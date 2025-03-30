@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Přehled objednávek</title>
+    <link rel="stylesheet" href="styles/main_styles.css"> <!-- Základní styly -->
+    <link rel="stylesheet" href="styles/order_management.css"> <!-- Specifické styly pro order_management -->
+</head>
+<body>
+    <header>
+        <h1>Přehled objednávek</h1>
+    </header>
+    <!-- Modální okno pro potvrzení -->
+<div id="deleteModal" class="modal">
+  <div class="modal-content">
+      <p id="delete-modal-message">Opravdu chcete stornovat objednávku?</p>
+      <button id="confirmDelete">Potvrdit</button>
+      <button id="cancelDelete">Zrušit</button>
+  </div>
+</div>
+
+<!-- Modální okno pro potvrzení -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <p id="modal-message"></p>
+        <button id="confirm-action">Potvrdit</button>
+        <button id="cancel-action">Zrušit</button>
+    </div>
+</div>
+<!-- Modální okno pro potvrzení akce -->
+<div id="confirm-modal" class="modal">
+  <div class="modal-content">
+      <p id="confirm-message"></p>
+      <div class="modal-buttons">
+          <button id="confirm-btn" class="confirm-btn">Ano</button>
+          <button id="cancel-btn" class="cancel-btn">Ne</button>
+      </div>
+  </div>
+</div>
+    <main>
+        <body>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>ID směny</th>
+                  <th>Začátek směny</th>
+                  <th>Konec směny</th>
+                  <th>Počet objednávek</th>
+                </tr>
+              </thead>
+              <tbody id="order-list">
+                <!-- Směny se vykreslí zde -->
+              </tbody>
+            </table>
+            <div class="pagination">
+              <button id="prev-page">Předchozí stránka</button>
+              <span id="page-info"></span>
+              <button id="next-page">Další stránka</button>
+            </div>
+        
+        </table>
+    </main>
+
+<!-- Zápatí stránky -->
+<footer id="footer">
+    <button class="footer-button" id="cashier-button">Pokladna</button>
+    <button class="footer-button" id="inventory-button">Inventář</button>
+    <button class="footer-button" id="order-management-button">Správa objednávek</button>
+    <button class="footer-button" id="customer-accounts-button" class="active">Účty zákazníků</button>
+    <button class="footer-button" id="shift-button" class="active">Směna</button>
+</footer>
+    <script src="scripts/common.js"></script>
+    <script type="module" src="scripts/order_management.js"></script> <!-- Skript pro správu stránky order_management -->
+
+
+</body>
+</html>

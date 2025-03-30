@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<customer name="Pepa">
+  <orders>
+    <order id="2">
+      <Date>2025-02-26 19:47:53</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>2x Víno (100 Kč)</Products>
+    </order>
+    <order id="3" payed="false">
+      <Date>2025-02-26 19:50:47</Date>
+      <TotalPrice>50</TotalPrice>
+      <Products>1x Víno (50 Kč)</Products>
+      <payed>@true</payed>
+    </order>
+    <order id="13" payed="false">
+      <Date>2025-02-26 23:34:31</Date>
+      <TotalPrice>80</TotalPrice>
+      <Products>1x Petardy (30 Kč), 1x Víno (50 Kč)</Products>
+    </order>
+    <order id="18" payed="false">
+      <Date>2025-02-27 00:09:34</Date>
+      <TotalPrice>110</TotalPrice>
+      <Products>2x Petardy (60 Kč), 1x Sklenka vodky (50 Kč)</Products>
+    </order>
+  </orders>
+</customer>

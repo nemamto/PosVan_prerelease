@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Systém - Bar - Pokladna</title>
+    <link rel="stylesheet" href="styles/main_styles.css">
+</head>
+<body>
+    <header>
+        <h1>Pokladna</h1>
+    </header>
+
+    <section id="order-section">
+        <div class="order-container">
+            <!-- ✅ Seznam produktů -->
+            <div class="product-container" id="product-container"></div>
+        
+
+        
+            <!-- ✅ Souhrn objednávky vpravo -->
+            <div class="order-summary">
+                <h2>Objednávka</h2>
+                <div id="product-list-summary"></div>
+                <h2 id="total-amount">Celkový součet: 0 Kč</h2>
+                <button class="submit-order" id="submit-order">Odeslat objednávku</button>
+            </div>
+        </div>
+        
+        <h2>Způsob platby</h2>
+        <div class="payment-methods">
+            <button class="payment-button" data-method="cash">💵 Hotovost</button>
+            <button class="payment-button" data-method="card">💳 Kartou</button>
+            <button class="payment-button" data-method="customer">👤 Účet zákazníka</button>
+        </div>
+    </section>
+<!-- ✅ Modal Overlay přes celý displej -->
+<!-- ✅ Modal Overlay přes celý displej -->
+<div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
+    <div id="modal-content" class="modal-content" onclick="event.stopPropagation();">
+        <p id="modal-message"></p>
+        <button id="close-modal" class="modal-close">Zavřít</button>
+    </div>
+</div>
+
+
+    <!-- ✅ Footer -->
+    <footer id="footer">
+        <button class="footer-button" id="cashier-button">Pokladna</button>
+        <button class="footer-button" id="inventory-button">Inventář</button>
+        <button class="footer-button" id="order-management-button">Správa objednávek</button>
+        <button class="footer-button" id="customer-accounts-button">Účty zákazníků</button>
+        <button class="footer-button" id="shift-button">Směna</button>
+    </footer>
+
+    <script src="scripts/common.js"></script>
+    <script src="scripts/cashier.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<products>
+  <product id="1" active="true">
+    <Name>Víno</Name>
+    <Description>lahev</Description>
+    <Quantity>91</Quantity>
+    <Price>50</Price>
+    <Color>#9c679c</Color>
+  </product>
+  <product id="2">
+    <Name>Petardy</Name>
+    <Description>30% studentská sleva</Description>
+    <Quantity>987</Quantity>
+    <Price>30</Price>
+    <Color>#006d0d</Color>
+  </product>
+  <product id="3">
+    <Name>Sklenka vodky</Name>
+    <Description>z mražáku</Description>
+    <Quantity>91</Quantity>
+    <Price>50</Price>
+    <Color>#458fd8</Color>
+  </product>
+</products>
