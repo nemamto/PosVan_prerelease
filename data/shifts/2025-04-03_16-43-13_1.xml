@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<shift id="1">
+  <startTime>2025-04-03 16-43-13</startTime>
+  <orders/>
+  <order id="1">
+    <time>2025-04-03 16:43:13</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>100</totalPrice>
+    <products>2x Káva (100 Kč)</products>
+  </order>
+  <order id="2">
+    <time>2025-04-03 16:43:22</time>
+    <paymentMethod/>
+    <totalPrice>50</totalPrice>
+    <products>1x Káva (50 Kč)</products>
+  </order>
+  <order id="3">
+    <time>2025-04-03 16:44:27</time>
+    <paymentMethod>Pepa</paymentMethod>
+    <totalPrice>100</totalPrice>
+    <products>2x Káva (100 Kč)</products>
+  </order>
+</shift>

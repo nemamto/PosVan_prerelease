@@ -1,5 +1,3 @@
-
-
 // Funkce pro zobrazení jednoduchého modálního okna
 function showModalpure(content, isHTML = false) {
     const modal = document.getElementById('modal');
@@ -183,39 +181,23 @@ async function checkActiveShift() {
         const shiftData = await response.json();
         console.log(`✅ Aktivní směna nalezena: ID ${shiftData.shiftID}, Barman: ${shiftData.bartender}`);
 
-        const shiftStatusElement = document.getElementById('shiftStatus');
-        const shiftButton = document.getElementById('shiftButton'); // tlačítko směny ve footeru
-
+        let shiftStatusElement = document.getElementById('shiftStatus');
         if (!shiftStatusElement) {
-            console.warn("⚠️ Element #shiftStatus nebyl nalezen. Přeskakuji nastavení.");
-            return;
+            console.warn("⚠️ Element #shiftStatus nebyl nalezen. Vytvářím nový element.");
+            shiftStatusElement = document.createElement('p');
+            shiftStatusElement.id = 'shiftStatus';
+            document.body.prepend(shiftStatusElement); // Přidáme na začátek těla stránky
         }
 
         if (shiftData.active) {
             shiftStatusElement.textContent = `🔵 Směna probíhá: ${shiftData.shiftID}`;
-            currentShiftID = shiftData.shiftID;
-            localStorage.setItem("currentShiftID", currentShiftID);
-
-            if (shiftButton) {
-                shiftButton.style.backgroundColor = 'green';
-            }
+            shiftStatusElement.style.color = 'green';
         } else {
-            console.warn("⚠️ Žádná aktivní směna nalezena.");
             shiftStatusElement.textContent = "🔴 Žádná aktivní směna!";
-            currentShiftID = null;
-            localStorage.removeItem("currentShiftID");
-
-            if (shiftButton) {
-                shiftButton.style.backgroundColor = 'red';
-            }
+            shiftStatusElement.style.color = 'red';
         }
     } catch (error) {
         console.error("❌ Chyba při načítání směny:", error);
-
-        const shiftStatusElement = document.getElementById('shiftStatus');
-        if (shiftStatusElement) {
-            shiftStatusElement.textContent = "❌ Chyba při ověřování směny!";
-        }
     }
 }
 
@@ -313,6 +295,19 @@ async function getShiftID() {
         return data.shiftID || null;
     } catch (error) {
         console.error("❌ Chyba při získávání shiftID:", error);
+        return null;
+    }
+}
+
+async function checkCurrentShift() {
+    try {
+        const response = await fetch(`${serverEndpoint}/currentShift`);
+        if (!response.ok) {
+            throw new Error("Chyba při načítání směny.");
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("❌ Chyba při načítání směny:", error);
         return null;
     }
 }

@@ -33,13 +33,15 @@ set "NODE_URL=https://nodejs.org/dist/v20.16.0/%NODE_VERSION%"
 setlocal EnableDelayedExpansion
 pushd %~dp0
 
-REM --- Download and install Node.js (this part is assumed working) ---
+REM --- Download and install Node.js ---
 echo [DEBUG] Downloading Node.js installer...
 powershell -Command "Start-BitsTransfer -Source %NODE_URL% -Destination %NODE_VERSION%"
+
 if not exist "%NODE_VERSION%" (
     echo [DEBUG] The file %NODE_VERSION% was not found after download.
     call :ShowError "Failed to download Node.js installer."
 )
+
 echo Installing Node.js...
 start "" /b msiexec /i "%NODE_VERSION%" /qn /l*v "install.log" /norestart
 
@@ -51,20 +53,19 @@ if not exist "install.log" (
     goto WAIT_FOR_LOG
 )
 
+REM --- Tail installation log ---
 echo [DEBUG] Tailing installation log (updates every 5 seconds)...
 set "oldSize=0"
 :TAIL_LOG
-REM Get the current file size (third token in dir output)
 for /f "tokens=3" %%I in ('dir /-C /A:-D "install.log" ^| find "install.log"') do set "newSize=%%I"
 
-REM If the file size has changed, clear and print the log; otherwise, print a waiting message.
 if not "!newSize!"=="!oldSize!" (
     cls
     type "install.log"
     set "oldSize=!newSize!"
 ) else (
     echo [DEBUG] No new log output..
-	call goto INSTALL_DONE
+call goto INSTALL_DONE
 )
 
 timeout /t 5 >nul
@@ -79,13 +80,11 @@ echo [DEBUG] Installation process has finished.
 echo [DEBUG] Verifying npm version...
 
 REM --- Verify npm version ---
-echo [DEBUG] Verifying npm version...
 call npm -v
 if "%errorlevel%" neq "0" (
     echo [ERROR] npm -v command failed! Please check Node.js installation.
     call :ShowError "npm is not functioning correctly."
 )
-echo [DEBUG] npm -v exit code: %errorlevel%
 
 REM --- Install nodemon globally ---
 echo [DEBUG] Installing nodemon...
@@ -98,8 +97,6 @@ if "%errorlevel%" neq "0" (
     echo " - npm is not installed correctly"
     call :ShowError "nodemon installation failed."
 )
-echo [DEBUG] npm install nodemon exit code: %errorlevel%
-timeout /t 5 >nul
 
 REM --- Check if nodemon is available in PATH ---
 echo [DEBUG] Checking nodemon availability...

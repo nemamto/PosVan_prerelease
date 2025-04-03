@@ -77,6 +77,110 @@ function getNextProductID() {
     return currentID;
 }
 
+// Zajistíme, že složka `data/shifts` existuje
+const shiftsDir = path.join(__dirname, 'data', 'shifts');
+if (!fs.existsSync(shiftsDir)) {
+    fs.mkdirSync(shiftsDir, { recursive: true });
+    console.log(`✅ Složka ${shiftsDir} byla vytvořena.`);
+}
+
+// Endpoint pro kontrolu aktuální směny
+app.get('/currentShift', (req, res) => {
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    if (fs.existsSync(shiftFilePath)) {
+        const shiftData = JSON.parse(fs.readFileSync(shiftFilePath, 'utf8'));
+        res.json(shiftData);
+    } else {
+        res.json({ active: false });
+    }
+});
+
+// Endpoint pro zahájení nové směny
+app.post('/startShift', (req, res) => {
+    const { bartender } = req.body;
+    if (!bartender) {
+        return res.status(400).json({ message: "Jméno barmana je povinné!" });
+    }
+
+    const shiftID = Date.now().toString();
+    const shiftData = { shiftID, bartender, startTime: new Date().toISOString(), active: true };
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    fs.writeFileSync(shiftFilePath, JSON.stringify(shiftData, null, 2));
+    res.json(shiftData);
+});
+
+// Endpoint pro ukončení směny
+app.post('/endShift', (req, res) => {
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    if (fs.existsSync(shiftFilePath)) {
+        const shiftData = JSON.parse(fs.readFileSync(shiftFilePath, 'utf8'));
+        shiftData.endTime = new Date().toISOString();
+        shiftData.active = false;
+        fs.writeFileSync(shiftFilePath, JSON.stringify(shiftData, null, 2));
+        res.json({ message: "Směna byla ukončena.", shiftID: shiftData.shiftID });
+    } else {
+        res.status(400).json({ message: "Žádná aktivní směna nebyla nalezena." });
+    }
+});
+
+// Endpoint pro načítání směn
+app.get('/shifts', (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const itemsPerPage = 10;
+
+    if (!fs.existsSync(shiftsDir)) {
+        fs.mkdirSync(shiftsDir, { recursive: true });
+        return res.json({ currentPage: page, totalPages: 0, totalFiles: 0, shifts: [] });
+    }
+
+    try {
+        const files = fs.readdirSync(shiftsDir)
+            .filter(file => file.match(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\d+\.xml$/))
+            .sort((a, b) => b.localeCompare(a));
+
+        const totalFiles = files.length;
+        const totalPages = Math.ceil(totalFiles / itemsPerPage);
+        const paginatedFiles = files.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+
+        const allShifts = paginatedFiles.map(file => {
+            const filePath = path.join(shiftsDir, file);
+            const xmlData = fs.readFileSync(filePath, 'utf8');
+            const jsonData = convert(xmlData, { format: 'object' });
+            const shift = jsonData.shift;
+
+            let orderItems = [];
+            if (shift.order) {
+                orderItems = shift.order;
+            } else if (shift.orders && shift.orders.order) {
+                orderItems = shift.orders.order;
+            }
+            if (!Array.isArray(orderItems)) {
+                orderItems = orderItems ? [orderItems] : [];
+            }
+
+            const orderCount = orderItems.length;
+            return {
+                id: shift['@id'] || '---',
+                startTime: shift.startTime || '---',
+                endTime: shift.endTime || 'Probíhá',
+                orderCount,
+                orderItems, // Detailní objednávky
+                fileName: file
+            };
+        });
+
+        res.json({
+            currentPage: page,
+            totalPages,
+            totalFiles,
+            shifts: allShifts,
+        });
+    } catch (error) {
+        console.error('❌ Chyba při načítání směn:', error);
+        res.status(500).json({ message: 'Chyba při načítání směn.' });
+    }
+});
+
 // Přidání zákazníka
 app.post('/addCustomer', (req, res) => {
     const { name } = req.body;
@@ -731,6 +835,45 @@ app.post('/endShift', async (req, res) => {
     }
 });
 
+// Endpoint pro kontrolu aktuální směny
+app.get('/currentShift', (req, res) => {
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    if (fs.existsSync(shiftFilePath)) {
+        const shiftData = JSON.parse(fs.readFileSync(shiftFilePath, 'utf8'));
+        res.json(shiftData);
+    } else {
+        res.json({ active: false });
+    }
+});
+
+// Endpoint pro zahájení nové směny
+app.post('/startShift', (req, res) => {
+    const { bartender } = req.body;
+    if (!bartender) {
+        return res.status(400).json({ message: "Jméno barmana je povinné!" });
+    }
+
+    const shiftID = Date.now().toString();
+    const shiftData = { shiftID, bartender, startTime: new Date().toISOString(), active: true };
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    fs.writeFileSync(shiftFilePath, JSON.stringify(shiftData, null, 2));
+    res.json(shiftData);
+});
+
+// Endpoint pro ukončení směny
+app.post('/endShift', (req, res) => {
+    const shiftFilePath = path.join(__dirname, 'data', 'current_shift.json');
+    if (fs.existsSync(shiftFilePath)) {
+        const shiftData = JSON.parse(fs.readFileSync(shiftFilePath, 'utf8'));
+        shiftData.endTime = new Date().toISOString();
+        shiftData.active = false;
+        fs.writeFileSync(shiftFilePath, JSON.stringify(shiftData, null, 2));
+        res.json({ message: "Směna byla ukončena.", shiftID: shiftData.shiftID });
+    } else {
+        res.status(400).json({ message: "Žádná aktivní směna nebyla nalezena." });
+    }
+});
+
 //přidání produktu
 app.post('/addProduct', (req, res) => {
     const { name, description, quantity, price, color } = req.body;
@@ -1121,14 +1264,7 @@ function getNewShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
     ensureDirectoryExistence(idsDir);
     const idFile = path.join(idsDir, 'shift_id.json');
-    let idData = { lastId: 0 };
-    if (fs.existsSync(idFile)) {
-        try {
-            idData = JSON.parse(fs.readFileSync(idFile, 'utf8'));
-        } catch (err) {
-            console.error("❌ Chyba při čtení shift_id.json:", err);
-        }
-    }
+    
     const newId = idData.lastId + 1;
     fs.writeFileSync(idFile, JSON.stringify({ lastId: newId }, null, 4));
     return newId;
