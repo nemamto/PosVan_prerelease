@@ -17,15 +17,31 @@ document.getElementById('login-form').addEventListener('submit', async function(
             const shiftData = await response.json();
 
             if (shiftData.active) {
-                const continueShift = confirm(`Aktivní směna ID ${shiftData.shiftID} probíhá. Chcete pokračovat?`);
-                if (continueShift) {
+                const startTime = new Date(shiftData.startTime).toLocaleString(); // Převod času zahájení na čitelný formát
+                const action = confirm(`Aktivní směna ID ${shiftData.shiftID} byla zahájena v ${startTime}. Chcete pokračovat v této směně?`);
+
+                if (action) {
                     localStorage.setItem("shiftID", shiftData.shiftID);
                     window.location.href = 'cashier.html';
                 } else {
-                    const endShift = confirm("Chcete ukončit aktuální směnu?");
-                    if (endShift) {
+                    // Automaticky ukončit aktuální směnu a zahájit novou
+                    try {
                         await fetch(`${serverEndpoint}/endShift`, { method: 'POST' });
                         alert("Směna byla ukončena.");
+
+                        const bartenderName = username; // Použijeme přihlašovací jméno jako jméno barmana
+                        const startResponse = await fetch(`${serverEndpoint}/startShift`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ bartender: bartenderName })
+                        });
+                        const startData = await startResponse.json();
+                        alert(`Nová směna zahájena: ID ${startData.shiftID}`);
+                        localStorage.setItem("shiftID", startData.shiftID);
+                        window.location.href = 'cashier.html';
+                    } catch (error) {
+                        console.error("Chyba při zahajování nové směny:", error);
+                        alert("Nepodařilo se zahájit novou směnu.");
                     }
                 }
             } else {

@@ -3,7 +3,7 @@
   <product id="1">
     <Name>Káva</Name>
     <Description>Espresso</Description>
-    <Quantity>95</Quantity>
+    <Quantity>84</Quantity>
     <Price>50</Price>
     <Color>#FFD700</Color>
   </product>

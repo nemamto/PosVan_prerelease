@@ -205,13 +205,25 @@ async function submitOrder() {
         return;
     }
 
-    // Získáme ID aktuálně otevřené směny
-    const shiftID = getShiftID(); 
+    // ✅ Kontrola, zda je aktivní směna
+    try {
+        const response = await fetch(`${serverEndpoint}/currentShift`);
+        if (!response.ok) {
+            throw new Error("Chyba při ověřování směny!");
+        }
 
-    if (!shiftID) {
-        console.error("❌ Chyba: Směna není otevřená!");
-        // Vyvoláme modální okno s upozorněním – nová směna se nevytvoří
-        showModal("❌ Nemáte aktivní směnu. Prosím, zahajte směnu před odesláním objednávky!", true, true);
+        const shiftData = await response.json();
+        if (!shiftData.active) {
+            console.error("❌ Chyba: Směna není otevřená!");
+            showModal("❌ Nemáte aktivní směnu. Prosím, zahajte směnu před odesláním objednávky!", true, true);
+            return;
+        }
+
+        // Nastavení shiftID z aktuální směny
+        shiftID = shiftData.shiftID;
+    } catch (error) {
+        console.error("❌ Chyba při kontrole aktivní směny:", error);
+        showModal("❌ Chyba při ověřování směny. Zkuste to znovu!", true, true);
         return;
     }
 

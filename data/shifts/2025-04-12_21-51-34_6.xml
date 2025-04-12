@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<shift id="6">
+  <startTime>2025-04-12 21-51-34</startTime>
+  <bartender>barman</bartender>
+  <orders/>
+  <order id="14" cancelled="false">
+    <time>2025-04-12 21:52:16</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Káva (50 Kč)</products>
+  </order>
+</shift>
