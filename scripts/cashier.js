@@ -75,8 +75,7 @@ function updateOrderSummary() {
         const productElement = document.createElement('p');
         productElement.innerHTML = `
             ${product.name} (${product.quantity}x) - ${product.totalPrice} Kč
-            <button class="remove-button">🗑️ Odebrat</button>
-
+            <button class="remove-button" data-name="${product.name}">🗑️ Odebrat</button>
         `;
         productListSummary.appendChild(productElement);
     });
