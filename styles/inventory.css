@@ -41,7 +41,15 @@
     border: 1px solid #ccc;
     border-radius: 4px;
 }
-
+.inventory-table {
+    max-height: 60vh; /* Maximální výška tabulky (60 % výšky okna) */
+    overflow-y: auto; /* Povolení vertikálního rolování */
+    margin-bottom: 20px; /* Odsazení od tlačítka */
+    border: 1px solid #ddd; /* Volitelný rámeček kolem tabulky */
+    border-radius: 8px; /* Volitelné zaoblení rohů */
+    padding: 10px; /* Volitelné vnitřní odsazení */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Jemný stín */
+}
 /* Tlačítka "Odstranit" a "Zrušit" budou červená */
 button.delete-btn, button.cancel-edit-btn {
     background-color: #dc3545;

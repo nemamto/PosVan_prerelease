@@ -387,8 +387,13 @@ function renderProductsByCategory(products) {
         const productDiv = document.createElement('div');
         productDiv.className = 'product';
         productDiv.style.backgroundColor = product.color || '#ccc'; // Barva produktu
-        productDiv.innerHTML = `<span>${product.name} - ${product.price} Kč</span>`;
-
+        productDiv.innerHTML = `
+        <div class="product-content">
+            <h3 class="product-name">${product.name}</h3>
+            <p class="product-description">${product.description || 'Bez popisu'}</p>
+            <span class="product-price">${product.price} Kč</span>
+        </div>
+    `;
         // Kliknutím na produkt přidáme do objednávky
         productDiv.addEventListener('click', () => addProductToOrder(product));
         productContainer.appendChild(productDiv);

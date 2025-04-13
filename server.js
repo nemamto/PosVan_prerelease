@@ -1331,6 +1331,22 @@ function getNewShiftID() {
     return newId;
 }
 
+// Endpoint pro načítání kategorií
+app.get('/categories', (req, res) => {
+    const categoriesPath = path.join(__dirname, 'data', 'categories.json');
+
+    if (!fs.existsSync(categoriesPath)) {
+        return res.status(404).json({ message: 'Soubor s kategoriemi nebyl nalezen.' });
+    }
+
+    try {
+        const categories = JSON.parse(fs.readFileSync(categoriesPath, 'utf8'));
+        res.json(categories);
+    } catch (error) {
+        console.error('❌ Chyba při načítání kategorií:', error);
+        res.status(500).json({ message: 'Chyba při načítání kategorií.' });
+    }
+});
 
 app.get('/products', (req, res) => {
     const productsPath = ensureProductsXML();

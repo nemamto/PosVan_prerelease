@@ -54,13 +54,13 @@ h2, h3, h4 {
 /* ========================== */
 footer {
     position: fixed; /* ✅ Footer se posune, nebude fixed */
-    height: 40px;
+    height: 32px;
     bottom: 0;
     width: 100%;
     background-color: #636e72;
     color: white;
     text-align: center;
-    padding: 0;
+    padding: 0px;
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -69,8 +69,9 @@ footer {
     background-color: #2d3436;
     color: white;
     font-size: 18px;
+    height: 40px;
     font-weight: bold;
-    padding: 12px 18px;
+    padding: 0px 18px;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease-in-out;
@@ -147,7 +148,6 @@ footer {
     gap: 15px;
     justify-content: center;
 }
-
 .product {
     padding: 15px;
     background-color: #ffffff;
@@ -155,59 +155,43 @@ footer {
     border-radius: 8px;
     text-align: center;
     width: 150px;
+    max-height: 25%; /* Maximální výška */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Přidání plynulé animace */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
 }
 
 .product:hover {
-    transform: scale(1.2); /* Jemné zvětšení produktu */
-    animation: pulse 0.5s ease-in-out;
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2); /* Zvýraznění stínu */
-    background-color: #f0f8ff; /* Jemné zvýraznění pozadí (volitelné) */
+    transform: scale(1.1);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    background-color: #f0f8ff;
 }
-.product-button {
-    padding: 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+
+.product-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.product-description {
     font-size: 14px;
-    transition: background-color 0.3s ease;
+    color: #666;
+    margin: 0;
+    text-align: center;
 }
 
-.product-button:hover {
-    background-color: #0056b3;
-}
-
-
-/* 📌 Zig-Zag efekt na liché produkty */
-.product:nth-child(odd) {
-    transform: translateY(10px);
-}
-
-/* 📌 Zig-Zag efekt na sudé produkty */
-.product:nth-child(even) {
-    transform: translateY(-10px);
-}
-
-/* 📌 Přizpůsobení pro menší obrazovky */
-@media (max-width: 1024px) {
-    .product {
-        flex: 1 1 calc(33.33% - 15px); /* ✅ 3 produkty na řádek */
-    }
-}
-
-@media (max-width: 768px) {
-    .product {
-        flex: 1 1 calc(50% - 15px); /* ✅ 2 produkty na řádek */
-    }
-}
-
-@media (max-width: 480px) {
-    .product {
-        flex: 1 1 100%; /* ✅ 1 produkt na řádek */
-    }
+.product-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
 }
 
 /* 🟠 Tlačítko pro odeslání objednávky */
@@ -603,21 +587,6 @@ border-radius: 4px;
     margin-top: 20px;
 }
 
-/* Tlačítka plateb */
-.payment-button {
-    padding: 15px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-}
-
-.payment-button:hover {
-    background-color: #45a049;
-}
 
 /* Modal Overlay */
 .modal-overlay {

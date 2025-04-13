@@ -553,12 +553,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 */
-
-function enableEditing(row) {
+async function loadCategories() {
+    try {
+        const response = await fetch('/categories'); // Načtení kategorií z endpointu
+        if (!response.ok) {
+            throw new Error('Chyba při načítání kategorií');
+        }
+        return await response.json(); // Vrátí pole kategorií
+    } catch (error) {
+        console.error('❌ Chyba při načítání kategorií:', error);
+        return []; // Vrátí prázdné pole při chybě
+    }
+}
+async function enableEditing(row) {
     const id = row.getAttribute('data-id');
     const nameCell = row.querySelector('td:nth-child(1)');
     const descriptionCell = row.querySelector('td:nth-child(2)');
-    const categoryCell = row.querySelector('td:nth-child(3)'); // Přidáno pro kategorii
+    const categoryCell = row.querySelector('td:nth-child(3)');
     const quantityCell = row.querySelector('td:nth-child(4)');
     const priceCell = row.querySelector('td:nth-child(5)');
     const actionCell = row.querySelector('td:nth-child(6)');
@@ -573,19 +584,21 @@ function enableEditing(row) {
     // Původní hodnoty
     const currentName = nameCell.textContent.trim();
     const currentDescription = descriptionCell.textContent.trim();
-    const currentCategory = categoryCell.textContent.trim(); // Přidáno pro kategorii
+    const currentCategory = categoryCell.textContent.trim();
     const currentQuantity = parseInt(quantityCell.textContent.trim());
     const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
+
+    // Načtení kategorií
+    const categories = await loadCategories();
 
     // Pole pro editaci
     nameCell.innerHTML = `<input type="text" value="${currentName}">`;
     descriptionCell.innerHTML = `<input type="text" value="${currentDescription}">`;
     categoryCell.innerHTML = `
         <select>
-            <option value="Nápoje" ${currentCategory === 'Nápoje' ? 'selected' : ''}>Nápoje</option>
-            <option value="Jídlo" ${currentCategory === 'Jídlo' ? 'selected' : ''}>Jídlo</option>
-            <option value="Dezerty" ${currentCategory === 'Dezerty' ? 'selected' : ''}>Dezerty</option>
-            <option value="Ostatní" ${currentCategory === 'Ostatní' ? 'selected' : ''}>Ostatní</option>
+            ${categories.map(category => `
+                <option value="${category}" ${currentCategory === category ? 'selected' : ''}>${category}</option>
+            `).join('')}
         </select>
     `;
     quantityCell.innerHTML = `<input type="number" min="0" value="${currentQuantity}">`;

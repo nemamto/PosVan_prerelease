@@ -167,7 +167,7 @@ async function payAllOrders(customerName) {
         // 🟢 Zobrazíme modální okno pro výběr způsobu platby
         const paymentMethod = await showPaymentModalForAllOrders(total, customerName);
         if (!paymentMethod) {
-            alert("Platba byla zrušena.");
+            //alert("Platba byla zrušena.");
             return;
         }
 
@@ -383,7 +383,7 @@ async function loadOrders(customerName) {
         document.getElementById('orderOverview').style.display = 'block';
 
         // Přidání event listenerů pro tlačítka "Zaplatit"
-        document.querySelectorAll('.pay-order-btn').forEach(button => {
+        document.querySelectorAll('.pay-order-button').forEach(button => {
             button.addEventListener('click', e => {
                 const orderId = e.target.getAttribute('data-id');
                 console.log(`Kliknuto na tlačítko Zaplatit pro objednávku ID: ${orderId}`);
@@ -544,7 +544,7 @@ async function showCustomerOrders(customerName) {
             <p><strong>Celková cena:</strong> ${order.totalPrice} Kč</p>
             <p><strong>Datum:</strong> ${order.date}</p>
             <p><strong>Produkty:</strong> ${order.products}</p>
-            ${order.payed !== "true" ? `<button class="pay-order-btn" data-id="${order['@id']}">Zaplatit</button>` : '<span>Zaplaceno</span>'}
+            ${order.payed !== "true" ? `<button class="pay-order-button" data-id="${order['@id']}">Zaplatit</button>` : '<span>Zaplaceno</span>'}
         `;
 
         orderList.appendChild(orderItem);
