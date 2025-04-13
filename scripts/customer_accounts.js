@@ -113,17 +113,24 @@ async function payAllOrders(customerName) {
 
         let orders = await response.json();
         const unpaidOrders = orders.filter(order =>
-            order.payed !== true && order.payed !== "true" && order['@payed'] !== "true"
+            (order.payed !== true && order.payed !== "true" && order['@payed'] !== "true") &&
+            (order.cancelled !== true && order.cancelled !== "true" && order['@cancelled'] !== "true")
         );
 
         if (unpaidOrders.length === 0) {
-            //alert(`Zákazník ${customerName} nemá žádné nezaplacené objednávky.`);
+            alert(`Zákazník ${customerName} nemá žádné nezaplacené objednávky.`);
             return;
         }
 
-        // ✅ Označíme každou objednávku jako zaplacenou (ale bez zápisu do směny)
+        console.log("📋 Nezaplacené objednávky:", unpaidOrders);
+
+        // ✅ Označíme každou objednávku jako zaplacenou
         for (const order of unpaidOrders) {
-            await markOrderAsPaid(order['@id']);
+            if (!order['@id']) {
+                console.error("❌ Objednávka nemá ID:", order);
+                continue; // Přeskočíme objednávky bez ID
+            }
+            await markCustomerOrderAsPaid(customerName, order['@id']);
         }
 
         // 💰 Sečteme celkovou částku a zapíšeme jako jednu objednávku do směny
@@ -138,7 +145,42 @@ async function payAllOrders(customerName) {
         alert('Nepodařilo se zaplatit všechny objednávky.');
     }
 }
+async function addPaymentToShift(customerName, total, paymentMethod) {
+    try {
+        const shiftID = getShiftID(); // Získání aktuálního ID směny
+        if (!shiftID) {
+            throw new Error("❌ Směna není otevřená!");
+        }
 
+        const response = await fetch(`${serverEndpoint}/logOrder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                order: [
+                    {
+                        name: `Platba zákazníka ${customerName}`,
+                        quantity: 1,
+                        price: total,
+                        totalPrice: total
+                    }
+                ],
+                paymentMethod: paymentMethod,
+                totalAmount: total,
+                selectedCustomer: customerName,
+                shiftID: shiftID
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Chyba při zaznamenávání platby do směny.');
+        }
+
+        console.log(`✅ Platba zákazníka ${customerName} ve výši ${total} Kč byla úspěšně zaznamenána do směny.`);
+    } catch (error) {
+        console.error('❌ Chyba při zaznamenávání platby do směny:', error);
+        throw error;
+    }
+}
 async function submitOrder() {
     console.log(`📤 Odesílám objednávku:`, order);
 

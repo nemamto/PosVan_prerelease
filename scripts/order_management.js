@@ -118,16 +118,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tbody>
                 `;
     
+                // Inicializace součtů
+                let totalCash = 0;
+                let totalCard = 0;
+                let totalRevenue = 0;
+    
                 // Řazení objednávek od nejnovějších po nejstarší
                 shift.orderItems
                     .sort((a, b) => new Date(b.time) - new Date(a.time)) // Řazení podle času
                     .forEach(order => {
+                        const totalPrice = Number(order.totalPrice || 0);
+                        totalRevenue += totalPrice;
+    
+                        if (order.paymentMethod === 'Hotovost' || order.paymentMethod === 'cash') {
+                            totalCash += totalPrice;
+                        } else if (order.paymentMethod === 'Karta' || order.paymentMethod === 'card') {
+                            totalCard += totalPrice;
+                        }
+    
                         detailHtml += `
                             <tr ${order['@cancelled'] === 'true' ? 'class="cancelled-order"' : ''}>
                                 <td>${order['@id']}</td>
                                 <td>${order.time}</td>
                                 <td>${order.paymentMethod}</td>
-                                <td>${order.totalPrice} Kč</td>
+                                <td>${totalPrice} Kč</td>
                                 <td class="products-column">${order.products}</td>
                                 <td>
                                     ${order['@cancelled'] === 'true' 
@@ -138,6 +152,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             </tr>
                         `;
                     });
+    
+                // Přidání řádku shrnutí
+                detailHtml += `
+                    <tr class="shift-summary">
+                        <td colspan="2"><strong>Souhrn směny:</strong></td>
+                        <td><strong>Hotovost:</strong> ${totalCash} Kč</td>
+                        <td><strong>Karta:</strong> ${totalCard} Kč</td>
+                        <td><strong>Celkem:</strong> ${totalRevenue} Kč</td>
+                        <td></td>
+                    </tr>
+                `;
     
                 detailHtml += '</tbody></table>';
             } else {
