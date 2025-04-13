@@ -137,10 +137,15 @@ async function showCustomerSelectionModal() {
     setTimeout(() => {
         const confirmButton = document.getElementById('confirm-customer');
         if (confirmButton) {
-            confirmButton.addEventListener('click', function () {
+            // Vytvoříme nový element a nahradíme starý
+            const newConfirmButton = confirmButton.cloneNode(true);
+            confirmButton.replaceWith(newConfirmButton);
+    
+            // Přidáme nový event listener
+            newConfirmButton.addEventListener('click', function () {
                 const customerSelect = document.getElementById('customer-select');
                 selectedCustomer = customerSelect.value;
-
+    
                 if (selectedCustomer) {
                     console.log(`✅ Vybraný zákazník: ${selectedCustomer}`);
                     closeModal(); // Zavře modální okno

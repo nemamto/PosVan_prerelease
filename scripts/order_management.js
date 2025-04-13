@@ -38,6 +38,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     async function fetchShifts() {
         console.log(`📥 Načítání směn pro stránku ${currentPage}...`);
+    
+        // Uchování stavu otevřených řádků
+        const openShiftIds = Array.from(document.querySelectorAll('.shift-detail'))
+            .filter(row => row.style.display !== 'none')
+            .map(row => row.getAttribute('data-shift-id'));
+    
         try {
             const response = await fetch(`${serverEndpoint}/shifts?page=${currentPage}&limit=${shiftsPerPage}`);
             if (!response.ok) throw new Error('Chyba při načítání směn!');
@@ -50,6 +56,15 @@ document.addEventListener('DOMContentLoaded', function() {
             totalPages = serverTotalPages;
     
             renderShifts({ shifts, currentPage, totalPages });
+    
+            // Obnovení stavu otevřených řádků
+            openShiftIds.forEach(id => {
+                const detailRow = document.querySelector(`.shift-detail[data-shift-id="${id}"]`);
+                if (detailRow) {
+                    detailRow.style.display = 'table-row';
+                }
+            });
+    
             updatePagination();
         } catch (error) {
             console.error('❌ Chyba při načítání směn:', error);
@@ -60,33 +75,33 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderShifts({ shifts, currentPage, totalPages }) {
         console.log(`Vykresluji směny – stránka ${currentPage} z ${totalPages}`);
         orderList.innerHTML = '';
-
+    
         if (!shifts || shifts.length === 0) {
             orderList.innerHTML = '<tr><td colspan="5">Žádné směny nebyly nalezeny.</td></tr>';
             return;
         }
-
+    
         shifts.forEach(shift => {
             // Vytvoříme header řádek se základními informacemi o směně
             const headerRow = document.createElement('tr');
             headerRow.classList.add('shift-header');
-            headerRow.style.cursor = 'pointer';
+            headerRow.style.cursor = 'pointer'; // Nastavíme kurzor na pointer
             headerRow.innerHTML = `
                 <td>${shift.id}</td>
                 <td>${shift.startTime}</td>
                 <td>${shift.endTime}</td>
                 <td>${shift.orderCount}</td>
-                <td><button class="toggle-detail">Detail</button></td>
             `;
-
+    
             // Vytvoříme detailní řádek s objednávkami (skrytý na začátku)
             const detailRow = document.createElement('tr');
             detailRow.classList.add('shift-detail');
+            detailRow.setAttribute('data-shift-id', shift.id); // Přidáme atribut pro identifikaci
             detailRow.style.display = 'none';
             const detailCell = document.createElement('td');
-            detailCell.colSpan = 5;
+            detailCell.colSpan = 4; // Spojíme buňky přes všechny sloupce
             let detailHtml = '';
-
+    
             if (shift.orderItems && shift.orderItems.length > 0) {
                 detailHtml += '<table style="width:100%; border-collapse: collapse;">';
                 detailHtml += `
@@ -103,13 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <tbody>
                 `;
                 shift.orderItems.forEach(order => {
-                        detailHtml += `
+                    detailHtml += `
                         <tr ${order['@cancelled'] === 'true' ? 'class="cancelled-order"' : ''}>
                             <td>${order['@id']}</td>
                             <td>${order.time}</td>
                             <td>${order.paymentMethod}</td>
                             <td>${order.totalPrice} Kč</td>
-                            <td class="products-column">${order.products}</td> <!-- ✅ Přidáno pro zalamování -->
+                            <td class="products-column">${order.products}</td>
                             <td>
                                 ${order['@cancelled'] === 'true' 
                                     ? `<button class="restore-order" data-id="${order['@id']}">Obnovit</button>`
@@ -119,28 +134,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         </tr>
                     `;
                 });
-                
                 detailHtml += '</tbody></table>';
             } else {
                 detailHtml = 'Žádné objednávky nejsou k dispozici.';
             }
             detailCell.innerHTML = detailHtml;
             detailRow.appendChild(detailCell);
-
-            // Event listener pro tlačítko "Detail" v header řádku
-            headerRow.querySelector('.toggle-detail').addEventListener('click', function(e) {
-                e.stopPropagation();
+    
+            // Event listener pro kliknutí na řádek
+            headerRow.addEventListener('click', function () {
                 detailRow.style.display = (detailRow.style.display === 'none') ? 'table-row' : 'none';
             });
-
+    
             orderList.appendChild(headerRow);
             orderList.appendChild(detailRow);
-
-            // Přidání listenerů pro tlačítka "Stornovat"
+    
+            // Připojení listenerů na tlačítka "Stornovat" a "Obnovit"
             setTimeout(() => {
                 detailRow.querySelectorAll('.delete-order').forEach(button => {
-                    button.addEventListener('click', function(e) {
-                        e.stopPropagation();
+                    button.addEventListener('click', function (e) {
+                        e.stopPropagation(); // Zabráníme zavření detailního řádku
                         const orderId = this.getAttribute('data-id');
                         console.log(`Klik na "Stornovat" pro objednávku ID: ${orderId}`);
                         showModalConfirm(`Opravdu chcete stornovat objednávku ${orderId}?`, () => {
@@ -148,11 +161,10 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 });
-            
-                // 🟢 Přidání listenerů pro tlačítka "Obnovit objednávku"
+    
                 detailRow.querySelectorAll('.restore-order').forEach(button => {
-                    button.addEventListener('click', function(e) {
-                        e.stopPropagation();
+                    button.addEventListener('click', function (e) {
+                        e.stopPropagation(); // Zabráníme zavření detailního řádku
                         const orderId = this.getAttribute('data-id');
                         console.log(`Klik na "Obnovit" pro objednávku ID: ${orderId}`);
                         showModalConfirm(`Opravdu chcete obnovit objednávku ${orderId}?`, () => {
@@ -160,11 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                     });
                 });
-            
             }, 0);
         });
-    }
-            
+    }      
     // Příklad funkce pro potvrzení akce pomocí confirm()
 // Nahrazuje standardní confirm() modálním oknem
 function showModalConfirm(message, onConfirm) {
