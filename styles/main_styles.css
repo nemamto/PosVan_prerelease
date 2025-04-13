@@ -12,14 +12,15 @@ html, body {
     font-family: 'Poppins', sans-serif; /* ✅ Oprava fontů */
     font-size: 16px;
     color: #333;
+    overflow: hidden;
 }
 
 /* 🟢 Hlavní obsah se roztáhne a footer zůstane dole */
 main {
-    flex: 80%; /* Automaticky zabere volný prostor mezi headerem a footerem */
+    flex: 2; /* Automaticky zabere volný prostor mezi headerem a footerem */
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 90%;
 
     padding-bottom: 80px; /* ✅ Rezerva pro footer */
 }
@@ -53,12 +54,13 @@ h2, h3, h4 {
 /* ========================== */
 footer {
     position: fixed; /* ✅ Footer se posune, nebude fixed */
+    height: 40px;
     bottom: 0;
     width: 100%;
     background-color: #636e72;
     color: white;
     text-align: center;
-    padding: 15px 0;
+    padding: 0;
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
 }
 
@@ -104,63 +106,79 @@ footer {
 .pagination button:hover {
     background-color: #45a049;
 }
+
+.category-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.category {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: #007bff;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.category:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
 /* ========================== */
 /*        PRODUKTY            */
 /* ========================== */
-
 .product-container {
     display: flex;
-    flex-wrap: wrap; /* ✅ Umožní zalamování na více řádků */
-    justify-content: center; /* ✅ Vycentrování produktů */
-    gap: 15px; /* ✅ Větší mezera mezi produkty */
-    padding: 20px;
-    max-width: 100%;
-    flex: 2;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
 }
 
-/* 📌 Produkt (kolečka) */
 .product {
-    padding-top: 5%;
-    flex: 1 1 calc(20% - 15px); /* ✅ Maximálně 5 produktů na řádek */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 180px; /* ✅ Zabrání smrštění */
-}
-/* 🟢 Styl tlačítek produktů */
-
-
-/* 🟢 Hover efekt */
-.product-button:hover {
-    transform: rotate(15deg); /* Otočí o 15° doprava */
-    transform: rotate(-15deg); /* Otočí o 15° doleva */
-   /* transform: scale(1.1);*/
-    border-color: #dd9e29; /* Zvýraznění */
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-}
-
-    
-/* 📌 Knoflík produktu */
-.product-button {
-    width: 200px; /* ✅ Lehce menší než dříve */
-    height: 200px;
-    border-radius: 20%;
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 20px;
-    color: #fff;
-    background-color: var(--product-color, #4CAF50); /* ✅ Použití barvy ze souboru */
-    transition: transform 0.2s ease-in-out, background-color 0.3s;
+    padding: 15px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
     text-align: center;
-    line-height: 1.2;
-    text-wrap: balance; /* ✅ Umožní zalomení textu uvnitř tlačítka */
-
+    width: 150px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Přidání plynulé animace */
 }
 
+.product:hover {
+    transform: scale(1.2); /* Jemné zvětšení produktu */
+    animation: pulse 0.5s ease-in-out;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2); /* Zvýraznění stínu */
+    background-color: #f0f8ff; /* Jemné zvýraznění pozadí (volitelné) */
+}
+.product-button {
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.product-button:hover {
+    background-color: #0056b3;
+}
 
 
 /* 📌 Zig-Zag efekt na liché produkty */
@@ -531,9 +549,108 @@ margin: 5px;
 cursor: pointer;
 border-radius: 4px;
 }
+/* Hlavní kontejner */
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    height: calc(100vh - 100px); /* Celá výška okna minus header a footer */
+    overflow: hidden;
+    padding: 10px;
+    gap: 10px;
+}
 
-button:hover {
-background: #005f5f;
+/* Pevné sekce */
+.fixed-section {
+    flex: 1;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Umožní scrollování, pokud je obsah větší než výška */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Kategorie */
+.category-container {
+    max-width: 20%; /* Kategorie zabírají 20 % šířky */
+    height: 100%; /* Zabírají celou výšku */
+}
+
+/* Produkty */
+.product-container {
+    max-width: 50%; /* Produkty zabírají 50 % šířky */
+    height: 100%; /* Zabírají celou výšku */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Souhrn objednávky */
+.order-summary {
+    max-width: 25%; /* Souhrn zabírá 25 % šířky */
+    height: 100%; /* Zabírá celou výšku */
+    text-align: center;
+}
+
+/* Způsob platby */
+.payment-methods {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Tlačítka plateb */
+.payment-button {
+    padding: 15px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.payment-button:hover {
+    background-color: #45a049;
+}
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Poloprůhledná černá */
+    display: none; /* Skryté ve výchozím stavu */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 80%;
+}
+
+.modal-close {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
 }
 
 /* ✅ Pokud tlačítko je v kontejneru s produkty */

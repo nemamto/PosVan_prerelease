@@ -353,45 +353,47 @@ function getRandomColor() {
     }
     return color;
 }
-
+// Funkce pro vykreslení kategorií
 function renderProducts(products) {
-    const productContainer = document.querySelector('.product-container');
-    productContainer.innerHTML = ''; // Vyčistí předchozí obsah
+    const categoryContainer = document.querySelector('.category-container');
+    categoryContainer.innerHTML = ''; // Vyčištění kategorií
 
-    // Dynamické nastavení sloupců podle šířky okna
-    function setGridColumns() {
-        const containerWidth = window.innerWidth;
-        let columns = Math.floor(containerWidth / 220); // Např. produkty široké 200px
-        columns = Math.max(columns, 1); // Minimálně 1 sloupec
-        productContainer.style.gridTemplateColumns = `repeat(${columns}, 1fr)`; // Nastavení počtu sloupců
-    }
+    // Skupina produktů podle kategorií
+    const categories = products.reduce((acc, product) => {
+        const category = product.category || 'Nezařazeno';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(product);
+        return acc;
+    }, {});
 
-    setGridColumns(); // Nastavení sloupců při načtení
-    window.addEventListener('resize', setGridColumns); // Aktualizace při změně velikosti okna
+    // Zobrazení kategorií
+    Object.keys(categories).forEach(category => {
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'category';
+        categoryDiv.textContent = category;
 
-    products.forEach(product => {
-            // ✅ Kontrola, zda je produkt aktivní
-        if (product.active !== "true") {
-            return; // Pokud není aktivní, přeskočíme ho
-    }
-        const productDiv = document.createElement('div');
-        productDiv.className = 'product';
-
-        const productButton = document.createElement('div');
-        productButton.className = 'product-button';
-        productButton.style.backgroundColor = product.color || '#ccc'; // Defaultní barva
-
-        productButton.innerHTML = `<span>${product.name} - ${product.price} Kč</span>`;
-        productDiv.appendChild(productButton);
-        productContainer.appendChild(productDiv);
-
-        // Přidání event listeneru pro přidání produktu do objednávky
-        productButton.addEventListener('click', () => addProductToOrder(product));
+        // Kliknutím na kategorii zobrazíme produkty
+        categoryDiv.addEventListener('click', () => renderProductsByCategory(categories[category]));
+        categoryContainer.appendChild(categoryDiv);
     });
 }
 
+// Funkce pro vykreslení produktů v kategorii
+function renderProductsByCategory(products) {
+    const productContainer = document.querySelector('.product-container');
+    productContainer.innerHTML = ''; // Vyčištění předchozích produktů
 
+    products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.className = 'product';
+        productDiv.style.backgroundColor = product.color || '#ccc'; // Barva produktu
+        productDiv.innerHTML = `<span>${product.name} - ${product.price} Kč</span>`;
 
+        // Kliknutím na produkt přidáme do objednávky
+        productDiv.addEventListener('click', () => addProductToOrder(product));
+        productContainer.appendChild(productDiv);
+    });
+}
 // Funkce pro zavření modálního okna
 document.getElementById('close-modal').addEventListener('click', function() {
     document.getElementById('modal').style.display = 'none';

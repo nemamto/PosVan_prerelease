@@ -1,63 +1,73 @@
 <!DOCTYPE html>
 <html lang="cs">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Systém - Bar - Pokladna</title>
-    <link rel="stylesheet" href="styles/main_styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pokladna | POS Systém</title>
+  <link rel="stylesheet" href="styles/main_styles.css" />
 </head>
 <body>
-    <div id="scale-container">
-    <header>
-        <h1>Pokladna</h1>
-    </header>
-<main>
-    <section id="order-section">
-        <div class="order-container">
-            <!-- ✅ Seznam produktů -->
-            <div class="product-container" id="product-container"></div>
-        
+  <header>
+    <h1>Pokladna</h1>
+  </header>
 
-        
-            <!-- ✅ Souhrn objednávky vpravo -->
-            <div class="order-summary">
-                <h2>Objednávka</h2>
-                <div id="product-list-summary"></div>
-                <h2 id="total-amount">Celkový součet: 0 Kč</h2>
-                <button class="submit-order" id="reset-order">Vymazat objednávku</button>
-            </div>
+  <main>
+    <section id="order-section" class="flex-container">
+        <!-- Kategorie -->
+        <div class="category-container fixed-section">
+            <h2>Kategorie</h2>
+            <!-- Kategorie se zobrazí zde -->
         </div>
-        
-        <h2>Způsob platby</h2>
-        <div class="payment-methods">
-            <button class="payment-button" data-method="cash">💵 Hotovost</button>
-            <button class="payment-button" data-method="card">💳 Kartou</button>
-            <button class="payment-button" data-method="customer">👤 Účet zákazníka</button>
+
+        <!-- Produkty -->
+        <div class="product-container fixed-section">
+            <h2>Produkty</h2>
+            <!-- Produkty se zobrazí zde -->
+        </div>
+
+        <!-- Souhrn objednávky -->
+        <div class="order-summary fixed-section">
+            <h2>Objednávka</h2>
+            <div id="product-list-summary"></div>
+            <h2 id="total-amount">Celkový součet: 0 Kč</h2>
+            <button class="submit-order" id="reset-order">Vymazat objednávku</button>
         </div>
     </section>
-<!-- ✅ Modal Overlay přes celý displej -->
-<!-- ✅ Modal Overlay přes celý displej -->
-<div id="modal-overlay" class="modal-overlay" onclick="closeModal()">
-    <div id="modal-content" class="modal-content" onclick="event.stopPropagation();">
-        <p id="modal-message"></p>
-        <button id="close-modal" class="modal-close">Zavřít</button>
-    </div>
-</div>
 
+    <!-- Způsob platby -->
+    <section class="payment-methods">
+        <h2>Způsob platby</h2>
+        <button class="payment-button" data-method="cash">💵 Hotovost</button>
+        <button class="payment-button" data-method="card">💳 Kartou</button>
+        <button class="payment-button" data-method="customer">👤 Účet zákazníka</button>
+    </section>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div id="modal-content" class="modal-content">
+            <p id="modal-message"></p>
+            <button id="close-modal" class="modal-close">Zavřít</button>
+        </div>
+    </div>
 </main>
-    <!-- ✅ Footer -->
-<footer id="footer">
+
+  <footer>
     <button class="footer-button" id="cashier-button">Pokladna</button>
     <button class="footer-button" id="inventory-button">Inventář</button>
     <button class="footer-button" id="order-management-button">Správa objednávek</button>
     <button class="footer-button" id="customer-accounts-button">Účty zákazníků</button>
     <button class="footer-button" id="shift-button">Směna</button>
-</footer>
+  </footer>
 
+  <!-- Modal okno -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation();">
+      <p id="modal-message"></p>
+      <button id="close-modal" class="btn btn-danger modal-close">Zavřít</button>
+    </div>
+  </div>
 
-</div>
-
+  <script src="scripts/common.js"></script>
+  <script src="scripts/cashier.js"></script>
 </body>
-<script src="scripts/common.js"></script>
-<script src="scripts/cashier.js"></script>
 </html>
