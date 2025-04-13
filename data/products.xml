@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <products>
-  <product id="24">
+  <product id="24" active="true">
     <Name>Káva</Name>
     <Description>černý</Description>
     <Quantity>99</Quantity>
