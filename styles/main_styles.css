@@ -115,6 +115,7 @@ footer {
     gap: 15px; /* ✅ Větší mezera mezi produkty */
     padding: 20px;
     max-width: 100%;
+    flex: 2;
 }
 
 /* 📌 Produkt (kolečka) */
@@ -269,20 +270,21 @@ footer {
 .pay-all-orders:hover {
     background-color: #e67e22;
 }
+/* Tlačítko Zrušit */
 .cancel-btn {
     background-color: #f44336;
     color: white;
+    padding: 10px 20px;
     border: none;
-    padding: 10px 15px;
-    margin: 5px;
     cursor: pointer;
-    border-radius: 4px;
-    transition: background-color 0.3s ease-in-out;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out;
 }
 
 .cancel-btn:hover {
     background-color: #d32f2f;
 }
+
 
 /* ========================== */
 /*      TABULKY A ŘÁDKY      */
@@ -317,18 +319,6 @@ td.products-column {
 
 
 
-/* ========================== */
-/*       PLATEBNÍ METODY      */
-/* ========================== */
-.payment-methods {
-    display: flex;
-    gap: 10px;
-    justify-content:space-around;
-    margin: 20px 0;
-    width: 97%;
-
-
-}
 
 
 /* 🟢 Obecné tlačítko plateb */
@@ -360,12 +350,6 @@ td.products-column {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
-/* 🟢 Kontejner plateb */
-.payment-methods {
-    display: flex;
-    gap: 15px;
-    margin: 20px 0;
-}
 
 
 
@@ -566,14 +550,7 @@ background: #005f5f;
     width: 100%;
 }
 
-/* ✅ Seznam produktů */
-.product-container {
-    flex: 2;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-}
+
 
 /* ✅ Platební metody */
 .payment-methods {
@@ -582,6 +559,9 @@ background: #005f5f;
     justify-content: space-between;
     width: 98%; /* Zajistí, že tlačítka budou stejně široká jako sekce objednávky */
     /*max-width: 400px; /* Maximální šířka pro lepší vizuální uspořádání */
+    gap: 10px;
+    margin: 20px 0;
+
 }
 
 /* ✅ Každé tlačítko bude mít stejnou šířku */
@@ -694,20 +674,7 @@ background: #005f5f;
     background-color: #45a049;
 }
 
-/* Tlačítko Zrušit */
-.cancel-btn {
-    background-color: #f44336;
-    color: white;
-    padding: 10px 20px;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: background-color 0.2s ease-in-out;
-}
 
-.cancel-btn:hover {
-    background-color: #d32f2f;
-}
 
 /* ========================== */
 /*         CHYBOVÉ STAVY     */
