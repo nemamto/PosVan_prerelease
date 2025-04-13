@@ -103,6 +103,43 @@ async function renderCustomerList(customers) {
 function normalizeCustomerName(name) {
     return name.replace(/\s+/g, "_");
 }
+async function showPaymentModalForAllOrders(totalAmount, customerName) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('payment-modal');
+        const modalMessage = document.getElementById('payment-modal-message');
+        const closeButton = document.getElementById('close-payment-modal');
+
+        // Kontrola, zda jsou všechny elementy přítomné
+        if (!modal || !modalMessage || !closeButton) {
+            console.error("❌ Chybí elementy modálního okna.");
+            resolve(null); // Vrátí null, pokud elementy chybí
+            return;
+        }
+
+        // Zobrazení modálního okna
+        modal.style.display = 'block';
+        modalMessage.textContent = `Zákazník: ${customerName}\nCelková částka: ${Number(totalAmount).toFixed(2)} Kč\nVyberte způsob platby:`;
+
+        // Přidání event listenerů na tlačítka způsobu platby
+        document.querySelectorAll('.payment-method-button').forEach(button => {
+            const newButton = button.cloneNode(true); // Klonování tlačítka
+            button.replaceWith(newButton); // Nahrazení starého tlačítka novým
+            newButton.onclick = function () {
+                const paymentMethod = this.getAttribute('data-method');
+                modal.style.display = 'none'; // Zavření modálního okna
+                resolve(paymentMethod);
+            };
+        });
+
+        // Zavření modálního okna
+        const newCloseButton = closeButton.cloneNode(true); // Klonování tlačítka zavření
+        closeButton.replaceWith(newCloseButton); // Nahrazení starého tlačítka novým
+        newCloseButton.onclick = function () {
+            modal.style.display = 'none';
+            resolve(null); // Vrátí null, pokud uživatel zavře okno
+        };
+    });
+}
 
 async function payAllOrders(customerName) {
     try {
@@ -124,6 +161,16 @@ async function payAllOrders(customerName) {
 
         console.log("📋 Nezaplacené objednávky:", unpaidOrders);
 
+        // 💰 Sečteme celkovou částku
+        const total = unpaidOrders.reduce((sum, order) => sum + Number(order.TotalPrice || 0), 0);
+
+        // 🟢 Zobrazíme modální okno pro výběr způsobu platby
+        const paymentMethod = await showPaymentModalForAllOrders(total, customerName);
+        if (!paymentMethod) {
+            alert("Platba byla zrušena.");
+            return;
+        }
+
         // ✅ Označíme každou objednávku jako zaplacenou
         for (const order of unpaidOrders) {
             if (!order['@id']) {
@@ -133,9 +180,8 @@ async function payAllOrders(customerName) {
             await markCustomerOrderAsPaid(customerName, order['@id']);
         }
 
-        // 💰 Sečteme celkovou částku a zapíšeme jako jednu objednávku do směny
-        const total = unpaidOrders.reduce((sum, order) => sum + Number(order.TotalPrice || 0), 0);
-        await addPaymentToShift(customerName, total, "Účet zákazníka");
+        // 💳 Zaznamenáme platbu do směny
+        await addPaymentToShift(customerName, total, paymentMethod);
 
         alert(`✅ ${unpaidOrders.length} objednávek bylo zaplaceno. Celkem ${total.toFixed(2)} Kč.`);
         loadOrders(customerName); // Aktualizace
