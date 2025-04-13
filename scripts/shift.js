@@ -75,31 +75,56 @@ document.addEventListener('DOMContentLoaded', async () => {
             showModal("❌ Chyba při zahájení směny!", "", true);
         }
     }
-
+    async function showShiftSummary(shiftID) {
+        try {
+            // Zavolání endpointu /shiftSummary
+            const response = await fetch(`${serverEndpoint}/shiftSummary?shiftID=${shiftID}`);
+            if (!response.ok) {
+                throw new Error(`Chyba při načítání přehledu směny: ${response.statusText}`);
+            }
+    
+            const summary = await response.json();
+    
+            // Zobrazení přehledu směny
+            alert(`
+                📊 Přehled směny ID: ${shiftID}
+                ------------------------------
+                Celková tržba: ${summary.totalRevenue} Kč
+                Hotovost: ${summary.cashRevenue} Kč
+                Karta: ${summary.cardRevenue} Kč
+                Účty zaměstnanců: ${summary.employeeAccountRevenue} Kč
+            `);
+        } catch (error) {
+            console.error("❌ Chyba při načítání přehledu směny:", error);
+            alert("Nepodařilo se načíst přehled směny.");
+        }
+    }
     // 🛑 Ukončení směny
     async function endShift() {
         if (!currentShiftID) {
             showModal("❌ Není aktivní žádná směna.", "", true);
             return;
         }
-
-        console.log("🛑 Odesílám požadavek na ukončení směny:", {currentShiftID});
-
+    
+        console.log("🛑 Odesílám požadavek na ukončení směny:", { currentShiftID });
+    
         try {
             const response = await fetch(`${serverEndpoint}/endShift`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ shiftID: currentShiftID }) // ✅ Odesíláme ID směny
             });
-
+    
             const data = await response.json();
-
+    
             if (!response.ok) {
                 showModal(`❌ ${data.message}`, "", false);
                 return;
             }
+    
+            // Zobrazení přehledu směny po úspěšném ukončení
+            await showShiftSummary(currentShiftID);
 
-            showModal(`✅ Směna ID ${currentShiftID} byla ukončena.`, "", false);
             currentShiftID = null; // ✅ Resetujeme currentShiftID
             await loadShiftStatus();
         } catch (error) {

@@ -31,5 +31,10 @@
       <TotalPrice>50</TotalPrice>
       <Products>1x Cola (50 Kč)</Products>
     </order>
+    <order id="88" payed="true">
+      <Date>2025-04-13 18:13:46</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>1x Zonka modrá (50 Kč), 1x Zonka zelena (50 Kč)</Products>
+    </order>
   </orders>
 </customer>
