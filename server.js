@@ -1136,7 +1136,7 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
 
 
 app.put('/updateProduct', (req, res) => {
-    const { id, name, description, price, quantity, color } = req.body;
+    const { id, name, description, price, quantity, color, category } = req.body;
 
     if (!id) {
         return res.status(400).json({ message: "❌ Neplatné ID produktu." });
@@ -1164,6 +1164,7 @@ app.put('/updateProduct', (req, res) => {
         if (description !== undefined) productToUpdate.Description = description || ''; // Ponecháme prázdný řetězec, pokud není description
         if (price !== undefined) productToUpdate.Price = price.toString();
         if (quantity !== undefined) productToUpdate.Quantity = quantity.toString();
+        if (category !== undefined) productToUpdate.Category = category || 'Nezařazeno'; // Přidáno pro kategorii
         if (color !== undefined) productToUpdate.Color = color || '#FFFFFF'; // Ponecháme výchozí barvu, pokud není color
 
         // Zápis zpět do XML
@@ -1352,6 +1353,7 @@ app.get('/products', (req, res) => {
             description: product.Description || '',
             quantity: product.Quantity || 0,
             color: product.Color || '#ccc',
+            category: product.Category || 'Nezařazeno',
             active: product['@active'] === "false" ? "false" : "true" // ✅ Oprava: správné načítání `active`
         })));
     } catch (error) {

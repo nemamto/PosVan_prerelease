@@ -13,14 +13,10 @@ html, body {
     font-size: 16px;
     color: #333;
 }
-#scale-container {
-    transform-origin: top left; /* Nastaví bod škálování */
-    width: 100%;
-    height: 100%;
-}
+
 /* 🟢 Hlavní obsah se roztáhne a footer zůstane dole */
 main {
-    flex: 1; /* Automaticky zabere volný prostor mezi headerem a footerem */
+    flex: 80%; /* Automaticky zabere volný prostor mezi headerem a footerem */
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -248,7 +244,7 @@ footer {
     background-color: #45a049;
 }
 .pay-order-button {
-    background-color: #4CAF50;
+    background-color: #f39c12;
     color: white;
     border: none;
     padding: 10px 15px;

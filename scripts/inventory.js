@@ -36,6 +36,7 @@ function renderInventory(products) {
         <tr>
             <th>Název</th>
             <th>Popis</th>
+            <th>Kategorie</th>
             <th>Množství</th>
             <th>Cena</th>
             <th>Akce</th>
@@ -59,6 +60,7 @@ function renderInventory(products) {
         row.innerHTML = `
             <td>${product.name}</td>
             <td>${product.description || 'Bez popisu'}</td>
+            <td>${product.category || 'Nezařazeno'}</td>
             <td>${product.quantity}</td>
             <td>${product.price} Kč</td>
             <td>
@@ -265,19 +267,26 @@ async function handleAddProduct() {
 
 
 
-
+/*
 function handleEditProduct(event) {
     const row = event.target.closest('tr');
     const id = event.target.getAttribute('data-id');
 
     const cells = Array.from(row.children);
-    const [idCell, nameCell, quantityCell, priceCell, actionCell] = cells;
+    const [idCell, nameCell, descriptionCell, categoryCell, quantityCell, priceCell, actionCell] = cells;
 
     // Vložíme vstupy do buňky
     nameCell.innerHTML = `<input type="text" value="${nameCell.textContent}">`;
     quantityCell.innerHTML = `<input type="number" value="${quantityCell.textContent}">`;
     priceCell.innerHTML = `<input type="number" step="0.01" value="${parseFloat(priceCell.textContent)}">`;
-
+    categoryCell.innerHTML = `
+    <select>
+        <option value="Nápoje" ${product.category === 'Nápoje' ? 'selected' : ''}>Nápoje</option>
+        <option value="Jídlo" ${product.category === 'Jídlo' ? 'selected' : ''}>Jídlo</option>
+        <option value="Dezerty" ${product.category === 'Dezerty' ? 'selected' : ''}>Dezerty</option>
+        <option value="Ostatní" ${product.category === 'Ostatní' ? 'selected' : ''}>Ostatní</option>
+    </select>
+    `;
     // Nastavíme tlačítko "Uložit"
     const saveButton = document.createElement('button');
     saveButton.textContent = 'Uložit';
@@ -295,7 +304,7 @@ function handleEditProduct(event) {
     actionCell.appendChild(saveButton);
     actionCell.appendChild(cancelButton);
 }
-
+*/
 // Funkce pro odstranění produktu
 let productIdToDelete = null; // Uchování ID pro smazání
 /*
@@ -549,9 +558,10 @@ function enableEditing(row) {
     const id = row.getAttribute('data-id');
     const nameCell = row.querySelector('td:nth-child(1)');
     const descriptionCell = row.querySelector('td:nth-child(2)');
-    const quantityCell = row.querySelector('td:nth-child(3)');
-    const priceCell = row.querySelector('td:nth-child(4)');
-    const actionCell = row.querySelector('td:nth-child(5)');
+    const categoryCell = row.querySelector('td:nth-child(3)'); // Přidáno pro kategorii
+    const quantityCell = row.querySelector('td:nth-child(4)');
+    const priceCell = row.querySelector('td:nth-child(5)');
+    const actionCell = row.querySelector('td:nth-child(6)');
 
     if (!id) {
         console.error("❌ Chyba: ID produktu nebylo nalezeno.");
@@ -563,12 +573,21 @@ function enableEditing(row) {
     // Původní hodnoty
     const currentName = nameCell.textContent.trim();
     const currentDescription = descriptionCell.textContent.trim();
+    const currentCategory = categoryCell.textContent.trim(); // Přidáno pro kategorii
     const currentQuantity = parseInt(quantityCell.textContent.trim());
     const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
 
     // Pole pro editaci
     nameCell.innerHTML = `<input type="text" value="${currentName}">`;
     descriptionCell.innerHTML = `<input type="text" value="${currentDescription}">`;
+    categoryCell.innerHTML = `
+        <select>
+            <option value="Nápoje" ${currentCategory === 'Nápoje' ? 'selected' : ''}>Nápoje</option>
+            <option value="Jídlo" ${currentCategory === 'Jídlo' ? 'selected' : ''}>Jídlo</option>
+            <option value="Dezerty" ${currentCategory === 'Dezerty' ? 'selected' : ''}>Dezerty</option>
+            <option value="Ostatní" ${currentCategory === 'Ostatní' ? 'selected' : ''}>Ostatní</option>
+        </select>
+    `;
     quantityCell.innerHTML = `<input type="number" min="0" value="${currentQuantity}">`;
     priceCell.innerHTML = `<input type="number" min="0" step="0.01" value="${currentPrice}">`;
 
@@ -580,10 +599,10 @@ function enableEditing(row) {
         </div>
     `;
 
+    // Event listenery pro tlačítka
     actionCell.querySelector('.save-btn').addEventListener('click', () => handleSaveInline(id, row));
     actionCell.querySelector('.cancel-btn').addEventListener('click', () => loadProducts());
 }
-
 
 async function handleSaveInline(id, row) {
     if (!id) {
@@ -593,20 +612,20 @@ async function handleSaveInline(id, row) {
 
     const nameInput = row.children[0].querySelector('input');
     const descriptionInput = row.children[1].querySelector('input');
-    const quantityInput = row.children[2].querySelector('input');
-    const priceInput = row.children[3].querySelector('input');
-    const colorInput = row.children[4]?.querySelector('input');
+    const categorySelect = row.children[2].querySelector('select'); // Přidáno pro kategorii
+    const quantityInput = row.children[3].querySelector('input');
+    const priceInput = row.children[4].querySelector('input');
 
-    if (!nameInput || !descriptionInput || !quantityInput || !priceInput) {
+    if (!nameInput || !descriptionInput || !categorySelect || !quantityInput || !priceInput) {
         console.error("❌ Chyba: Některé vstupy nebyly nalezeny.");
         return;
     }
 
     const name = nameInput.value.trim();
     const description = descriptionInput.value.trim();
+    const category = categorySelect.value; // Získání vybrané kategorie
     const quantity = parseInt(quantityInput.value, 10);
     const price = parseFloat(priceInput.value);
-    const color = colorInput ? colorInput.value.trim() : undefined;
 
     if (!name || isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
         alert("❌ Neplatná hodnota pro název, množství nebo cenu!");
@@ -619,7 +638,7 @@ async function handleSaveInline(id, row) {
         const response = await fetch(`${serverEndpoint}/updateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, name, description, quantity, price, color })
+            body: JSON.stringify({ id, name, description, category, quantity, price })
         });
 
         if (!response.ok) {

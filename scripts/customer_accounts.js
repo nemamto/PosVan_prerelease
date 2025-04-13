@@ -373,7 +373,7 @@ async function loadOrders(customerName) {
                   <strong>Datum:</strong> ${orderDate}
                 </p>
                 <p><strong>Produkty:</strong> ${products}</p>
-                <button class="pay-order-btn" data-id="${orderId}">Zaplatit</button>
+                <button class="pay-order-button" data-id="${orderId}">Zaplatit</button>
                 <hr>
             `;
             orderDetails.appendChild(orderElement);
