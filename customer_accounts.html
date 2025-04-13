@@ -9,7 +9,7 @@
 <body>
   <header>
     <h1>Účty zákazníků</h1>
-    <p id="shiftStatus">🔴 Žádná aktivní směna!</p> <!-- Přidán element pro stav směny -->
+   
   </header>
   <main>
     <!-- Sekce zákaznických účtů -->
@@ -34,7 +34,7 @@
       
     <!-- Přehled objednávek -->
     <section class="order-overview" id="orderOverview" style="display: none;">
-      <h2>Přehled objednávek zákazníka</h2>
+
       <div id="orderDetails"></div>
     </section>
 
@@ -62,6 +62,16 @@
         <button id="confirm-modal-no">Ne</button>
     </div>
 </div>
+
+<div id="payment-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h3>Vyberte způsob platby</h3>
+    <button class="payment-method-button" data-method="cash">Hotovost</button>
+    <button class="payment-method-button" data-method="card">Karta</button>
+    <button id="close-payment-modal" class="cancel-btn">Zrušit</button>
+  </div>
+</div>
+
   <footer id="footer">
     <button class="footer-button" id="cashier-button">Pokladna</button>
     <button class="footer-button" id="inventory-button">Inventář</button>

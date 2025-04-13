@@ -117,23 +117,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     </thead>
                     <tbody>
                 `;
-                shift.orderItems.forEach(order => {
-                    detailHtml += `
-                        <tr ${order['@cancelled'] === 'true' ? 'class="cancelled-order"' : ''}>
-                            <td>${order['@id']}</td>
-                            <td>${order.time}</td>
-                            <td>${order.paymentMethod}</td>
-                            <td>${order.totalPrice} Kč</td>
-                            <td class="products-column">${order.products}</td>
-                            <td>
-                                ${order['@cancelled'] === 'true' 
-                                    ? `<button class="restore-order" data-id="${order['@id']}">Obnovit</button>`
-                                    : `<button class="delete-order" data-id="${order['@id']}">Stornovat</button>`
-                                }
-                            </td>
-                        </tr>
-                    `;
-                });
+    
+                // Řazení objednávek od nejnovějších po nejstarší
+                shift.orderItems
+                    .sort((a, b) => new Date(b.time) - new Date(a.time)) // Řazení podle času
+                    .forEach(order => {
+                        detailHtml += `
+                            <tr ${order['@cancelled'] === 'true' ? 'class="cancelled-order"' : ''}>
+                                <td>${order['@id']}</td>
+                                <td>${order.time}</td>
+                                <td>${order.paymentMethod}</td>
+                                <td>${order.totalPrice} Kč</td>
+                                <td class="products-column">${order.products}</td>
+                                <td>
+                                    ${order['@cancelled'] === 'true' 
+                                        ? `<button class="restore-order" data-id="${order['@id']}">Obnovit</button>`
+                                        : `<button class="cancell-order" data-id="${order['@id']}">Stornovat</button>`
+                                    }
+                                </td>
+                            </tr>
+                        `;
+                    });
+    
                 detailHtml += '</tbody></table>';
             } else {
                 detailHtml = 'Žádné objednávky nejsou k dispozici.';
@@ -151,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
             // Připojení listenerů na tlačítka "Stornovat" a "Obnovit"
             setTimeout(() => {
-                detailRow.querySelectorAll('.delete-order').forEach(button => {
+                detailRow.querySelectorAll('.cancell-order').forEach(button => {
                     button.addEventListener('click', function (e) {
                         e.stopPropagation(); // Zabráníme zavření detailního řádku
                         const orderId = this.getAttribute('data-id');
@@ -174,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }, 0);
         });
-    }      
+    }
     // Příklad funkce pro potvrzení akce pomocí confirm()
 // Nahrazuje standardní confirm() modálním oknem
 function showModalConfirm(message, onConfirm) {
