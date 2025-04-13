@@ -7,10 +7,11 @@
     <link rel="stylesheet" href="styles/main_styles.css">
 </head>
 <body>
+    <div id="scale-container">
     <header>
         <h1>Pokladna</h1>
     </header>
-
+<main>
     <section id="order-section">
         <div class="order-container">
             <!-- ✅ Seznam produktů -->
@@ -43,17 +44,20 @@
     </div>
 </div>
 
-
+</main>
     <!-- ✅ Footer -->
-    <footer id="footer">
-        <button class="footer-button" id="cashier-button">Pokladna</button>
-        <button class="footer-button" id="inventory-button">Inventář</button>
-        <button class="footer-button" id="order-management-button">Správa objednávek</button>
-        <button class="footer-button" id="customer-accounts-button">Účty zákazníků</button>
-        <button class="footer-button" id="shift-button">Směna</button>
-    </footer>
+<footer id="footer">
+    <button class="footer-button" id="cashier-button">Pokladna</button>
+    <button class="footer-button" id="inventory-button">Inventář</button>
+    <button class="footer-button" id="order-management-button">Správa objednávek</button>
+    <button class="footer-button" id="customer-accounts-button">Účty zákazníků</button>
+    <button class="footer-button" id="shift-button">Směna</button>
+</footer>
 
-    <script src="scripts/common.js"></script>
-    <script src="scripts/cashier.js"></script>
+
+</div>
+
 </body>
+<script src="scripts/common.js"></script>
+<script src="scripts/cashier.js"></script>
 </html>

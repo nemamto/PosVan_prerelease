@@ -13,7 +13,11 @@ html, body {
     font-size: 16px;
     color: #333;
 }
-
+#scale-container {
+    transform-origin: top left; /* Nastaví bod škálování */
+    width: 100%;
+    height: 100%;
+}
 /* 🟢 Hlavní obsah se roztáhne a footer zůstane dole */
 main {
     flex: 1; /* Automaticky zabere volný prostor mezi headerem a footerem */

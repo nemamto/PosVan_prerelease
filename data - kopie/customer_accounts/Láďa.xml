@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<customer name="Láďa">
+  <orders>
+    <order id="45" cancelled="false" payed="true">
+      <Date>2025-04-13 15:49:59</Date>
+      <TotalPrice>80</TotalPrice>
+      <Products>1x Káva (30 Kč), 1x Cola (50 Kč)</Products>
+    </order>
+    <order id="50" payed="true" cancelled="false">
+      <Date>2025-04-13 16:57:36</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>1x Zonka modrá (50 Kč), 1x Zonka zelena (50 Kč)</Products>
+    </order>
+    <order id="72" payed="true">
+      <Date>2025-04-13 17:22:54</Date>
+      <TotalPrice>150</TotalPrice>
+      <Products>3x Cola (150 Kč)</Products>
+    </order>
+    <order id="76" payed="true">
+      <Date>2025-04-13 17:25:14</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>1x Zonka modrá (50 Kč), 1x Cola (50 Kč)</Products>
+    </order>
+    <order id="83" payed="true">
+      <Date>2025-04-13 17:41:04</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>1x Cola (50 Kč), 1x Zonka zelena (50 Kč)</Products>
+    </order>
+    <order id="85" payed="true">
+      <Date>2025-04-13 17:46:21</Date>
+      <TotalPrice>50</TotalPrice>
+      <Products>1x Cola (50 Kč)</Products>
+    </order>
+    <order id="88" payed="true">
+      <Date>2025-04-13 18:13:46</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>1x Zonka modrá (50 Kč), 1x Zonka zelena (50 Kč)</Products>
+    </order>
+    <order id="90" payed="true">
+      <Date>2025-04-13 20:24:23</Date>
+      <TotalPrice>90</TotalPrice>
+      <Products>1x Rum (40 Kč), 1x Cola (50 Kč)</Products>
+    </order>
+    <order id="91" payed="true">
+      <Date>2025-04-13 20:24:53</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>2x Káva (60 Kč), 1x Rum (40 Kč)</Products>
+    </order>
+    <order id="92" payed="true">
+      <Date>2025-04-13 20:25:40</Date>
+      <TotalPrice>240</TotalPrice>
+      <Products>6x Rum (240 Kč)</Products>
+    </order>
+    <order id="94" payed="true">
+      <Date>2025-04-13 20:35:42</Date>
+      <TotalPrice>540</TotalPrice>
+      <Products>1x Platba zákazníka Láďa (540 Kč)</Products>
+    </order>
+    <order id="95" payed="false" cancelled="true">
+      <Date>2025-04-13 20:36:35</Date>
+      <TotalPrice>540</TotalPrice>
+      <Products>1x Platba zákazníka Láďa (540 Kč)</Products>
+    </order>
+    <order id="96" payed="true">
+      <Date>2025-04-13 20:44:30</Date>
+      <TotalPrice>50</TotalPrice>
+      <Products>1x Cola (50 Kč)</Products>
+    </order>
+    <order id="98" payed="true">
+      <Date>2025-04-13 20:45:36</Date>
+      <TotalPrice>160</TotalPrice>
+      <Products>4x Rum (160 Kč)</Products>
+    </order>
+    <order id="99" payed="true">
+      <Date>2025-04-13 20:45:59</Date>
+      <TotalPrice>120</TotalPrice>
+      <Products>4x Káva (120 Kč)</Products>
+    </order>
+    <order id="100" payed="true">
+      <Date>2025-04-13 20:46:09</Date>
+      <TotalPrice>280</TotalPrice>
+      <Products>1x Platba zákazníka Láďa (280 Kč)</Products>
+    </order>
+    <order id="101" payed="true">
+      <Date>2025-04-13 20:47:17</Date>
+      <TotalPrice>140</TotalPrice>
+      <Products>1x Rum (40 Kč), 1x Cola (50 Kč), 1x Zonka modrá (50 Kč)</Products>
+    </order>
+    <order id="104" payed="true">
+      <Date>2025-04-13 20:58:44</Date>
+      <TotalPrice>140</TotalPrice>
+      <Products>1x Rum (40 Kč), 2x Cola (100 Kč)</Products>
+    </order>
+    <order id="105" payed="true">
+      <Date>2025-04-13 20:58:57</Date>
+      <TotalPrice>90</TotalPrice>
+      <Products>1x Cola (50 Kč), 1x Rum (40 Kč)</Products>
+    </order>
+    <order id="106" payed="true">
+      <Date>2025-04-13 20:59:18</Date>
+      <TotalPrice>230</TotalPrice>
+      <Products>1x Platba zákazníka Láďa (230 Kč)</Products>
+    </order>
+    <order id="108" payed="true">
+      <Date>2025-04-13 21:04:03</Date>
+      <TotalPrice>140</TotalPrice>
+      <Products>1x Rum (40 Kč), 1x Cola (50 Kč), 1x Zonka modrá (50 Kč)</Products>
+    </order>
+    <order id="110" payed="true">
+      <Date>2025-04-13 21:08:29</Date>
+      <TotalPrice>130</TotalPrice>
+      <Products>2x Rum (80 Kč), 1x Cola (50 Kč)</Products>
+    </order>
+    <order id="111" payed="true">
+      <Date>2025-04-13 21:08:35</Date>
+      <TotalPrice>150</TotalPrice>
+      <Products>3x Zonka zelena (150 Kč)</Products>
+    </order>
+  </orders>
+</customer>
