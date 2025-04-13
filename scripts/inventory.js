@@ -65,8 +65,8 @@ function renderInventory(products) {
                 <div class="btn-container">
                     <button class="edit-btn">Upravit</button>
                     ${product.active === "false" 
-                        ? `<button class="confirm-btn" data-id="${product.id}">Aktivovat</button>`
-                        : `<button class="cancel-btn" data-id="${product.id}">Deaktivovat</button>`
+                        ? `<button class="activateProduct-btn" data-id="${product.id}">Aktivovat</button>`
+                        : `<button class="deactivateProduct-btn" data-id="${product.id}">Deaktivovat</button>`
                     }
                 </div>
             </td>
@@ -76,14 +76,15 @@ function renderInventory(products) {
     });
 
     // Připojení event listenerů
-    document.querySelectorAll('.cancel-btn').forEach(button => {
+    document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const productId = event.target.getAttribute('data-id');
-            openDeleteModal(productId);
+            //openDeleteModal(productId);
+            deactivateProduct(productId);
         });
     });
 
-    document.querySelectorAll('.confirm-btn').forEach(button => {
+    document.querySelectorAll('.activateProduct-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const productId = event.target.getAttribute('data-id');
             activateProduct(productId);
@@ -98,13 +99,29 @@ function renderInventory(products) {
     });
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleButton = document.getElementById('toggleAddItemForm');
+    const addItemForm = document.getElementById('addItemForm');
+
+    toggleButton.addEventListener('click', () => {
+        // Přepínání viditelnosti formuláře
+        if (addItemForm.style.display === 'none') {
+            addItemForm.style.display = 'block';
+            toggleButton.textContent = 'Skrýt formulář';
+        } else {
+            addItemForm.style.display = 'none';
+            toggleButton.textContent = 'Přidat novou položku';
+        }
+    });
+});
+
 async function activateProduct(productId) {
-    if (!productId) {
+/*    if (!productId) {
         console.error("❌ Neplatné ID produktu!");
         showModal("❌ Neplatné ID produktu!", true);
         return;
     }
-
+*/
     try {
         const response = await fetch(`${serverEndpoint}/activateProduct`, {
             method: "PUT",
@@ -128,7 +145,7 @@ async function activateProduct(productId) {
 }
 
 // 🟢 Zavřít modal při kliknutí na tlačítka
-document.getElementById('confirm-action').addEventListener('click', closeModal);
+//document.getElementById('confirm-action').addEventListener('click', closeModal);
 
 
 
@@ -159,13 +176,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function handleDeleteConfirmed() {
-    if (!productIdToDelete) {
+ /*   if (!productIdToDelete) {
         console.error("❌ Chyba: Žádný produkt k deaktivaci.");
         return;
     }
 
     console.log(`🛑 Deaktivuji produkt ID: ${productIdToDelete}...`);
-
+*/
     try {
         const response = await fetch(`${serverEndpoint}/deactivateProduct`, {
             method: 'PUT',
@@ -190,7 +207,25 @@ async function handleDeleteConfirmed() {
 }
 
 
+document.addEventListener('DOMContentLoaded', () => {
+    const colorSelect = document.getElementById('productColor');
 
+    // Nastavení barvy pozadí při změně výběru
+    colorSelect.addEventListener('change', () => {
+        const selectedColor = colorSelect.value;
+        if (selectedColor) {
+            colorSelect.style.backgroundColor = selectedColor;
+        } else {
+            colorSelect.style.backgroundColor = ''; // Výchozí barva
+        }
+    });
+
+    // Nastavení výchozí barvy při načtení stránky
+    const initialColor = colorSelect.value;
+    if (initialColor) {
+        colorSelect.style.backgroundColor = initialColor;
+    }
+});
 // Funkce pro přidání nového produktu
 async function handleAddProduct() {
     const name = document.getElementById('productName').value.trim();
@@ -263,7 +298,7 @@ function handleEditProduct(event) {
 
 // Funkce pro odstranění produktu
 let productIdToDelete = null; // Uchování ID pro smazání
-
+/*
 // 🟢 Otevření modálního okna
 function openDeleteModal(id) {
     console.log(`🟢 Otevření modalu pro produkt ID: ${id}`);
@@ -294,9 +329,9 @@ function openDeleteModal(id) {
         console.log("🟢 Kliknuto na zrušení mazání.");
         closeDeleteModal();
     };
-}
+}*/
 
-async function handleDeleteConfirmed() {
+async function deactivateProduct(productIdToDelete) {
     if (!productIdToDelete) {
         console.error("❌ Chyba: ID produktu není definováno.");
         return;
@@ -320,17 +355,17 @@ async function handleDeleteConfirmed() {
         // 🟢 **Správná interpretace odpovědi backendu**
         if (data.alreadyDeactivated) {
             console.warn(`⚠️ Produkt ID ${productIdToDelete} byl už dříve deaktivován.`);
-            showModal("⚠️ Tento produkt byl už dříve deaktivován.", loadProducts);
+            //showModal("⚠️ Tento produkt byl už dříve deaktivován.", loadProducts);
         } else {
             console.log(`✅ Produkt ${productIdToDelete} deaktivován: ${data.message}`);
-            showModal("✅ Produkt byl úspěšně deaktivován!", loadProducts);
+            //showModal("✅ Produkt byl úspěšně deaktivován!", loadProducts);
         }
 
     } catch (error) {
         console.error("❌ Chyba při deaktivaci produktu:", error);
         showModal("❌ Chyba při deaktivaci produktu!");
     } finally {
-        closeDeleteModal();
+        await loadProducts();
     }
 }
 
@@ -371,10 +406,10 @@ document.getElementById('cancelDelete').addEventListener('click', closeModal);
 
 // 🟢 Přidání listenerů k tlačítkům smazání v tabulce
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.remove-button').forEach(button => {
+    document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const productId = event.target.getAttribute('data-id');
-            openDeleteModal(productId);
+            deactivateProduct(productId);
         });
     });
 });
@@ -472,7 +507,7 @@ async function deleteOrder(orderId) {
     });
 }
 
-
+/*
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts(); // Načíst produkty při načtení stránky
 
@@ -508,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("Prvky confirmDelete nebo cancelDelete nebyly nalezeny v DOM.");
     }
 });
-
+*/
 
 function enableEditing(row) {
     const id = row.getAttribute('data-id');

@@ -6,5 +6,10 @@
       <TotalPrice>50</TotalPrice>
       <Products>1x Káva (50 Kč)</Products>
     </order>
+    <order id="20" payed="false">
+      <Date>2025-04-13 11:28:48</Date>
+      <TotalPrice>40</TotalPrice>
+      <Products>1x Rum (40 Kč)</Products>
+    </order>
   </orders>
 </customer>

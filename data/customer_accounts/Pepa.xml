@@ -5,6 +5,19 @@
       <Date>2025-04-03 16:44:27</Date>
       <TotalPrice>100</TotalPrice>
       <Products>2x Káva (100 Kč)</Products>
+      <payed>@true</payed>
+    </order>
+    <order id="17" payed="false">
+      <Date>2025-04-13 10:17:28</Date>
+      <TotalPrice>30</TotalPrice>
+      <Products>1x Káva (30 Kč)</Products>
+      <payed>@true</payed>
+    </order>
+    <order id="18" payed="false">
+      <Date>2025-04-13 10:46:08</Date>
+      <TotalPrice>40</TotalPrice>
+      <Products>1x Rum (40 Kč)</Products>
+      <payed>@true</payed>
     </order>
   </orders>
 </customer>

@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<shift id="8">
+  <startTime>2025-04-13 10-44-59</startTime>
+  <bartender>Filip</bartender>
+  <orders/>
+  <order id="18">
+    <time>2025-04-13 10:46:08</time>
+    <paymentMethod>Pepa</paymentMethod>
+    <totalPrice>40</totalPrice>
+    <products>1x Rum (40 Kč)</products>
+  </order>
+  <order id="19">
+    <time>2025-04-13 11:28:37</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>40</totalPrice>
+    <products>1x Rum (40 Kč)</products>
+  </order>
+  <order id="20">
+    <time>2025-04-13 11:28:48</time>
+    <paymentMethod/>
+    <totalPrice>40</totalPrice>
+    <products>1x Rum (40 Kč)</products>
+  </order>
+  <order id="21">
+    <time>2025-04-13 11:31:01</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Cola (50 Kč)</products>
+  </order>
+</shift>

@@ -84,64 +84,6 @@ if (!fs.existsSync(shiftsDir)) {
     console.log(`✅ Složka ${shiftsDir} byla vytvořena.`);
 }
 
-/* Endpoint pro načítání směn
-app.get('/shifts', (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const itemsPerPage = 10;
-
-    if (!fs.existsSync(shiftsDir)) {
-        fs.mkdirSync(shiftsDir, { recursive: true });
-        return res.json({ currentPage: page, totalPages: 0, totalFiles: 0, shifts: [] });
-    }
-
-    try {
-        const files = fs.readdirSync(shiftsDir)
-            .filter(file => file.match(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_\d+\.xml$/))
-            .sort((a, b) => b.localeCompare(a));
-
-        const totalFiles = files.length;
-        const totalPages = Math.ceil(totalFiles / itemsPerPage);
-        const paginatedFiles = files.slice((page - 1) * itemsPerPage, page * itemsPerPage);
-
-        const allShifts = paginatedFiles.map(file => {
-            const filePath = path.join(shiftsDir, file);
-            const xmlData = fs.readFileSync(filePath, 'utf8');
-            const jsonData = convert(xmlData, { format: 'object' });
-            const shift = jsonData.shift;
-
-            let orderItems = [];
-            if (shift.order) {
-                orderItems = shift.order;
-            } else if (shift.orders && shift.orders.order) {
-                orderItems = shift.orders.order;
-            }
-            if (!Array.isArray(orderItems)) {
-                orderItems = orderItems ? [orderItems] : [];
-            }
-
-            const orderCount = orderItems.length;
-            return {
-                id: shift['@id'] || '---',
-                startTime: shift.startTime || '---',
-                endTime: shift.endTime || 'Probíhá',
-                orderCount,
-                orderItems, // Detailní objednávky
-                fileName: file
-            };
-        });
-
-        res.json({
-            currentPage: page,
-            totalPages,
-            totalFiles,
-            shifts: allShifts,
-        });
-    } catch (error) {
-        console.error('❌ Chyba při načítání směn:', error);
-        res.status(500).json({ message: 'Chyba při načítání směn.' });
-    }
-});
-*/
 // Přidání zákazníka
 app.post('/addCustomer', (req, res) => {
     const { name } = req.body;
@@ -578,8 +520,6 @@ app.get('/customerOrders', (req, res) => {
 
 
 
-/*
-console.log("📢 API `/payOrder` načteno.");
 app.post('/payOrder', (req, res) => {
     try {
         const { customerName } = req.body;
@@ -640,7 +580,7 @@ app.post('/payOrder', (req, res) => {
     }
 });
 
-*/
+
 
 
 // Endpoint pro načítání směn

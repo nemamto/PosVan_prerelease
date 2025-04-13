@@ -25,23 +25,24 @@
         </section>
         
         <!-- Formulář pro přidání nové položky -->
-        <section class="add-item-form">
+        <button id="toggleAddItemForm" class="toggle-btn">Přidat novou položku</button>
+
+        <!-- Sekce formuláře -->
+        <section class="add-item-form" id="addItemForm" style="display: none;">
             <h2>Přidat novou položku</h2>
             <form id="addProductForm">
-            
                 <label for="productName">Název produktu:</label>
                 <input type="text" id="productName" name="name" required>
-            
+        
                 <label for="productDescription">Popis produktu:</label>
                 <input type="text" id="productDescription" name="description">
-            
+        
                 <label for="productQuantity">Množství:</label>
                 <input type="number" id="productQuantity" name="quantity" required>
-            
+        
                 <label for="productPrice">Cena:</label>
                 <input type="number" id="productPrice" name="price" required>
-                
-                <label for="productColor">Barva:</label>
+        
                 <label for="productColor">Barva produktu:</label>
                 <select id="productColor" name="color" class="styled-select" required>
                     <option value="">Vyberte barvu...</option>
@@ -54,9 +55,10 @@
                     <option value="#006d0d" style="background-color: #006d0d; color: black;">Pastel Mint</option>
                     <option value="#458fd8" style="background-color: #458fd8; color: black;">Pastel Sky Blue</option>
                 </select>
-                
+        
                 <button class="confirm-btn" type="button" id="addProductButton">Přidat položku</button>
             </form>
+        </section>
             
         </section>
     </main>

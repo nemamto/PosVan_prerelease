@@ -104,11 +104,14 @@ function removeProductFromOrder(productName) {
     updateOrderSummary();
 }
 
-// Odeslání objednávky - tlačítko "Odeslat objednávku"
-document.getElementById('submit-order').addEventListener('click', function() {
+// Odeslání objednávky - tlačítko "Odeslat objednávku" - nepoužívá se
+/* document.getElementById('submit-order').addEventListener('click', function() {
     submitOrder();
+}) */
+//reset objednavky
+document.getElementById('reset-order').addEventListener('click', function() {
+    resetOrder();
 });
-
 
 
 async function showCustomerSelectionModal() {
@@ -151,6 +154,47 @@ async function showCustomerSelectionModal() {
 }
 
 
+document.querySelectorAll('.payment-button').forEach(button => {
+    let lastClickedButton = null; // Sledování posledního kliknutého tlačítka
+
+    button.addEventListener('click', async function () {
+        const method = this.getAttribute('data-method');
+
+        // Pokud je tlačítko kliknuto podruhé
+        if (lastClickedButton === this) {
+            if (method === 'customer') {
+                console.log("🟢 Otevírám formulář pro výběr zákazníka.");
+                showCustomerSelectionModal(); // Otevře formulář pro výběr zákazníka
+                return;
+            }
+
+            console.log(`📤 Odesílám objednávku se způsobem platby: ${selectedPaymentMethod}`);
+            try {
+                await submitOrder(); // Odeslání objednávky
+            } catch (error) {
+                console.error("❌ Chyba při odesílání objednávky:", error);
+            }
+            lastClickedButton = null; // Reset stavu po zaplacení
+            return;
+        }
+
+        // Nastavení způsobu platby při prvním kliknutí
+        document.querySelectorAll('.payment-button').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        this.classList.add('active');
+        selectedPaymentMethod = method === 'cash' ? 'Hotovost' : method === 'card' ? 'Karta' : 'Účet zákazníka';
+        console.log(`✅ Zvolen způsob platby: ${selectedPaymentMethod}`);
+
+        if (method === 'customer') {
+            console.log("🟢 Otevírám formulář pro výběr zákazníka.");
+            showCustomerSelectionModal(); // Otevře formulář pro výběr zákazníka
+        }
+
+        lastClickedButton = this; // Nastavení aktuálního tlačítka jako posledního kliknutého
+    });
+});
 function initializeShift() {
     let shiftID = localStorage.getItem("shiftID");
 

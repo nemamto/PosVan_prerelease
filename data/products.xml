@@ -3,8 +3,22 @@
   <product id="24" active="true">
     <Name>Káva</Name>
     <Description>černý</Description>
-    <Quantity>99</Quantity>
+    <Quantity>0</Quantity>
     <Price>30</Price>
     <Color>#faa4b8</Color>
+  </product>
+  <product id="25" active="true">
+    <Name>Rum</Name>
+    <Description>dobrý</Description>
+    <Quantity>97</Quantity>
+    <Price>40</Price>
+    <Color>#dacb77</Color>
+  </product>
+  <product id="26" active="true">
+    <Name>Cola</Name>
+    <Description>0,33</Description>
+    <Quantity>99</Quantity>
+    <Price>50</Price>
+    <Color>#458fd8</Color>
   </product>
 </products>

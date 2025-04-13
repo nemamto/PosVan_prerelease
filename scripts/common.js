@@ -181,20 +181,24 @@ async function checkActiveShift() {
         const shiftData = await response.json();
         console.log(`✅ Aktivní směna nalezena: ID ${shiftData.shiftID}, Barman: ${shiftData.bartender}`);
 
-        let shiftStatusElement = document.getElementById('shiftStatus');
-        if (!shiftStatusElement) {
-            console.warn("⚠️ Element #shiftStatus nebyl nalezen. Vytvářím nový element.");
-            shiftStatusElement = document.createElement('p');
-            shiftStatusElement.id = 'shiftStatus';
-            document.body.prepend(shiftStatusElement); // Přidáme na začátek těla stránky
-        }
+        // Pokud směna není aktivní, vytvoříme nebo aktualizujeme element #shiftStatus
+        if (!shiftData.active) {
+            let shiftStatusElement = document.getElementById('shiftStatus');
+            if (!shiftStatusElement) {
+                console.warn("⚠️ Element #shiftStatus nebyl nalezen. Vytvářím nový element.");
+                shiftStatusElement = document.createElement('p');
+                shiftStatusElement.id = 'shiftStatus';
+                document.body.prepend(shiftStatusElement); // Přidáme na začátek těla stránky
+            }
 
-        if (shiftData.active) {
-            shiftStatusElement.textContent = `🔵 Směna probíhá: ${shiftData.shiftID}`;
-            shiftStatusElement.style.color = 'green';
-        } else {
             shiftStatusElement.textContent = "🔴 Žádná aktivní směna!";
             shiftStatusElement.style.color = 'red';
+        } else {
+            // Pokud směna je aktivní, odstraníme element #shiftStatus, pokud existuje
+            const shiftStatusElement = document.getElementById('shiftStatus');
+            if (shiftStatusElement) {
+                shiftStatusElement.remove();
+            }
         }
     } catch (error) {
         console.error("❌ Chyba při načítání směny:", error);
