@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <products>
-  <product id="1">
+  <product id="24">
     <Name>Káva</Name>
-    <Description>Espresso</Description>
-    <Quantity>84</Quantity>
-    <Price>50</Price>
-    <Color>#FFD700</Color>
+    <Description>černý</Description>
+    <Quantity>99</Quantity>
+    <Price>30</Price>
+    <Color>#faa4b8</Color>
   </product>
 </products>

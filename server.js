@@ -84,7 +84,7 @@ if (!fs.existsSync(shiftsDir)) {
     console.log(`✅ Složka ${shiftsDir} byla vytvořena.`);
 }
 
-// Endpoint pro načítání směn
+/* Endpoint pro načítání směn
 app.get('/shifts', (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const itemsPerPage = 10;
@@ -141,7 +141,7 @@ app.get('/shifts', (req, res) => {
         res.status(500).json({ message: 'Chyba při načítání směn.' });
     }
 });
-
+*/
 // Přidání zákazníka
 app.post('/addCustomer', (req, res) => {
     const { name } = req.body;
@@ -578,7 +578,7 @@ app.get('/customerOrders', (req, res) => {
 
 
 
-
+/*
 console.log("📢 API `/payOrder` načteno.");
 app.post('/payOrder', (req, res) => {
     try {
@@ -640,7 +640,7 @@ app.post('/payOrder', (req, res) => {
     }
 });
 
-
+*/
 
 
 // Endpoint pro načítání směn
@@ -799,7 +799,8 @@ app.post('/endShift', async (req, res) => {
 //přidání produktu
 app.post('/addProduct', (req, res) => {
     const { name, description, quantity, price, color } = req.body;
-    const productColor = color || "#ccc"; 
+    const productColor = color || "#ccc";
+
     if (!name || quantity <= 0 || price <= 0) {
         return res.status(400).json({ message: "Neplatné vstupy." });
     }
@@ -808,7 +809,7 @@ app.post('/addProduct', (req, res) => {
     const newProduct = {
         '@id': getNextProductID().toString(),
         Name: name,
-        Description: description || '',
+        Description: description ? description.toString() : '',
         Quantity: quantity.toString(),
         Price: price.toString(),
         Color: productColor
@@ -841,9 +842,6 @@ app.post('/addProduct', (req, res) => {
         res.status(500).json({ message: "Chyba při ukládání produktu." });
     }
 });
-
-
-// Pomocná funkce pro hledání souboru směny podle shiftID
 // Pomocná funkce pro nalezení souboru směny podle shiftID nebo vytvoření nové směny
 function findShiftFileByID(shiftID) {
     try {
@@ -1001,16 +999,13 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
 
 
 app.put('/updateProduct', (req, res) => {
-    const { id, name, description, price, quantity, color = '#FFFFFF' } = req.body; // ✅ Opraveno
+    const { id, name, description, price, quantity, color } = req.body;
 
     if (!id) {
         return res.status(400).json({ message: "❌ Neplatné ID produktu." });
     }
 
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-    if (!fs.existsSync(productsPath)) {
-        return res.status(404).json({ message: "❌ Soubor s produkty neexistuje." });
-    }
+    const productsPath = ensureProductsXML();
 
     try {
         const xmlData = fs.readFileSync(productsPath, 'utf8');
@@ -1027,13 +1022,14 @@ app.put('/updateProduct', (req, res) => {
             return res.status(404).json({ message: "❌ Produkt nebyl nalezen." });
         }
 
-        // ✅ Aktualizace dat
-        productToUpdate.Name = name;
-        productToUpdate.Description = description;
-        productToUpdate.Price = price;
-        productToUpdate.Quantity = quantity;
-        productToUpdate.Color = color; // ✅ Přidáno
+        // ✅ Aktualizace pouze odeslaných vlastností
+        if (name !== undefined) productToUpdate.Name = name;
+        if (description !== undefined) productToUpdate.Description = description || ''; // Ponecháme prázdný řetězec, pokud není description
+        if (price !== undefined) productToUpdate.Price = price.toString();
+        if (quantity !== undefined) productToUpdate.Quantity = quantity.toString();
+        if (color !== undefined) productToUpdate.Color = color || '#FFFFFF'; // Ponecháme výchozí barvu, pokud není color
 
+        // Zápis zpět do XML
         const updatedXml = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(productsPath, updatedXml);
 
@@ -1045,8 +1041,7 @@ app.put('/updateProduct', (req, res) => {
         res.status(500).json({ message: "❌ Chyba při aktualizaci produktu." });
     }
 });
-
-
+/*
 function addOrUpdateProduct(product) {
     const dataPath = path.join(__dirname, 'data');
     const productsPath = path.join(dataPath, 'products.xml');
@@ -1075,7 +1070,7 @@ function addOrUpdateProduct(product) {
 
     fs.writeFileSync(productsPath, xmlDoc.end({ prettyPrint: true, indent: '\t' }));
 }
-
+*/
 app.post('/logOrder', (req, res) => {
     console.log("📥 Přijatý request body:", req.body); // Debug
     const { order, paymentMethod, totalAmount, selectedCustomer, shiftID } = req.body;

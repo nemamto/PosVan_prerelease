@@ -99,31 +99,33 @@ function renderInventory(products) {
 }
 
 async function activateProduct(productId) {
-    console.log(`🔄 Aktivuji produkt ID: ${productId}...`);
+    if (!productId) {
+        console.error("❌ Neplatné ID produktu!");
+        showModal("❌ Neplatné ID produktu!", true);
+        return;
+    }
 
     try {
         const response = await fetch(`${serverEndpoint}/activateProduct`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: productId })  // 🔹 ID produktu v těle
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: productId }),
         });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(`⚠️ ${data.message}`);
+            const errorText = await response.text();
+            throw new Error(errorText);
         }
 
-        console.log(`✅ Produkt ${productId} byl úspěšně aktivován.`);
-        
-        // 🟢 Aktualizace inventáře
-        await new Promise(resolve => setTimeout(resolve, 500));
+        const result = await response.json();
         await loadProducts();
+        console.log(`✅ Produkt ID ${productId} byl úspěšně aktivován:`, result);
     } catch (error) {
         console.error("❌ Chyba při aktivaci produktu:", error);
+        showModal(`❌ Chyba při aktivaci produktu: ${error.message}`, true);
+
     }
 }
-
 
 // 🟢 Zavřít modal při kliknutí na tlačítka
 document.getElementById('confirm-action').addEventListener('click', closeModal);
@@ -510,6 +512,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function enableEditing(row) {
     const id = row.getAttribute('data-id');
+    const nameCell = row.querySelector('td:nth-child(1)');
     const descriptionCell = row.querySelector('td:nth-child(2)');
     const quantityCell = row.querySelector('td:nth-child(3)');
     const priceCell = row.querySelector('td:nth-child(4)');
@@ -523,11 +526,13 @@ function enableEditing(row) {
     console.log(`📝 Editace produktu ID: ${id}`);
 
     // Původní hodnoty
+    const currentName = nameCell.textContent.trim();
     const currentDescription = descriptionCell.textContent.trim();
     const currentQuantity = parseInt(quantityCell.textContent.trim());
     const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
 
     // Pole pro editaci
+    nameCell.innerHTML = `<input type="text" value="${currentName}">`;
     descriptionCell.innerHTML = `<input type="text" value="${currentDescription}">`;
     quantityCell.innerHTML = `<input type="number" min="0" value="${currentQuantity}">`;
     priceCell.innerHTML = `<input type="number" min="0" step="0.01" value="${currentPrice}">`;
@@ -551,21 +556,25 @@ async function handleSaveInline(id, row) {
         return;
     }
 
+    const nameInput = row.children[0].querySelector('input');
     const descriptionInput = row.children[1].querySelector('input');
     const quantityInput = row.children[2].querySelector('input');
     const priceInput = row.children[3].querySelector('input');
+    const colorInput = row.children[4]?.querySelector('input');
 
-    if (!descriptionInput || !quantityInput || !priceInput) {
+    if (!nameInput || !descriptionInput || !quantityInput || !priceInput) {
         console.error("❌ Chyba: Některé vstupy nebyly nalezeny.");
         return;
     }
 
+    const name = nameInput.value.trim();
     const description = descriptionInput.value.trim();
-    const quantity = parseInt(quantityInput.value);
+    const quantity = parseInt(quantityInput.value, 10);
     const price = parseFloat(priceInput.value);
+    const color = colorInput ? colorInput.value.trim() : undefined;
 
-    if (isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
-        alert("❌ Neplatná hodnota pro množství nebo cenu!");
+    if (!name || isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
+        alert("❌ Neplatná hodnota pro název, množství nebo cenu!");
         return;
     }
 
@@ -575,7 +584,7 @@ async function handleSaveInline(id, row) {
         const response = await fetch(`${serverEndpoint}/updateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, description, quantity, price })
+            body: JSON.stringify({ id, name, description, quantity, price, color })
         });
 
         if (!response.ok) {
@@ -583,11 +592,12 @@ async function handleSaveInline(id, row) {
         }
 
         console.log(`✅ Produkt ${id} byl úspěšně aktualizován.`);
-        loadProducts();
+        loadProducts(); // Načtení aktualizovaných produktů
     } catch (error) {
         console.error("❌ Chyba při aktualizaci produktu:", error);
     }
 }
+
 function handleEditInline(event) {
     const row = event.target.closest('tr');
     row.querySelectorAll('td').forEach((cell, index) => {
