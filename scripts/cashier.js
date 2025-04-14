@@ -358,11 +358,13 @@ function renderProducts(products) {
     const categoryContainer = document.querySelector('.category-container');
     categoryContainer.innerHTML = ''; // Vyčištění kategorií
 
-    // Skupina produktů podle kategorií
+    // Skupina produktů podle kategorií (filtrování pouze aktivních produktů)
     const categories = products.reduce((acc, product) => {
-        const category = product.category || 'Nezařazeno';
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(product);
+        if (product.active === "true") { // Zkontrolujeme, zda je produkt aktivní
+            const category = product.category || 'Nezařazeno';
+            if (!acc[category]) acc[category] = [];
+            acc[category].push(product);
+        }
         return acc;
     }, {});
 
@@ -377,7 +379,6 @@ function renderProducts(products) {
         categoryContainer.appendChild(categoryDiv);
     });
 }
-
 // Funkce pro vykreslení produktů v kategorii
 function renderProductsByCategory(products) {
     const productContainer = document.querySelector('.product-container');

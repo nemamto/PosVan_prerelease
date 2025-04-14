@@ -4,6 +4,23 @@
     text-decoration: line-through; /* Přeškrtnutí textu */
 }
 
+/* Kontejner pro správu objednávek */
+.order-management-container {
+    padding: 20px;
+    width: 80lh;
+    margin: 0 auto;
+}
+
+/* Kontejner pro tabulku objednávek */
+.order-list-container {
+    height: 75vh; /* Maximální výška tabulky */
+    overflow-y: auto; /* Povolení vertikálního rolování */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
 
 /* Styl pro tabulku objednávek */
 table {
