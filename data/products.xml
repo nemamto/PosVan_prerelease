@@ -3,7 +3,7 @@
   <product id="1" active="true">
     <Name>Gin</Name>
     <Description>0,02l</Description>
-    <Quantity>66</Quantity>
+    <Quantity>60</Quantity>
     <Price>50.00</Price>
     <Color>#e0b7be</Color>
     <Category>Panáky</Category>
@@ -11,7 +11,7 @@
   <product id="2" active="true">
     <Name>Malfy</Name>
     <Description>0,02l</Description>
-    <Quantity>92</Quantity>
+    <Quantity>90</Quantity>
     <Price>55.00</Price>
     <Color>#e0d9b7</Color>
     <Category>Panáky</Category>
@@ -19,7 +19,7 @@
   <product id="3" active="true">
     <Name>Diplomatico</Name>
     <Description>0,02l</Description>
-    <Quantity>96</Quantity>
+    <Quantity>94</Quantity>
     <Price>70.00</Price>
     <Color>#bee0b7</Color>
     <Category>Panáky</Category>
@@ -99,7 +99,7 @@
   <product id="13" active="true">
     <Name>Arašídy</Name>
     <Description>100g</Description>
-    <Quantity>98</Quantity>
+    <Quantity>96</Quantity>
     <Price>45.00</Price>
     <Color>#cce0b7</Color>
     <Category>Jídlo</Category>
@@ -107,7 +107,7 @@
   <product id="14" active="true">
     <Name>Brambůrky</Name>
     <Description>80g</Description>
-    <Quantity>96</Quantity>
+    <Quantity>95</Quantity>
     <Price>45.00</Price>
     <Color>#cbb7e0</Color>
     <Category>Jídlo</Category>

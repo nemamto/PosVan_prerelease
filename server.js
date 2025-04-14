@@ -309,7 +309,7 @@ app.delete('/orders/:id', (req, res) => {
 
             orderProducts.forEach(returnedProduct => {
                 const productInXml = productsDoc.products.product.find(p =>
-                    p.Name.trim().toLowerCase() === returnedProduct.name.trim().toLowerCase()
+                    p['@id'] === returnedProduct.id
                 );
 
                 if (productInXml) {
@@ -442,8 +442,8 @@ app.put('/orders/:id/restore', (req, res) => {
             console.log("♻️ Odečítám produkty ze skladu po obnovení objednávky:", orderProducts);
 
             orderProducts.forEach(product => {
-                const productInXml = productsDoc.products.product.find(p => 
-                    p.Name.trim().toLowerCase() === product.name.trim().toLowerCase()
+                const productInXml = productsDoc.products.product.find(p =>
+                    p['@id'] === product.id
                 );
                 if (productInXml) {
                     const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
@@ -1252,7 +1252,7 @@ app.post('/logOrder', (req, res) => {
             if (!Array.isArray(products)) products = [products];
 
             order.forEach(orderedProduct => {
-                const productInXml = products.find(p => p.Name === orderedProduct.name);
+                const productInXml = products.find(p => p['@id'] === orderedProduct.id.toString());
                 if (productInXml) {
                     const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
                     const newQuantity = Math.max(0, currentQuantity - orderedProduct.quantity);

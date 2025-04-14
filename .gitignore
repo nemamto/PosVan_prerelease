@@ -4,3 +4,4 @@ data/*
 # ALE povol konkrétní soubory
 !data/categories.json
 !data/products.xml
+!data/ids/*
