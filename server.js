@@ -143,7 +143,7 @@ app.put('/activateProduct', (req, res) => {
 });
 
 
-app.put('/deleteProduct', (req, res) => {
+app.put('/deactivateProduct', (req, res) => {
     const { id } = req.body;
     const productsPath = ensureProductsXML();
 
@@ -166,12 +166,12 @@ app.put('/deleteProduct', (req, res) => {
             return res.status(404).json({ message: "Produkt nebyl nalezen." });
         }
 
-        if (productToUpdate['@used'] === 'false') {
+        if (productToUpdate['@active'] === 'false') {
             return res.status(400).json({ message: "Produkt je již označen jako nepoužitý." });
         }
 
         // Nastavíme atribut used na "false"
-        productToUpdate['@used'] = 'false';
+        productToUpdate['@active'] = 'false';
 
         const updatedXml = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(productsPath, updatedXml);
