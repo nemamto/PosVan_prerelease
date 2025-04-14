@@ -3,7 +3,7 @@
   <product id="1" active="true">
     <Name>Gin</Name>
     <Description>0,02l</Description>
-    <Quantity>60</Quantity>
+    <Quantity>61</Quantity>
     <Price>50.00</Price>
     <Color>#e0b7be</Color>
     <Category>Panáky</Category>
@@ -11,7 +11,7 @@
   <product id="2" active="true">
     <Name>Malfy</Name>
     <Description>0,02l</Description>
-    <Quantity>90</Quantity>
+    <Quantity>87</Quantity>
     <Price>55.00</Price>
     <Color>#e0d9b7</Color>
     <Category>Panáky</Category>
@@ -19,7 +19,7 @@
   <product id="3" active="true">
     <Name>Diplomatico</Name>
     <Description>0,02l</Description>
-    <Quantity>94</Quantity>
+    <Quantity>93</Quantity>
     <Price>70.00</Price>
     <Color>#bee0b7</Color>
     <Category>Panáky</Category>
@@ -35,7 +35,7 @@
   <product id="5" active="true">
     <Name>Whiskey</Name>
     <Description>0,02l</Description>
-    <Quantity>77</Quantity>
+    <Quantity>72</Quantity>
     <Price>45.00</Price>
     <Color>#b7bee0</Color>
     <Category>Panáky</Category>
@@ -43,7 +43,7 @@
   <product id="6" active="true">
     <Name>Žufánek</Name>
     <Description>0,02l</Description>
-    <Quantity>100</Quantity>
+    <Quantity>99</Quantity>
     <Price>50.00</Price>
     <Color>#d9b7e0</Color>
     <Category>Panáky</Category>

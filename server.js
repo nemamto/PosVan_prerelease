@@ -259,25 +259,30 @@ app.delete('/orders/:id', (req, res) => {
                     order['@cancelled'] = 'true';
                     orderFound = true;
 
-                    // 📌 Parsování produktů pro vrácení do skladu
-                    if (order.products) {
-                        const productsList = order.products.trim().split(', ');
-                        productsList.forEach(productEntry => {
-                            const match = productEntry.match(/^(\d+)x (.+) \(\d+ Kč\)$/);
-                            if (match) {
-                                const quantity = parseInt(match[1], 10);
-                                const productName = match[2].trim();
-
-                                orderProducts.push({
-                                    name: productName,
-                                    quantity: quantity
-                                });
-                                console.log(`↩️ Připraveno k vrácení: ${quantity}x ${productName}`);
-                            } else {
-                                console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
-                            }
-                        });
-                    }
+                    const productRegex = /(\d+x .+? \(ID: \d+, [\d.]+ Kč\))/g;
+                    const matches = order.products.match(productRegex) || [];
+                    
+                    matches.forEach(productEntry => {
+                        console.log(`📦 Parsování produktu: ${productEntry}`);
+                        const match = productEntry.match(/^(\d+)x (.+?) \(ID: (\d+), ([\d.]+) Kč\)$/);
+                        console.log(`🔍 Výsledek parsování:`, match);
+                        if (match) {
+                            const quantity = parseInt(match[1], 10);
+                            const productName = match[2].trim();
+                            const productId = match[3];
+                            const productPrice = parseFloat(match[4]);
+                            orderProducts.push({
+                                id: productId,
+                                name: productName,
+                                quantity: quantity,
+                                price: productPrice
+                            });
+                            console.log(`↩️ Připraveno k vrácení: ${quantity}x ${productName} (ID: ${productId}, Cena: ${productPrice} Kč)`);
+                        } else {
+                            console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
+                        }
+                    });
+                    
 
                     // 📌 Získání zákaznického jména
                     if (order.paymentMethod) {
@@ -311,7 +316,7 @@ app.delete('/orders/:id', (req, res) => {
                 const productInXml = productsDoc.products.product.find(p =>
                     p['@id'] === returnedProduct.id
                 );
-
+            
                 if (productInXml) {
                     const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
                     const updatedQuantity = currentQuantity + returnedProduct.quantity;
@@ -407,17 +412,32 @@ app.put('/orders/:id/restore', (req, res) => {
                     }
 
                     // Parsujeme produkty pro odečtení ze skladu
+                    // Parsujeme produkty pro odečtení ze skladu
                     if (order.products) {
-                        const productsList = order.products.trim().split(', ');
-                        productsList.forEach(productEntry => {
-                            const parts = productEntry.split('x ');
-                            if (parts.length >= 2) {
-                                const quantity = parseInt(parts[0].trim(), 10) || 0;
-                                const productName = parts.slice(1).join('x ').trim().replace(/\(.+\)/, '').trim();
-                                orderProducts.push({ name: productName, quantity });
+                        const productRegex = /(\d+x .+? \(ID: \d+, [\d.]+ Kč\))/g;
+                        const matches = order.products.match(productRegex) || [];
+
+                        matches.forEach(productEntry => {
+                            const match = productEntry.match(/^(\d+)x (.+?) \(ID: (\d+), ([\d.]+) Kč\)$/);
+                            if (match) {
+                                const quantity = parseInt(match[1], 10);
+                                const productName = match[2].trim();
+                                const productId = match[3];
+                                const productPrice = parseFloat(match[4]);
+                                orderProducts.push({
+                                    id: productId,
+                                    name: productName,
+                                    quantity: quantity,
+                                    price: productPrice
+                                });
+                                console.log(`↩️ Připraveno k odečtení: ${quantity}x ${productName} (ID: ${productId}, Cena: ${productPrice} Kč)`);
+                            } else {
+                                console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
                             }
                         });
                     }
+
+                    
                 }
             });
 
@@ -450,12 +470,12 @@ app.put('/orders/:id/restore', (req, res) => {
                     if (currentQuantity >= product.quantity) {
                         const newQuantity = currentQuantity - product.quantity;
                         productInXml.Quantity = newQuantity.toString();
-                        console.log(`✅ Odečítám ${product.quantity} ks produktu ${product.name} -> nové množství: ${newQuantity}`);
+                        console.log(`✅ Odečítám ${product.quantity} ks produktu (ID: ${product.id}) -> nové množství: ${newQuantity}`);
                     } else {
-                        console.warn(`⚠️ Pokus o odečtení více než dostupného množství (${product.name}).`);
+                        console.warn(`⚠️ Pokus o odečtení více než dostupného množství (ID: ${product.id}).`);
                     }
                 } else {
-                    console.warn(`⚠️ Produkt ${product.name} nebyl nalezen ve skladu!`);
+                    console.warn(`⚠️ Produkt s ID ${product.id} nebyl nalezen ve skladu!`);
                 }
             });
 
@@ -1018,7 +1038,7 @@ async function saveOrderToShift(orderLog, shiftID) {
     orderNode.ele('totalPrice').txt(orderLog.TotalPrice);
     
     const productsSummary = orderLog.OrderDetails.map(product =>
-        `${product.Quantity}x ${product.Product} (${product.TotalProductPrice} Kč)`
+        `${product.Quantity}x ${product.Product} (ID: ${product.ProductID}, ${product.TotalProductPrice} Kč)`
     ).join(', ');
     orderNode.ele('products').txt(productsSummary);
     
@@ -1117,8 +1137,7 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
             "@payed": false,
             "Date": formattedDateTime,
             "TotalPrice": totalAmount.toString(),
-            "Products": orderLog.OrderDetails.map(p => `${p.Quantity}x ${p.Product} (${p.TotalProductPrice} Kč)`).join(", "),
-            
+            "Products": orderLog.OrderDetails.map(p => `${p.Quantity}x ${p.Product} (ID: ${p.ProductID}, ${p.TotalProductPrice} Kč)`).join(", ")
         };
 
         // 📌 Přidání nové objednávky do XML
@@ -1222,9 +1241,10 @@ app.post('/logOrder', (req, res) => {
 
     const orderLog = {
         OrderID: orderID,
-        PaymentMethod: paymentInfo, // 🔄 Uloží jméno zákazníka místo "Účet zákazníka"
+        PaymentMethod: paymentInfo,
         TotalPrice: totalAmount,
         OrderDetails: order.map(product => ({
+            ProductID: product.id, // Přidáme ID produktu
             Product: product.name,
             Quantity: product.quantity,
             UnitPrice: product.price,
@@ -1252,12 +1272,19 @@ app.post('/logOrder', (req, res) => {
             if (!Array.isArray(products)) products = [products];
 
             order.forEach(orderedProduct => {
+                if (!orderedProduct.id) {
+                    console.error(`❌ Chybí ID pro produkt: ${orderedProduct.name}`);
+                    return;
+                }
+            
                 const productInXml = products.find(p => p['@id'] === orderedProduct.id.toString());
                 if (productInXml) {
                     const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
                     const newQuantity = Math.max(0, currentQuantity - orderedProduct.quantity);
                     console.log(`🔽 Odečítám produkt ${productInXml.Name}: ${currentQuantity} ➝ ${newQuantity}`);
                     productInXml.Quantity = newQuantity.toString();
+                } else {
+                    console.warn(`⚠️ Produkt s ID ${orderedProduct.id} nebyl nalezen ve skladu!`);
                 }
             });
 

@@ -39,16 +39,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 // Přidání produktu do objednávky
 function addProductToOrder(product) {
-    const existingProduct = order.find(item => item.name === product.name);
+    const existingProduct = order.find(item => item.id === product.id); // Hledáme podle ID
 
     if (existingProduct) {
         existingProduct.quantity += 1;
-        existingProduct.totalPrice = existingProduct.quantity * product.price; // Celková cena
+        existingProduct.totalPrice = existingProduct.quantity * product.price;
     } else {
-        order.push({ ...product, quantity: 1, totalPrice: product.price }); // Přidání celého objektu produktu
+        order.push({ ...product, quantity: 1, totalPrice: product.price }); // Přidáme ID produktu
     }
 
-    totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0); // Přepočet celkové částky
+    totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0);
     updateOrderSummary();
 }
 
@@ -277,6 +277,7 @@ async function submitOrder() {
 
     const requestBody = {
         order: order.map(item => ({
+            id: item.id, // Přidáme ID produktu
             name: item.name,
             quantity: item.quantity,
             price: item.price,
@@ -285,7 +286,7 @@ async function submitOrder() {
         paymentMethod: selectedPaymentMethod,
         totalAmount: totalAmount,
         selectedCustomer: selectedCustomer,
-        shiftID: shiftID // ✅ Přidáno shiftID
+        shiftID: shiftID
     };
 
     try {
@@ -380,23 +381,29 @@ function renderProducts(products) {
     });
 }
 // Funkce pro vykreslení produktů v kategorii
+const productContainer = document.getElementById('product-container'); // Definice kontejneru
+
 function renderProductsByCategory(products) {
-    const productContainer = document.querySelector('.product-container');
-    productContainer.innerHTML = ''; // Vyčištění předchozích produktů
+    productContainer.innerHTML = ''; // Vyčistíme obsah kontejneru
 
     products.forEach(product => {
         const productDiv = document.createElement('div');
         productDiv.className = 'product';
-        productDiv.style.backgroundColor = product.color || '#ccc'; // Barva produktu
+        productDiv.style.backgroundColor = product.color || '#ccc';
         productDiv.innerHTML = `
-        <div class="product-content">
-            <h3 class="product-name">${product.name}</h3>
-            <p class="product-description">${product.description || 'Bez popisu'}</p>
-            <span class="product-price">${product.price} Kč</span>
-        </div>
-    `;
-        // Kliknutím na produkt přidáme do objednávky
-        productDiv.addEventListener('click', () => addProductToOrder(product));
+            <div class="product-content">
+                <h3 class="product-name">${product.name}</h3>
+                <p class="product-description">${product.description || 'Bez popisu'}</p>
+                <span class="product-price">${product.price} Kč</span>
+            </div>
+        `;
+        productDiv.addEventListener('click', () => addProductToOrder({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            description: product.description,
+            color: product.color
+        }));
         productContainer.appendChild(productDiv);
     });
 }
