@@ -1,3 +1,6 @@
-data/
+# Ignoruj vše ve složce data/
+data/*
+
+# ALE povol konkrétní soubory
 !data/categories.json
 !data/products.xml

@@ -145,7 +145,7 @@
     <Category>Nealko</Category>
   </product>
   <product id="19" active="true">
-    <Name>Mattoni</Name>
+    <Name>Mattoni (2)</Name>
     <Description>0,33l</Description>
     <Quantity>41</Quantity>
     <Price>45.00</Price>
@@ -249,7 +249,7 @@
     <Category>Víno</Category>
   </product>
   <product id="32" active="true">
-    <Name>Víno</Name>
+    <Name>Víno (2)</Name>
     <Description>Červené 0,1l</Description>
     <Quantity>713</Quantity>
     <Price>45.00</Price>
@@ -257,11 +257,18 @@
     <Category>Víno</Category>
   </product>
   <product id="33" active="true">
-    <Name>Víno</Name>
+    <Name>Víno (3)</Name>
     <Description>lepší, dle nabídky 0,1l</Description>
     <Quantity>1000</Quantity>
     <Price>65.00</Price>
     <Color>#b7bee0</Color>
     <Category>Víno</Category>
+  </product>
+  <product id="4">
+    <Name>blbost</Name>
+    <Description>558</Description>
+    <Quantity>888</Quantity>
+    <Price>888</Price>
+    <Color>#006d0d</Color>
   </product>
 </products>

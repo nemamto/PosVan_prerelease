@@ -34,6 +34,7 @@ function renderInventory(products) {
 
     inventoryContainer.innerHTML = `
         <tr>
+            <th>ID</th>
             <th>Název</th>
             <th>Popis</th>
             <th>Kategorie</th>
@@ -58,6 +59,7 @@ function renderInventory(products) {
 
         // 🛑 Přidáme kontejner na tlačítka, aby zůstala na jednom řádku
         row.innerHTML = `
+            <td>${product.id}</td>
             <td>${product.name}</td>
             <td>${product.description || 'Bez popisu'}</td>
             <td>${product.category || 'Nezařazeno'}</td>
