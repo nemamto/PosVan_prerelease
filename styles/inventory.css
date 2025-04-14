@@ -42,7 +42,7 @@
     border-radius: 4px;
 }
 .inventory-table {
-    max-height: 60vh; /* Maximální výška tabulky (60 % výšky okna) */
+    max-height: 750vh; /* Maximální výška tabulky (60 % výšky okna) */
     overflow-y: auto; /* Povolení vertikálního rolování */
     margin-bottom: 20px; /* Odsazení od tlačítka */
     border: 1px solid #ddd; /* Volitelný rámeček kolem tabulky */
