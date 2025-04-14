@@ -1,0 +1,267 @@
+<?xml version="1.0"?>
+<products>
+  <product id="1" active="true">
+    <Name>Gin</Name>
+    <Description>0,02l</Description>
+    <Quantity>66</Quantity>
+    <Price>50.00</Price>
+    <Color>#e0b7be</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="2" active="true">
+    <Name>Malfy</Name>
+    <Description>0,02l</Description>
+    <Quantity>92</Quantity>
+    <Price>55.00</Price>
+    <Color>#e0d9b7</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="3" active="true">
+    <Name>Diplomatico</Name>
+    <Description>0,02l</Description>
+    <Quantity>96</Quantity>
+    <Price>70.00</Price>
+    <Color>#bee0b7</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="4" active="true">
+    <Name>Vodka</Name>
+    <Description>0,02l</Description>
+    <Quantity>63</Quantity>
+    <Price>40.00</Price>
+    <Color>#b7e0d9</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="5" active="true">
+    <Name>Whiskey</Name>
+    <Description>0,02l</Description>
+    <Quantity>77</Quantity>
+    <Price>45.00</Price>
+    <Color>#b7bee0</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="6" active="true">
+    <Name>Žufánek</Name>
+    <Description>0,02l</Description>
+    <Quantity>100</Quantity>
+    <Price>50.00</Price>
+    <Color>#d9b7e0</Color>
+    <Category>Panáky</Category>
+  </product>
+  <product id="7" active="true">
+    <Name>0,2</Name>
+    <Description>Drinky</Description>
+    <Quantity>100</Quantity>
+    <Price>120.00</Price>
+    <Color>#e0ccb7</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="8" active="true">
+    <Name>GinTon</Name>
+    <Description>0,2l</Description>
+    <Quantity>37</Quantity>
+    <Price>110.00</Price>
+    <Color>#cce0b7</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="9" active="true">
+    <Name>Cesky</Name>
+    <Description>lev</Description>
+    <Quantity>95</Quantity>
+    <Price>95.00</Price>
+    <Color>#b7e0cc</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="10" active="true">
+    <Name>Virgin</Name>
+    <Description>lev</Description>
+    <Quantity>94</Quantity>
+    <Price>55.00</Price>
+    <Color>#b7cbe0</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="11" active="true">
+    <Name>Skinny</Name>
+    <Description>Bitch 0,2l</Description>
+    <Quantity>81</Quantity>
+    <Price>90.00</Price>
+    <Color>#cbb7e0</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="12" active="true">
+    <Name>Mimosa</Name>
+    <Description>0,2</Description>
+    <Quantity>11106</Quantity>
+    <Price>55.00</Price>
+    <Color>#e0b7cc</Color>
+    <Category>Drinky</Category>
+  </product>
+  <product id="13" active="true">
+    <Name>Arašídy</Name>
+    <Description>100g</Description>
+    <Quantity>98</Quantity>
+    <Price>45.00</Price>
+    <Color>#cce0b7</Color>
+    <Category>Jídlo</Category>
+  </product>
+  <product id="14" active="true">
+    <Name>Brambůrky</Name>
+    <Description>80g</Description>
+    <Quantity>96</Quantity>
+    <Price>45.00</Price>
+    <Color>#cbb7e0</Color>
+    <Category>Jídlo</Category>
+  </product>
+  <product id="15" active="true">
+    <Name>BioZisch</Name>
+    <Description>matcha 0,33l</Description>
+    <Quantity>92</Quantity>
+    <Price>75.00</Price>
+    <Color>#b7d2e0</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="16" active="true">
+    <Name>Cola</Name>
+    <Description>0,33l</Description>
+    <Quantity>66</Quantity>
+    <Price>75.00</Price>
+    <Color>#bbb7e0</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="17" active="true">
+    <Name>Kombucha</Name>
+    <Description>original 0,33l</Description>
+    <Quantity>18887</Quantity>
+    <Price>80.00</Price>
+    <Color>#d9b7e0</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="18" active="true">
+    <Name>Mattoni</Name>
+    <Description>0,1l</Description>
+    <Quantity>979</Quantity>
+    <Price>12.00</Price>
+    <Color>#e0b7c8</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="19" active="true">
+    <Name>Mattoni</Name>
+    <Description>0,33l</Description>
+    <Quantity>41</Quantity>
+    <Price>45.00</Price>
+    <Color>#e0c5b7</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="20" active="true">
+    <Name>Dzus</Name>
+    <Description>0,3l</Description>
+    <Quantity>72</Quantity>
+    <Price>45.00</Price>
+    <Color>#dde0b7</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="21" active="true">
+    <Name>Vincentka</Name>
+    <Description>0,33</Description>
+    <Quantity>66</Quantity>
+    <Price>40.00</Price>
+    <Color>#bee0b7</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="22" active="true">
+    <Name>Zon</Name>
+    <Description>0,33l</Description>
+    <Quantity>174</Quantity>
+    <Price>50.00</Price>
+    <Color>#b7e0cf</Color>
+    <Category>Nealko</Category>
+  </product>
+  <product id="23" active="true">
+    <Name>Cider</Name>
+    <Description>0,33l</Description>
+    <Quantity>99995</Quantity>
+    <Price>75.00</Price>
+    <Color>#e0d9b7</Color>
+    <Category>Pivo</Category>
+  </product>
+  <product id="24" active="true">
+    <Name>Kamenice</Name>
+    <Description>0,5l</Description>
+    <Quantity>87</Quantity>
+    <Price>55.00</Price>
+    <Color>#b7e0b8</Color>
+    <Category>Pivo</Category>
+  </product>
+  <product id="25" active="true">
+    <Name>Nealko</Name>
+    <Description>pivo 0,33l</Description>
+    <Quantity>11098</Quantity>
+    <Price>55.00</Price>
+    <Color>#b7d6e0</Color>
+    <Category>Pivo</Category>
+  </product>
+  <product id="26" active="true">
+    <Name>Pilsner</Name>
+    <Description>0,33l</Description>
+    <Quantity>9783</Quantity>
+    <Price>55.00</Price>
+    <Color>#c9b7e0</Color>
+    <Category>Pivo</Category>
+  </product>
+  <product id="27" active="true">
+    <Name>Radegast</Name>
+    <Description>0,5l</Description>
+    <Quantity>9967</Quantity>
+    <Price>45</Price>
+    <Color>#e0b7c6</Color>
+    <Category>Pivo</Category>
+  </product>
+  <product id="28" active="true">
+    <Name>Čaj</Name>
+    <Description>0,2l</Description>
+    <Quantity>63</Quantity>
+    <Price>45.00</Price>
+    <Color>#cbb7e0</Color>
+    <Category>Teplé</Category>
+  </product>
+  <product id="29" active="true">
+    <Name>Káva</Name>
+    <Description>0,2l</Description>
+    <Quantity>77</Quantity>
+    <Price>50.00</Price>
+    <Color>#cce0b7</Color>
+    <Category>Teplé</Category>
+  </product>
+  <product id="30" active="true">
+    <Name>Prosecco</Name>
+    <Description>0,1l</Description>
+    <Quantity>110869</Quantity>
+    <Price>45.00</Price>
+    <Color>#e0b7d2</Color>
+    <Category>Víno</Category>
+  </product>
+  <product id="31" active="true">
+    <Name>Víno</Name>
+    <Description>Bílé 0,1l</Description>
+    <Quantity>837</Quantity>
+    <Price>45.00</Price>
+    <Color>#e0d9b7</Color>
+    <Category>Víno</Category>
+  </product>
+  <product id="32" active="true">
+    <Name>Víno</Name>
+    <Description>Červené 0,1l</Description>
+    <Quantity>713</Quantity>
+    <Price>45.00</Price>
+    <Color>#b7e0c5</Color>
+    <Category>Víno</Category>
+  </product>
+  <product id="33" active="true">
+    <Name>Víno</Name>
+    <Description>lepší, dle nabídky 0,1l</Description>
+    <Quantity>1000</Quantity>
+    <Price>65.00</Price>
+    <Color>#b7bee0</Color>
+    <Category>Víno</Category>
+  </product>
+</products>
