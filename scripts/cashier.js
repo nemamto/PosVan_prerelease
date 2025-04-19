@@ -7,35 +7,16 @@ let currentShiftID = null;
 let shiftID 
 //const serverEndpoint = 'https://posven00-707895647386.us-central1.run.app';
 const serverEndpoint = 'http://127.0.0.1:3000';
-// Seznam zakazniku
-/*
-async function getCustomers() {
-    try {
-        const response = await fetch({serverEndpoint}'/customers');
-        if (!response.ok) {
-            throw new Error('Chyba při načítání zakazniku');
-        }
-        const customers = await response.json();
-        console.log('Zakaznici:', customers);
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-
-getCustomers(); // Načtení zakazniku při načítání stránky
-*/
-
-
+let loadedCategories = [];
 
 // 🟢 Zavoláme při načtení stránky
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkActiveShift(); // ✅ Kontrola směny při načtení
+    await checkActiveShift(); // ✅ Kontrola směny při načítání
     await fetchProducts(); // ✅ Načtení produktů
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await fetchProducts(); // Načtení produktů při načtení stránky
+    await fetchProducts(); // Načtení produktů při načítání stránky
 });
 // Přidání produktu do objednávky
 function addProductToOrder(product) {
@@ -113,51 +94,117 @@ document.getElementById('reset-order').addEventListener('click', function() {
     resetOrder();
 });
 
+// Funkce pro zobrazení modálního okna (univerzální)
+function showModal(contentHtml, center = true) {
+    // Odstranění případného starého modalu
+    closeModal();
 
+    // Vytvoření overlay
+    let overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.style.position = 'fixed';
+    overlay.style.top = 0;
+    overlay.style.left = 0;
+    overlay.style.width = '100vw';
+    overlay.style.height = '100vh';
+    overlay.style.background = 'rgba(0,0,0,0.25)';
+    overlay.style.zIndex = 9999;
+    overlay.style.display = 'flex';
+    overlay.style.alignItems = center ? 'center' : 'flex-start';
+    overlay.style.justifyContent = 'center';
+
+    // Vytvoření modalu
+    let modal = document.createElement('div');
+    modal.className = 'modal-content';
+    modal.style.background = '#fff';
+    modal.style.borderRadius = '12px';
+    modal.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)';
+    modal.style.color = '#222';
+    modal.style.padding = '24px 18px';
+    modal.style.maxWidth = '400px';
+    modal.style.width = '90%';
+    modal.style.textAlign = 'center';
+    modal.innerHTML = contentHtml;
+
+    // Přidání do overlay
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    // Zavření kliknutím mimo modal (použijte 'click', ne 'mousedown')
+    overlay.addEventListener('click', function(e) {
+        if (!modal.contains(e.target)) {
+            closeModal();
+        }
+    });
+
+    // Zabrání zavření při kliknutí uvnitř modalu
+    modal.addEventListener('click', function(e) {
+        e.stopPropagation();
+    });
+
+    window._currentModalOverlay = overlay;
+}
+
+// Funkce pro zavření modalu
+function closeModal() {
+    if (window._currentModalOverlay) {
+        window._currentModalOverlay.remove();
+        window._currentModalOverlay = null;
+    }
+}
+
+// Úprava showCustomerSelectionModal – NEpřidávejte tlačítko Zavřít!
 async function showCustomerSelectionModal() {
-    await fetchCustomersIfNeeded(); // Zajistí načtení zákazníků
+    await fetchCustomersIfNeeded();
 
     if (customers.length === 0) {
-        showModal('Seznam zákazníků není k dispozici!', true, true);
+        showModal('Seznam zákazníků není k dispozici!', true);
         return;
     }
 
-    let customerOptions = '<h3>Vyberte zákazníka</h3>';
-    customerOptions += '<select class="styled-select" id="customer-select"><option value="">Vyberte...</option>';
+    let customerOptions = `
+        <h3>Vyberte zákazníka</h3>
+        <input type="text" id="customer-search" placeholder="Hledat zákazníka..." style="width:90%;padding:6px;margin-bottom:8px;">
+        <select class="styled-select" id="customer-select" size="8" style="width:95%">
+            ${customers.map(customer => `<option value="${customer.name}">${customer.name}</option>`).join('')}
+        </select>
+        <br><br>
+        <button class="button" id="confirm-customer">Potvrdit</button>
+    `;
 
-    customers.forEach(customer => {
-        customerOptions += `<option value="${customer.name}">${customer.name}</option>`;
-    });
+    showModal(customerOptions, true);
 
-    customerOptions += '</select><br><br><button class="button" id="confirm-customer">Potvrdit</button>';
-    
-    showModal(customerOptions, true); // Otevře modální okno s výběrem
-
-    // Přidání event listeneru až po zobrazení modálního okna
     setTimeout(() => {
+        const searchInput = document.getElementById('customer-search');
+        const select = document.getElementById('customer-select');
         const confirmButton = document.getElementById('confirm-customer');
-        if (confirmButton) {
-            // Vytvoříme nový element a nahradíme starý
-            const newConfirmButton = confirmButton.cloneNode(true);
-            confirmButton.replaceWith(newConfirmButton);
-    
-            // Přidáme nový event listener
-            newConfirmButton.addEventListener('click', function () {
-                const customerSelect = document.getElementById('customer-select');
-                selectedCustomer = customerSelect.value;
-    
-                if (selectedCustomer) {
-                    console.log(`✅ Vybraný zákazník: ${selectedCustomer}`);
-                    closeModal(); // Zavře modální okno
-                    submitOrder(); // Pokračuje v procesu objednávky
-                } else {
-                    showModal('⚠️ Prosím vyberte zákazníka!', true, true);
-                }
-            });
-        }
-    }, 100); // Zajistí, že tlačítko existuje před přiřazením event listeneru
-}
 
+        // Filtrování zákazníků podle vyhledávání
+        searchInput.addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            Array.from(select.options).forEach(option => {
+                option.style.display = option.value.toLowerCase().includes(filter) ? '' : 'none';
+            });
+        });
+
+        // Výběr zákazníka kliknutím nebo enterem
+        select.addEventListener('dblclick', () => confirmButton.click());
+        select.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') confirmButton.click();
+        });
+
+        // Potvrzení výběru
+        confirmButton.addEventListener('click', function () {
+            selectedCustomer = select.value;
+            if (selectedCustomer) {
+                closeModal();
+                submitOrder();
+            } else {
+                showModal('⚠️ Prosím vyberte zákazníka!', true);
+            }
+        });
+    }, 100);
+}
 
 document.querySelectorAll('.payment-button').forEach(button => {
     let lastClickedButton = null; // Sledování posledního kliknutého tlačítka
@@ -346,40 +393,42 @@ async function fetchProducts() {
     }
 }
 
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
+async function fetchCategories() {
+    try {
+        const response = await fetch(`${serverEndpoint}/categories`);
+        if (!response.ok) throw new Error('Chyba při načítání kategorií');
+        loadedCategories = await response.json();
+    } catch (e) {
+        console.error(e);
+        loadedCategories = [];
     }
-    return color;
 }
+
 // Funkce pro vykreslení kategorií
-function renderProducts(products) {
+async function renderProducts(products) {
+    await fetchCategories(); // načti kategorie ze serveru
     const categoryContainer = document.querySelector('.category-container');
-    categoryContainer.innerHTML = ''; // Vyčištění kategorií
+    categoryContainer.innerHTML = '';
 
-    // Skupina produktů podle kategorií (filtrování pouze aktivních produktů)
-    const categories = products.reduce((acc, product) => {
-        if (product.active === "true") { // Zkontrolujeme, zda je produkt aktivní
-            const category = product.category || 'Nezařazeno';
-            if (!acc[category]) acc[category] = [];
-            acc[category].push(product);
-        }
-        return acc;
-    }, {});
+    // Seřaď kategorie podle pořadí
+    loadedCategories.sort((a, b) => a.order - b.order);
 
-    // Zobrazení kategorií
-    Object.keys(categories).forEach(category => {
+    loadedCategories.forEach(cat => {
+        // Filtrování produktů do této kategorie
+        const productsInCategory = products.filter(
+            p => (p.category || 'Nezařazeno') === cat.name && p.active === "true"
+        );
+        if (productsInCategory.length === 0) return; // Nezobrazuj prázdné kategorie
+
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'category';
-        categoryDiv.textContent = category;
-
-        // Kliknutím na kategorii zobrazíme produkty
-        categoryDiv.addEventListener('click', () => renderProductsByCategory(categories[category]));
+        categoryDiv.textContent = cat.name;
+        categoryDiv.style.backgroundColor = cat.color;
+        categoryDiv.addEventListener('click', () => renderProductsByCategory(productsInCategory));
         categoryContainer.appendChild(categoryDiv);
     });
 }
+
 // Funkce pro vykreslení produktů v kategorii
 const productContainer = document.getElementById('product-container'); // Definice kontejneru
 
@@ -454,5 +503,26 @@ async function fetchCustomers() {
     } catch (error) {
         console.error('Chyba při načítání:', error);
     }
+}
+
+// Funkce pro vykreslení kategorií
+async function renderCategories() {
+    const response = await fetch('/categories');
+    const categories = await response.json();
+
+    // Seřazení podle pořadí
+    categories.sort((a, b) => a.order - b.order);
+
+    const categoryContainer = document.querySelector('.category-container');
+    categoryContainer.innerHTML = '';
+
+    categories.forEach(cat => {
+        const div = document.createElement('div');
+        div.className = 'category';
+        div.textContent = cat.name;
+        div.style.backgroundColor = cat.color;
+        // ... další stylování, eventy atd.
+        categoryContainer.appendChild(div);
+    });
 }
 

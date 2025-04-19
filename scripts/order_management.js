@@ -121,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Inicializace součtů
                 let totalCash = 0;
                 let totalCard = 0;
+                let totalPaid = 0;
                 let totalRevenue = 0;
     
                 // Řazení objednávek od nejnovějších po nejstarší
@@ -132,8 +133,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
                         if (order.paymentMethod === 'Hotovost' || order.paymentMethod === 'cash') {
                             totalCash += totalPrice;
+                            totalPaid += totalPrice;
                         } else if (order.paymentMethod === 'Karta' || order.paymentMethod === 'card') {
                             totalCard += totalPrice;
+                            totalPaid += totalPrice;   
                         }
     
                         detailHtml += `
@@ -159,6 +162,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <td colspan="2"><strong>Souhrn směny:</strong></td>
                         <td><strong>Hotovost:</strong> ${totalCash} Kč</td>
                         <td><strong>Karta:</strong> ${totalCard} Kč</td>
+                        <td><strong>Celkem zaplaceno:</strong> ${totalPaid} Kč</td>
+                        <td></td>
                         <td><strong>Celkem:</strong> ${totalRevenue} Kč</td>
                         <td></td>
                     </tr>

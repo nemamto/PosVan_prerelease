@@ -24,7 +24,14 @@ main {
 
     padding-bottom: 80px; /* ✅ Rezerva pro footer */
 }
-
+.category {
+    padding: 10px 16px;
+    margin: 8px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
 /* ========================== */
 /*          HEADER            */
 /* ========================== */
@@ -653,6 +660,7 @@ border-radius: 4px;
 /* ✅ Každé tlačítko bude mít stejnou šířku */
 
 
+
 /* ✅ Souhrn objednávky (vpravo) */
 .order-summary {
     flex: 1;
@@ -826,27 +834,26 @@ border-radius: 4px;
     padding: 12px;
     font-size: 18px;
     font-weight: bold;
-    border: 2px solid #8E44AD; /* Fialový rámeček */
+    border: 2px solid #bbb;
     border-radius: 10px;
     background-color: white;
-    color: #8E44AD;
+    color: #222;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     appearance: none;
     text-align: center;
 }
 
-/* ✅ Hover efekt pro select */
-.styled-select:hover {
-    background-color: #8E44AD;
-    color: white;
+.styled-select:hover,
+.styled-select:focus {
+    background-color: #f5f5f5;
+    color: #222;
+    border-color: #888;
 }
 
-/* ✅ Aktivní stav pro select */
-.styled-select:focus {
-    outline: none;
-    background-color: #8E44AD;
-    color: white;
+.styled-select option {
+    color: #222;
+    background: #fff;
 }
 
 /* 🔹 Tlačítko "Potvrdit" */

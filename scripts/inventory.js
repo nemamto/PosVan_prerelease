@@ -451,16 +451,16 @@ async function deleteOrder(orderId) {
     });
 }
 
-async function loadCategories() {
+let loadedCategories = [];
+
+async function fetchCategories() {
     try {
-        const response = await fetch('/categories'); // Načtení kategorií z endpointu
-        if (!response.ok) {
-            throw new Error('Chyba při načítání kategorií');
-        }
-        return await response.json(); // Vrátí pole kategorií
-    } catch (error) {
-        console.error('❌ Chyba při načítání kategorií:', error);
-        return []; // Vrátí prázdné pole při chybě
+        const response = await fetch(`${serverEndpoint}/categories`);
+        if (!response.ok) throw new Error('Chyba při načítání kategorií');
+        loadedCategories = await response.json();
+    } catch (e) {
+        console.error(e);
+        loadedCategories = [];
     }
 }
 
@@ -487,14 +487,14 @@ async function enableEditing(row) {
     const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
     const currentColor = row.style.backgroundColor ? rgbToHex(row.style.backgroundColor) : "#ffffff";
 
-    const categories = await loadCategories();
+    if (loadedCategories.length === 0) await fetchCategories();
 
     nameCell.innerHTML = `<input type="text" value="${currentName}">`;
     descriptionCell.innerHTML = `<input type="text" value="${currentDescription}">`;
     categoryCell.innerHTML = `
         <select>
-            ${categories.map(category => `
-                <option value="${category}" ${currentCategory === category ? 'selected' : ''}>${category}</option>
+            ${loadedCategories.map(cat => `
+                <option value="${cat.name}" ${currentCategory === cat.name ? 'selected' : ''}>${cat.name}</option>
             `).join('')}
         </select>
     `;

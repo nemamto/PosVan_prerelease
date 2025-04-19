@@ -4,8 +4,8 @@
     <Name>Gin</Name>
     <Description>0,02l</Description>
     <Quantity>61</Quantity>
-    <Price>50.00</Price>
-    <Color>#e0b7be</Color>
+    <Price>50</Price>
+    <Color>#00ff2a</Color>
     <Category>Panáky</Category>
   </product>
   <product id="2" active="true">
@@ -19,7 +19,7 @@
   <product id="3" active="true">
     <Name>Diplomatico</Name>
     <Description>0,02l</Description>
-    <Quantity>93</Quantity>
+    <Quantity>91</Quantity>
     <Price>70.00</Price>
     <Color>#bee0b7</Color>
     <Category>Panáky</Category>
@@ -27,7 +27,7 @@
   <product id="4" active="true">
     <Name>Vodka</Name>
     <Description>0,02l</Description>
-    <Quantity>63</Quantity>
+    <Quantity>60</Quantity>
     <Price>40.00</Price>
     <Color>#b7e0d9</Color>
     <Category>Panáky</Category>
@@ -68,9 +68,9 @@
     <Name>Cesky</Name>
     <Description>lev</Description>
     <Quantity>95</Quantity>
-    <Price>95.00</Price>
+    <Price>95</Price>
     <Color>#b7e0cc</Color>
-    <Category>Drinky</Category>
+    <Category>Píčoviny</Category>
   </product>
   <product id="10" active="true">
     <Name>Virgin</Name>
@@ -91,7 +91,7 @@
   <product id="12" active="true">
     <Name>Mimosa</Name>
     <Description>0,2</Description>
-    <Quantity>11106</Quantity>
+    <Quantity>11105</Quantity>
     <Price>55.00</Price>
     <Color>#e0b7cc</Color>
     <Category>Drinky</Category>
@@ -187,7 +187,7 @@
   <product id="24" active="true">
     <Name>Kamenice</Name>
     <Description>0,5l</Description>
-    <Quantity>87</Quantity>
+    <Quantity>84</Quantity>
     <Price>55.00</Price>
     <Color>#b7e0b8</Color>
     <Category>Pivo</Category>
@@ -195,7 +195,7 @@
   <product id="25" active="true">
     <Name>Nealko</Name>
     <Description>pivo 0,33l</Description>
-    <Quantity>11098</Quantity>
+    <Quantity>11095</Quantity>
     <Price>55.00</Price>
     <Color>#b7d6e0</Color>
     <Category>Pivo</Category>
