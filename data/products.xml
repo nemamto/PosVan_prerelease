@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <products>
   <product id="1" active="true">
-    <Name>Gin</Name>
-    <Description>0,02l</Description>
-    <Quantity>61</Quantity>
-    <Price>50.00</Price>
-    <Color>#e0b7be</Color>
-    <Category>Panáky</Category>
+    <Name>1</Name>
+    <Description>Gin</Description>
+    <Quantity>1</Quantity>
+    <Price>61</Price>
+    <Color>#ff002b</Color>
+    <Category>Pivo</Category>
   </product>
   <product id="2" active="true">
-    <Name>Malfy</Name>
-    <Description>0,02l</Description>
-    <Quantity>87</Quantity>
-    <Price>55.00</Price>
+    <Name>2</Name>
+    <Description>Malfy</Description>
+    <Quantity>1</Quantity>
+    <Price>87</Price>
     <Color>#e0d9b7</Color>
-    <Category>Panáky</Category>
+    <Category>Pivo</Category>
   </product>
   <product id="3" active="true">
     <Name>Diplomatico</Name>
@@ -196,7 +196,7 @@
     <Name>Nealko</Name>
     <Description>pivo 0,33l</Description>
     <Quantity>11098</Quantity>
-    <Price>55.00</Price>
+    <Price>55</Price>
     <Color>#b7d6e0</Color>
     <Category>Pivo</Category>
   </product>

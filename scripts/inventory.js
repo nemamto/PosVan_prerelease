@@ -22,68 +22,85 @@ async function loadProducts() {
     }
 }
 
-
-// Funkce pro vykreslení inventáře v HTML
+// Funkce pro vykreslení inventáře podle kategorií
 function renderInventory(products) {
     const inventoryContainer = document.getElementById('inventory-list');
-
     if (!inventoryContainer) {
         console.error('❌ Element s ID "inventory-list" nebyl nalezen.');
         return;
     }
 
-    inventoryContainer.innerHTML = `
-        <tr>
-            <th>ID</th>
-            <th>Název</th>
-            <th>Popis</th>
-            <th>Kategorie</th>
-            <th>Množství</th>
-            <th>Cena</th>
-            <th>Akce</th>
-        </tr>
-    `;
+    // Skupina produktů podle kategorií
+    const categories = products.reduce((acc, product) => {
+        const category = product.category || 'Nezařazeno';
+        if (!acc[category]) acc[category] = [];
+        acc[category].push(product);
+        return acc;
+    }, {});
 
-    products.forEach((product) => {
-        if (!product || !product.id || !product.name) {
-            console.warn('⚠️ Neplatný produkt:', product);
-            return;
-        }
+    inventoryContainer.innerHTML = '';
 
-        const row = document.createElement('tr');
-        row.setAttribute('data-id', product.id); // ✅ PŘIDÁME `data-id`
+    Object.keys(categories).forEach((category) => {
+        const categoryHeader = document.createElement('h3');
+        categoryHeader.textContent = category;
+        inventoryContainer.appendChild(categoryHeader);
 
-        const isDeactivated = product.active === "false";
-        row.style.backgroundColor = isDeactivated ? "#ccc" : product.color || "#fff";
-        row.style.opacity = isDeactivated ? "0.5" : "1";
-
-        // 🛑 Přidáme kontejner na tlačítka, aby zůstala na jednom řádku
-        row.innerHTML = `
-            <td>${product.id}</td>
-            <td>${product.name}</td>
-            <td>${product.description || 'Bez popisu'}</td>
-            <td>${product.category || 'Nezařazeno'}</td>
-            <td>${product.quantity}</td>
-            <td>${product.price} Kč</td>
-            <td>
-                <div class="btn-container">
-                    <button class="edit-btn">Upravit</button>
-                    ${product.active === "false" 
-                        ? `<button class="activateProduct-btn" data-id="${product.id}">Aktivovat</button>`
-                        : `<button class="deactivateProduct-btn" data-id="${product.id}">Deaktivovat</button>`
-                    }
-                </div>
-            </td>
+        const table = document.createElement('table');
+        table.classList.add('inventory-table');
+        table.innerHTML = `
+            <tr>
+                <th>ID</th>
+                <th>Název</th>
+                <th>Popis</th>
+                <th>Kategorie</th>
+                <th>Množství</th>
+                <th>Cena</th>
+                <th>Barva</th>
+                <th>Akce</th>
+            </tr>
         `;
 
-        inventoryContainer.appendChild(row);
+        categories[category].forEach((product) => {
+            if (!product || !product.id || !product.name) return;
+
+            const row = document.createElement('tr');
+            row.setAttribute('data-id', product.id);
+
+            const isDeactivated = product.active === "false";
+            row.style.backgroundColor = isDeactivated ? "#ccc" : product.color || "#fff";
+            row.style.opacity = isDeactivated ? "0.5" : "1";
+
+            row.innerHTML = `
+                <td>${product.id}</td>
+                <td>${product.name}</td>
+                <td>${product.description || 'Bez popisu'}</td>
+                <td>${product.category || 'Nezařazeno'}</td>
+                <td>${product.quantity}</td>
+                <td>${product.price} Kč</td>
+                <td>
+                    <div style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #ccc; background: ${product.color || '#fff'}"></div>
+                </td>
+                <td>
+                    <div class="btn-container">
+                        <button class="edit-btn">Upravit</button>
+                        ${product.active === "false" 
+                            ? `<button class="activateProduct-btn" data-id="${product.id}">Aktivovat</button>`
+                            : `<button class="deactivateProduct-btn" data-id="${product.id}">Deaktivovat</button>`
+                        }
+                    </div>
+                </td>
+            `;
+
+            table.appendChild(row);
+        });
+
+        inventoryContainer.appendChild(table);
     });
 
-    // Připojení event listenerů
+    // Event listenery
     document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
         button.addEventListener('click', (event) => {
             const productId = event.target.getAttribute('data-id');
-            //openDeleteModal(productId);
             deactivateProduct(productId);
         });
     });
@@ -103,6 +120,30 @@ function renderInventory(products) {
     });
 }
 
+// Funkce pro aktualizaci barvy produktu
+async function updateProductColor(productId, color) {
+    if (!productId || !color) {
+        console.error("❌ Chyba: ID produktu nebo barva není definována.");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/updateProductColor`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: productId, color })
+        });
+
+        if (!response.ok) {
+            throw new Error("❌ Chyba při aktualizaci barvy produktu.");
+        }
+
+        console.log(`✅ Barva produktu ID ${productId} byla úspěšně aktualizována.`);
+        loadProducts(); // Aktualizace seznamu produktů
+    } catch (error) {
+        console.error("❌ Chyba při aktualizaci barvy produktu:", error);
+    }
+}
 document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('toggleAddItemForm');
     const addItemForm = document.getElementById('addItemForm');
@@ -120,12 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function activateProduct(productId) {
-/*    if (!productId) {
-        console.error("❌ Neplatné ID produktu!");
-        showModal("❌ Neplatné ID produktu!", true);
-        return;
-    }
-*/
     try {
         const response = await fetch(`${serverEndpoint}/activateProduct`, {
             method: "PUT",
@@ -147,11 +182,6 @@ async function activateProduct(productId) {
 
     }
 }
-
-// 🟢 Zavřít modal při kliknutí na tlačítka
-//document.getElementById('confirm-action').addEventListener('click', closeModal);
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
     const addProductButton = document.getElementById('addProductButton');
@@ -180,13 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function handleDeleteConfirmed() {
- /*   if (!productIdToDelete) {
-        console.error("❌ Chyba: Žádný produkt k deaktivaci.");
-        return;
-    }
-
-    console.log(`🛑 Deaktivuji produkt ID: ${productIdToDelete}...`);
-*/
     try {
         const response = await fetch(`${serverEndpoint}/deactivateProduct`, {
             method: 'PUT',
@@ -209,7 +232,6 @@ async function handleDeleteConfirmed() {
         console.error("❌ Chyba při deaktivaci produktu:", error);
     }
 }
-
 
 document.addEventListener('DOMContentLoaded', () => {
     const colorSelect = document.getElementById('productColor');
@@ -258,8 +280,6 @@ async function handleAddProduct() {
 
         const data = await response.json();
         console.log("✅ Produkt přidán:", data.product);
-        // Zobrazíme potvrzení, modal použijeme jen při chybě – nebo volitelně i při úspěchu
-        // openModal("✅ Produkt úspěšně přidán!");
         loadProducts(); // Aktualizace seznamu produktů
     } catch (error) {
         console.error("❌ Chyba při přidávání produktu:", error);
@@ -267,80 +287,8 @@ async function handleAddProduct() {
     }
 }
 
-
-
-/*
-function handleEditProduct(event) {
-    const row = event.target.closest('tr');
-    const id = event.target.getAttribute('data-id');
-
-    const cells = Array.from(row.children);
-    const [idCell, nameCell, descriptionCell, categoryCell, quantityCell, priceCell, actionCell] = cells;
-
-    // Vložíme vstupy do buňky
-    nameCell.innerHTML = `<input type="text" value="${nameCell.textContent}">`;
-    quantityCell.innerHTML = `<input type="number" value="${quantityCell.textContent}">`;
-    priceCell.innerHTML = `<input type="number" step="0.01" value="${parseFloat(priceCell.textContent)}">`;
-    categoryCell.innerHTML = `
-    <select>
-        <option value="Nápoje" ${product.category === 'Nápoje' ? 'selected' : ''}>Nápoje</option>
-        <option value="Jídlo" ${product.category === 'Jídlo' ? 'selected' : ''}>Jídlo</option>
-        <option value="Dezerty" ${product.category === 'Dezerty' ? 'selected' : ''}>Dezerty</option>
-        <option value="Ostatní" ${product.category === 'Ostatní' ? 'selected' : ''}>Ostatní</option>
-    </select>
-    `;
-    // Nastavíme tlačítko "Uložit"
-    const saveButton = document.createElement('button');
-    saveButton.textContent = 'Uložit';
-    saveButton.classList.add('save-btn');
-    saveButton.addEventListener('click', () => handleSaveInline(id, nameCell, quantityCell, priceCell, row));
-
-    // Nastavíme tlačítko "Zrušit"
-    const cancelButton = document.createElement('button');
-    cancelButton.textContent = 'Zrušit';
-    cancelButton.classList.add('cancel-btn');
-    cancelButton.addEventListener('click', () => loadProducts());
-
-    // Vymazání starých tlačítek a vložení "Uložit"/"Zrušit"
-    actionCell.innerHTML = ''; 
-    actionCell.appendChild(saveButton);
-    actionCell.appendChild(cancelButton);
-}
-*/
 // Funkce pro odstranění produktu
 let productIdToDelete = null; // Uchování ID pro smazání
-/*
-// 🟢 Otevření modálního okna
-function openDeleteModal(id) {
-    console.log(`🟢 Otevření modalu pro produkt ID: ${id}`);
-
-    productIdToDelete = id;
-    const modal = document.getElementById('deleteModal');
-    const modalMessage = document.getElementById('delete-modal-message');
-    const confirmButton = document.getElementById('confirmDelete');
-    const cancelButton = document.getElementById('cancelDelete');
-
-    if (!modal || !modalMessage || !confirmButton || !cancelButton) {
-        console.error("❌ Chyba: Modální okno neobsahuje všechny potřebné prvky.");
-        return;
-    }
-
-    modalMessage.textContent = `Opravdu chcete odstranit tento produkt?`;
-    modal.style.display = 'flex';
-    modal.style.opacity = '1';
-
-    console.log("🟢 Modal byl úspěšně zobrazen: opacity = 1");
-
-    confirmButton.onclick = function () {
-        console.log("🟢 Kliknuto na potvrzení smazání.");
-        handleDeleteConfirmed();
-    };
-
-    cancelButton.onclick = function () {
-        console.log("🟢 Kliknuto na zrušení mazání.");
-        closeDeleteModal();
-    };
-}*/
 
 async function deactivateProduct(productIdToDelete) {
     if (!productIdToDelete) {
@@ -363,13 +311,10 @@ async function deactivateProduct(productIdToDelete) {
             throw new Error(data.message);
         }
 
-        // 🟢 **Správná interpretace odpovědi backendu**
         if (data.alreadyDeactivated) {
             console.warn(`⚠️ Produkt ID ${productIdToDelete} byl už dříve deaktivován.`);
-            //showModal("⚠️ Tento produkt byl už dříve deaktivován.", loadProducts);
         } else {
             console.log(`✅ Produkt ${productIdToDelete} deaktivován: ${data.message}`);
-            //showModal("✅ Produkt byl úspěšně deaktivován!", loadProducts);
         }
 
     } catch (error) {
@@ -379,7 +324,6 @@ async function deactivateProduct(productIdToDelete) {
         await loadProducts();
     }
 }
-
 
 function closeDeleteModal() {
     console.log("🛑 Zavírám modal pro mazání produktu...");
@@ -399,7 +343,6 @@ function closeDeleteModal() {
     }, 300); // Čekáme na dokončení animace
 }
 
-
 document.addEventListener('DOMContentLoaded', () => {
     const modal = document.getElementById('deleteModal');
     if (!modal) {
@@ -409,13 +352,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-
-// 🟢 Event listenery pro tlačítka v modalu
+// Event listenery pro tlačítka v modalu
 document.getElementById('confirmDelete').addEventListener('click', handleDeleteConfirmed);
 document.getElementById('cancelDelete').addEventListener('click', closeModal);
 
-// 🟢 Přidání listenerů k tlačítkům smazání v tabulce
+// Přidání listenerů k tlačítkům smazání v tabulce
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
         button.addEventListener('click', (event) => {
@@ -428,11 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Při kliknutí na tlačítko "OK" modál zavře
 document.getElementById('confirm-action').addEventListener('click', () => {
     closeModal();
-    // Můžete zde také provést další akce, například reload stránky nebo aktualizaci dat
-    // location.reload();
 });
-
-
 
 // Ujistěte se, že modál je skrytý při načtení stránky
 document.addEventListener('DOMContentLoaded', () => {
@@ -462,14 +399,12 @@ function showModalConfirm(message, onConfirm) {
 
         console.log("✅ Potvrzovací modal byl úspěšně zobrazen.");
 
-        // ✅ Odstraníme staré listenery (aby se nevolaly dvakrát)
         confirmButton.replaceWith(confirmButton.cloneNode(true));
         cancelButton.replaceWith(cancelButton.cloneNode(true));
 
         const newConfirmButton = document.getElementById('confirmDelete');
         const newCancelButton = document.getElementById('cancelDelete');
 
-        // ✅ Přidání nových listenerů
         newConfirmButton.addEventListener('click', async () => {
             console.log("🟢 Potvrzeno: Probíhá deaktivace...");
             await onConfirm();
@@ -485,7 +420,6 @@ function showModalConfirm(message, onConfirm) {
 
     }, 50);
 }
-
 
 async function deleteOrder(orderId) {
     console.log(`🟢 Požadavek na stornování objednávky ID: ${orderId}`);
@@ -506,7 +440,6 @@ async function deleteOrder(orderId) {
             const data = await response.json();
             console.log(`✅ Server odpověděl: ${data.message}`);
 
-            // ✅ Počkej 300ms na aktualizaci a pak zavři modal
             setTimeout(async () => {
                 await refreshInventory();
                 fetchShifts();
@@ -518,43 +451,6 @@ async function deleteOrder(orderId) {
     });
 }
 
-/*
-document.addEventListener('DOMContentLoaded', () => {
-    loadProducts(); // Načíst produkty při načtení stránky
-
-    // Přidat event listener na tlačítko přidání produktu
-    document.getElementById('addProductButton').addEventListener('click', handleAddProduct);
-
-    // Nastavení listenerů pro potvrzení a zrušení mazání
-    const confirmDeleteButton = document.getElementById('confirmDelete');
-    const cancelDeleteButton = document.getElementById('cancelDelete');
-
-    if (confirmDeleteButton && cancelDeleteButton) {
-        confirmDeleteButton.addEventListener('click', () => {
-            if (productIdToDelete) {
-                fetch(`${serverEndpoint}/deactivateProduct`, {
-                    method: 'put',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: productIdToDelete })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Zpráva o smazání:", data.message);
-                    loadProducts(); // Obnoví inventář po smazání
-                    closeModal();
-                })
-                .catch(error => console.error('Chyba při odstraňování produktu:', error));
-            }
-        });
-
-        cancelDeleteButton.addEventListener('click', closeModal);
-    } else {
-        console.error("Prvky confirmDelete nebo cancelDelete nebyly nalezeny v DOM.");
-    }
-});
-*/
 async function loadCategories() {
     try {
         const response = await fetch('/categories'); // Načtení kategorií z endpointu
@@ -567,33 +463,32 @@ async function loadCategories() {
         return []; // Vrátí prázdné pole při chybě
     }
 }
+
 async function enableEditing(row) {
     const id = row.getAttribute('data-id');
-    const nameCell = row.querySelector('td:nth-child(1)');
-    const descriptionCell = row.querySelector('td:nth-child(2)');
-    const categoryCell = row.querySelector('td:nth-child(3)');
-    const quantityCell = row.querySelector('td:nth-child(4)');
-    const priceCell = row.querySelector('td:nth-child(5)');
-    const actionCell = row.querySelector('td:nth-child(6)');
+    const idCell = row.children[0];
+    const nameCell = row.children[1];
+    const descriptionCell = row.children[2];
+    const categoryCell = row.children[3];
+    const quantityCell = row.children[4];
+    const priceCell = row.children[5];
+    const colorCell = row.children[6];
+    const actionCell = row.children[7];
 
     if (!id) {
         console.error("❌ Chyba: ID produktu nebylo nalezeno.");
         return;
     }
 
-    console.log(`📝 Editace produktu ID: ${id}`);
-
-    // Původní hodnoty
     const currentName = nameCell.textContent.trim();
     const currentDescription = descriptionCell.textContent.trim();
     const currentCategory = categoryCell.textContent.trim();
     const currentQuantity = parseInt(quantityCell.textContent.trim());
     const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
+    const currentColor = row.style.backgroundColor ? rgbToHex(row.style.backgroundColor) : "#ffffff";
 
-    // Načtení kategorií
     const categories = await loadCategories();
 
-    // Pole pro editaci
     nameCell.innerHTML = `<input type="text" value="${currentName}">`;
     descriptionCell.innerHTML = `<input type="text" value="${currentDescription}">`;
     categoryCell.innerHTML = `
@@ -605,8 +500,8 @@ async function enableEditing(row) {
     `;
     quantityCell.innerHTML = `<input type="number" min="0" value="${currentQuantity}">`;
     priceCell.innerHTML = `<input type="number" min="0" step="0.01" value="${currentPrice}">`;
+    colorCell.innerHTML = `<input type="color" value="${currentColor}">`;
 
-    // Tlačítka uložit/zrušit uvnitř flexboxu
     actionCell.innerHTML = `
         <div class="btn-container">
             <button class="save-btn">Uložit</button>
@@ -614,9 +509,22 @@ async function enableEditing(row) {
         </div>
     `;
 
-    // Event listenery pro tlačítka
     actionCell.querySelector('.save-btn').addEventListener('click', () => handleSaveInline(id, row));
     actionCell.querySelector('.cancel-btn').addEventListener('click', () => loadProducts());
+}
+
+function rgbToHex(rgb) {
+    const result = rgb.match(/\d+/g);
+    if (!result) return "#ffffff";
+    return (
+        "#" +
+        result
+            .map(x => {
+                const hex = parseInt(x).toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            })
+            .join("")
+    );
 }
 
 async function handleSaveInline(id, row) {
@@ -625,64 +533,43 @@ async function handleSaveInline(id, row) {
         return;
     }
 
-    const nameInput = row.children[0].querySelector('input');
-    const descriptionInput = row.children[1].querySelector('input');
-    const categorySelect = row.children[2].querySelector('select'); // Přidáno pro kategorii
-    const quantityInput = row.children[3].querySelector('input');
-    const priceInput = row.children[4].querySelector('input');
+    const nameInput = row.children[1].querySelector('input');
+    const descriptionInput = row.children[2].querySelector('input');
+    const categorySelect = row.children[3].querySelector('select');
+    const quantityInput = row.children[4].querySelector('input');
+    const priceInput = row.children[5].querySelector('input');
+    const colorInput = row.children[6].querySelector('input[type="color"]');
 
-    if (!nameInput || !descriptionInput || !categorySelect || !quantityInput || !priceInput) {
+    if (!nameInput || !descriptionInput || !categorySelect || !quantityInput || !priceInput || !colorInput) {
         console.error("❌ Chyba: Některé vstupy nebyly nalezeny.");
         return;
     }
 
     const name = nameInput.value.trim();
     const description = descriptionInput.value.trim();
-    const category = categorySelect.value; // Získání vybrané kategorie
+    const category = categorySelect.value;
     const quantity = parseInt(quantityInput.value, 10);
     const price = parseFloat(priceInput.value);
+    const color = colorInput.value;
 
     if (!name || isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
         alert("❌ Neplatná hodnota pro název, množství nebo cenu!");
         return;
     }
 
-    console.log(`📝 Ukládám změny pro produkt ID: ${id}`);
-
     try {
         const response = await fetch(`${serverEndpoint}/updateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, name, description, category, quantity, price })
+            body: JSON.stringify({ id, name, description, category, quantity, price, color })
         });
-
-        if (!response.ok) {
-            throw new Error("❌ Chyba při aktualizaci produktu.");
-        }
-
-        console.log(`✅ Produkt ${id} byl úspěšně aktualizován.`);
-        loadProducts(); // Načtení aktualizovaných produktů
-    } catch (error) {
-        console.error("❌ Chyba při aktualizaci produktu:", error);
+        if (!response.ok) throw new Error("Chyba při ukládání produktu.");
+        await loadProducts();
+    } catch (e) {
+        alert("Chyba při ukládání produktu!");
+        console.error(e);
     }
 }
-
-function handleEditInline(event) {
-    const row = event.target.closest('tr');
-    row.querySelectorAll('td').forEach((cell, index) => {
-        if (index > 0 && index < 5) { // Přeskočíme ID a jiné nepodstatné buňky
-            const originalValue = cell.innerText.replace(' Kč', ''); // odstraní Kč, pokud je uvedeno
-            cell.innerHTML = `<input type="text" value="${originalValue}" />`;
-        }
-    });
-
-    // Přepnutí tlačítek
-    row.querySelector('.edit-btn').style.display = 'none';
-    row.querySelector('.save-btn').style.display = 'inline';
-}
-
-
-
 
 // Načíst a vykreslit inventář při načtení stránky a přidat event listener na tlačítko přidání
 document.addEventListener('DOMContentLoaded', () => {
