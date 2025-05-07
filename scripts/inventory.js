@@ -1,5 +1,5 @@
 import { serverEndpoint } from './config.js';
-import { closeModal } from './common.js';
+import { showModal, closeModal } from './common.js';
 let allProducts = []; // Globální pole všech produktů
 
 async function loadProducts() {
@@ -259,10 +259,11 @@ async function handleAddProduct() {
     const description = document.getElementById('productDescription').value.trim();
     const quantity = parseInt(document.getElementById('productQuantity').value, 10);
     const price = parseFloat(document.getElementById('productPrice').value);
-    const color = document.getElementById('productColor').value;  // Získání vybrané barvy
+    const color = document.getElementById('productColor').value;
 
-    if (!name || isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0 || !document.getElementById('productColor').value) {
-        openModal("❌ Vyplňte všechna pole správně a vyberte barvu!");
+    // Oprava: použij showModal místo openModal a kontroluj všechny hodnoty
+    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(price) || price <= 0 || !color) {
+        showModal("❌ Vyplňte všechna pole správně a vyberte barvu!", true, true);
         return;
     }
 
@@ -281,10 +282,20 @@ async function handleAddProduct() {
 
         const data = await response.json();
         console.log("✅ Produkt přidán:", data.product);
+
+        // Vymaž formulář po úspěchu
+        document.getElementById('productName').value = '';
+        document.getElementById('productDescription').value = '';
+        document.getElementById('productQuantity').value = '';
+        document.getElementById('productPrice').value = '';
+        document.getElementById('productColor').value = '';
+
+        showModal("✅ Produkt byl úspěšně přidán!", false, true);
+
         loadProducts(); // Aktualizace seznamu produktů
     } catch (error) {
         console.error("❌ Chyba při přidávání produktu:", error);
-        openModal("❌ Chyba při přidávání produktu!");
+        showModal("❌ Chyba při přidávání produktu!", true, true);
     }
 }
 
