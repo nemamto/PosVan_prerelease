@@ -1,4 +1,6 @@
-const serverEndpoint = 'http://localhost:666';
+import { serverEndpoint } from './config.js';
+import { showModal, closeModal } from './common.js';
+
 let currentShiftID = null;
 
 document.addEventListener('DOMContentLoaded', async () => {

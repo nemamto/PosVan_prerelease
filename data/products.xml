@@ -3,9 +3,9 @@
   <product id="1" active="true">
     <Name>Svijany</Name>
     <Description>0,02l</Description>
-    <Quantity>51</Quantity>
+    <Quantity>50</Quantity>
     <Price>50</Price>
-    <Color>#e0b7be</Color>
+    <Color>#d9c4c8</Color>
     <Category>Pivo</Category>
   </product>
   <product id="2" active="true">

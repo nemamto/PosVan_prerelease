@@ -1,7 +1,7 @@
 import { serverEndpoint } from './config.js';
 
 // Zobrazí základní modální okno (#modal)
-function showModalpure(content, isHTML = false) {
+export function showModalpure(content, isHTML = false) {
     const modal = document.getElementById('modal');
     const modalMessage = document.getElementById('modal-message');
 
@@ -35,7 +35,7 @@ export function closeModal() {
 }
 
 // Pokročilé modal okno s textem a volitelnou chybou
-function showModal(message, isError = false) {
+export function showModal(message, isError = false) {
     let modalOverlay = document.getElementById("modal-overlay");
     if (!modalOverlay) {
         modalOverlay = document.createElement("div");

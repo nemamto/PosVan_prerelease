@@ -258,6 +258,7 @@ export async function submitOrder() {
 
     const requestBody = {
         order: order.map(item => ({
+            id: item.id, // ← přidej ID!
             name: item.name,
             quantity: item.quantity,
             price: item.price,
