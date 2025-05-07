@@ -1,5 +1,7 @@
 import { serverEndpoint } from './config.js';
 import { closeModal } from './common.js';
+let allProducts = []; // Globální pole všech produktů
+
 async function loadProducts() {
     try {
         const response = await fetch(`${serverEndpoint}/products`);
@@ -7,6 +9,7 @@ async function loadProducts() {
             throw new Error('Chyba při načítání produktů');
         }
         const products = await response.json();
+        allProducts = products; // Ulož do globální proměnné
         console.log('Načtené produkty:', products); // Ověření načtených dat
 
         if (!Array.isArray(products) || products.length === 0) {
@@ -558,4 +561,20 @@ document.getElementById('inventory-button').addEventListener('click', function()
 
 document.getElementById('order-management-button').addEventListener('click', function() {
     window.location.href = 'order_management.html'; // Přesměruje na stránku Správa objednávek
+});
+
+// Přidej tento kód pro vyhledávání:
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('search');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            const filtered = allProducts.filter(product =>
+                product.name.toLowerCase().includes(query) ||
+                (product.description && product.description.toLowerCase().includes(query)) ||
+                (product.category && product.category.toLowerCase().includes(query))
+            );
+            renderInventory(filtered);
+        });
+    }
 });
