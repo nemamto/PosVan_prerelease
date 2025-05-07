@@ -1,4 +1,5 @@
 import { serverEndpoint } from './config.js';
+import { getShiftID } from './common.js';
 // Načítání seznamu zákazníků
 async function loadCustomers() {
     try {
@@ -224,50 +225,6 @@ async function addPaymentToShift(customerName, total, paymentMethod) {
     } catch (error) {
         console.error('❌ Chyba při zaznamenávání platby do směny:', error);
         throw error;
-    }
-}
-async function submitOrder() {
-    console.log(`📤 Odesílám objednávku:`, order);
-
-    const shiftID = getShiftID(); // 🟢 Kontrola aktuální směny
-
-    if (!shiftID) {
-        console.error("❌ Chyba: Směna není otevřená!");
-        showModal("❌ Nelze zpracovat objednávku: Směna není otevřená!", true, true);
-        return;
-    }
-
-    const requestBody = {
-        order: order.map(item => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            totalPrice: item.totalPrice
-        })),
-        paymentMethod: selectedPaymentMethod,
-        totalAmount: totalAmount,
-        selectedCustomer: selectedCustomer,
-        shiftID: shiftID // ✅ Přidáno shiftID
-    };
-
-    try {
-        const response = await fetch(`${serverEndpoint}/logOrder`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error! Status: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log(`✅ Objednávka úspěšně odeslána:`, result);
-        resetOrder(); // ✅ Po odeslání vyčistí objednávku
-    } catch (error) {
-        console.error("❌ Chyba při odesílání objednávky:", error);
-        showModal("❌ Chyba při odesílání objednávky!", true, true);
     }
 }
 

@@ -38,7 +38,7 @@ function getNextOrderID() {
     fs.writeFileSync(idPath, currentID.toString());
     return currentID;
 }
-
+/*
 function getNextShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
     ensureDirectoryExistence(idsDir);
@@ -51,6 +51,7 @@ function getNextShiftID() {
     fs.writeFileSync(idPath, currentID.toString());
     return currentID;
 }
+    */
 function ensureProductsXML() {
     const dataPath = path.join(__dirname, 'data');
     const productsPath = path.join(dataPath, 'products.xml');

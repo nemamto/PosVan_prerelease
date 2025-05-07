@@ -7,14 +7,14 @@ let currentShiftID = null;
 let shiftID 
 
 import { serverEndpoint } from './config.js';
-import { checkActiveShift, closeModal } from './common.js';
+import { checkActiveShift, closeModal, getShiftID } from './common.js';
 let loadedCategories = [];
 
 // 🟢 Zavoláme při načtení stránky
 document.addEventListener('DOMContentLoaded', async () => {
     await checkActiveShift(); // ✅ Kontrola směny při načítání
     await fetchProducts(); // ✅ Načtení produktů
-    await fetchProducts(); // Načtení produktů při načítání stránky
+    await fetchCategories(); // ✅ Načtení kategorií
 });
 
 // Přidání produktu do objednávky
@@ -31,7 +31,7 @@ function addProductToOrder(product) {
     totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0);
     updateOrderSummary();
 }
-
+/*
 function getNextShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
     ensureDirectoryExistence(idsDir);
@@ -44,7 +44,7 @@ function getNextShiftID() {
     fs.writeFileSync(idPath, currentID.toString());
     return currentID;
 }
-
+*/
 // Aktualizace zobrazení objednávky
 function updateOrderSummary() {
     const productListSummary = document.getElementById('product-list-summary');
@@ -230,60 +230,34 @@ function initializeShift() {
     }
 }
 
-// Zavoláme při načtení stránky
-initializeShift();
-
-
-// 🟢 Funkce pro odeslání objednávky
-async function submitOrder() {
+export async function submitOrder() {
     console.log(`📤 Odesílám objednávku:`, order);
 
-    // ✅ Kontrola, zda objednávka není prázdná
+    const shiftID = await getShiftID(); // 🟢 Kontrola aktuální směny
+
+    if (!shiftID) {
+        console.error("❌ Chyba: Směna není otevřená!");
+        showModal("❌ Nelze zpracovat objednávku: Směna není otevřená!", true, true);
+        return;
+    }
+
     if (!order || order.length === 0) {
-        console.error("❌ Chyba: Objednávka je prázdná!");
         showModal("❌ Nelze odeslat prázdnou objednávku!", true);
         return;
     }
 
-    // ✅ Kontrola, zda byl vybrán způsob platby
     if (!selectedPaymentMethod) {
-        console.error("❌ Chyba: Nebyl vybrán způsob platby!");
         showModal("❌ Vyberte způsob platby!", true);
         return;
     }
 
-    // ✅ Pokud je platba na účet zákazníka, musí být vybrán zákazník
-    if (selectedPaymentMethod === "account" && !selectedCustomer) {
-        console.error("❌ Chyba: Nebyl vybrán zákazník!");
+    if (selectedPaymentMethod === "Účet zákazníka" && !selectedCustomer) {
         showModal("❌ Vyberte zákazníka pro platbu na účet!", true);
-        return;
-    }
-
-    // ✅ Kontrola, zda je aktivní směna
-    try {
-        const response = await fetch(`${serverEndpoint}/currentShift`);
-        if (!response.ok) {
-            throw new Error("Chyba při ověřování směny!");
-        }
-
-        const shiftData = await response.json();
-        if (!shiftData.active) {
-            console.error("❌ Chyba: Směna není otevřená!");
-            showModal("❌ Nemáte aktivní směnu. Prosím, zahajte směnu před odesláním objednávky!", true, true);
-            return;
-        }
-
-        // Nastavení shiftID z aktuální směny
-        shiftID = shiftData.shiftID;
-    } catch (error) {
-        console.error("❌ Chyba při kontrole aktivní směny:", error);
-        showModal("❌ Chyba při ověřování směny. Zkuste to znovu!", true, true);
         return;
     }
 
     const requestBody = {
         order: order.map(item => ({
-            id: item.id, // Přidáme ID produktu
             name: item.name,
             quantity: item.quantity,
             price: item.price,
@@ -309,12 +283,19 @@ async function submitOrder() {
 
         const result = await response.json();
         console.log(`✅ Objednávka úspěšně odeslána:`, result);
-        resetOrder(); // ✅ Po odeslání vyčistí objednávku
+        resetOrder();
     } catch (error) {
         console.error("❌ Chyba při odesílání objednávky:", error);
         showModal("❌ Chyba při odesílání objednávky!", true, true);
     }
 }
+
+
+
+
+// Zavoláme při načtení stránky
+initializeShift();
+
 // 🟢 Funkce pro resetování objednávky po odeslání
 function resetOrder() {
     order = [];
@@ -327,7 +308,6 @@ function resetOrder() {
         button.classList.remove('active');
     });
 }
-
 
 // Výběr produktu - simulace kliknutí na produkt
 document.querySelectorAll('.product-button').forEach(button => {
@@ -420,10 +400,6 @@ document.getElementById('close-modal').addEventListener('click', function() {
     document.getElementById('modal').style.display = 'none';
 });
 
-
-
-
-
 // Funkce pro zobrazení modálního okna s výběrem zákazníka
 async function fetchCustomersIfNeeded() {
     if (!customers || customers.length === 0) {
@@ -431,7 +407,6 @@ async function fetchCustomersIfNeeded() {
         await fetchCustomers(); // Počkáme na dokončení načítání zakazniku
     }
 }
-
 
 async function fetchCustomers() {
     console.log('Načítání seznamu zakazniku...');

@@ -164,7 +164,9 @@ export async function checkActiveShift() {
     }
 }
 
-async function getShiftID() {
+
+
+export async function getShiftID() {
     try {
         const response = await fetch(`${serverEndpoint}/currentShift`);
         const data = await response.json();
@@ -175,7 +177,7 @@ async function getShiftID() {
     }
 }
 
-async function checkCurrentShift() {
+export async function checkCurrentShift() {
     try {
         const response = await fetch(`${serverEndpoint}/currentShift`);
         if (!response.ok) throw new Error("Chyba při načítání směny.");
@@ -186,36 +188,3 @@ async function checkCurrentShift() {
     }
 }
 
-// =================== OBJEDNAVKY ===================
-
-async function submitOrder(order) {
-    console.log("Odesílám objednávku:", order);
-
-    const shiftID = await getShiftID();
-
-    const requestBody = {
-        order: order.items,
-        paymentMethod: order.paymentMethod,
-        totalAmount: order.totalAmount,
-        selectedCustomer: order.selectedCustomer,
-        shiftID: shiftID
-    };
-
-    try {
-        const response = await fetch(`${serverEndpoint}/logOrder`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`HTTP error: ${response.status} - ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log("Objednávka odeslána:", result);
-    } catch (error) {
-        console.error("Chyba při odesílání objednávky:", error);
-    }
-}

@@ -3,10 +3,10 @@
   <product id="1" active="true">
     <Name>Svijany</Name>
     <Description>0,02l</Description>
-    <Quantity>61</Quantity>
+    <Quantity>51</Quantity>
     <Price>50</Price>
     <Color>#e0b7be</Color>
-    <Category>Víno</Category>
+    <Category>Pivo</Category>
   </product>
   <product id="2" active="true">
     <Name>Malfy</Name>
@@ -59,7 +59,7 @@
   <product id="8" active="true">
     <Name>GinTon</Name>
     <Description>0,2l</Description>
-    <Quantity>37</Quantity>
+    <Quantity>36</Quantity>
     <Price>110.00</Price>
     <Color>#cce0b7</Color>
     <Category>Drinky</Category>
@@ -75,7 +75,7 @@
   <product id="10" active="true">
     <Name>Virgin</Name>
     <Description>lev</Description>
-    <Quantity>94</Quantity>
+    <Quantity>93</Quantity>
     <Price>55.00</Price>
     <Color>#b7cbe0</Color>
     <Category>Drinky</Category>
@@ -179,7 +179,7 @@
   <product id="23" active="true">
     <Name>Cider</Name>
     <Description>0,33l</Description>
-    <Quantity>99993</Quantity>
+    <Quantity>99992</Quantity>
     <Price>75</Price>
     <Color>#e0d9b7</Color>
     <Category>Pivo</Category>
@@ -187,7 +187,7 @@
   <product id="24" active="true">
     <Name>Kamenice</Name>
     <Description>0,5l</Description>
-    <Quantity>82</Quantity>
+    <Quantity>81</Quantity>
     <Price>55.00</Price>
     <Color>#b7e0b8</Color>
     <Category>Pivo</Category>
@@ -211,7 +211,7 @@
   <product id="27" active="true">
     <Name>Radegast</Name>
     <Description>0,5l</Description>
-    <Quantity>9966</Quantity>
+    <Quantity>9965</Quantity>
     <Price>45</Price>
     <Color>#e0b7c6</Color>
     <Category>Pivo</Category>
@@ -235,7 +235,7 @@
   <product id="30" active="true">
     <Name>Prosecco</Name>
     <Description>0,1l</Description>
-    <Quantity>110867</Quantity>
+    <Quantity>110866</Quantity>
     <Price>45.00</Price>
     <Color>#e0b7d2</Color>
     <Category>Víno</Category>
