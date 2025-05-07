@@ -7,7 +7,7 @@ let currentShiftID = null;
 let shiftID 
 
 import { serverEndpoint } from './config.js';
-import { checkActiveShift } from './common.js';
+import { checkActiveShift, closeModal } from './common.js';
 let loadedCategories = [];
 
 // 🟢 Zavoláme při načtení stránky
@@ -95,56 +95,21 @@ document.getElementById('reset-order').addEventListener('click', function() {
 
 // Funkce pro zobrazení modálního okna (univerzální)
 function showModal(contentHtml, center = true) {
-    // Odstranění případného starého modalu
-    closeModal();
+    // Najdi overlay a message v DOM
+    const overlay = document.getElementById('modal-overlay');
+    const message = document.getElementById('modal-message');
+    if (!overlay || !message) return;
 
-    // Vytvoření overlay
-    let overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-    overlay.style.position = 'fixed';
-    overlay.style.top = 0;
-    overlay.style.left = 0;
-    overlay.style.width = '100vw';
-    overlay.style.height = '100vh';
-    overlay.style.background = 'rgba(0,0,0,0.25)';
-    overlay.style.zIndex = 9999;
+    message.innerHTML = contentHtml;
     overlay.style.display = 'flex';
     overlay.style.alignItems = center ? 'center' : 'flex-start';
     overlay.style.justifyContent = 'center';
 
-    // Vytvoření modalu
-    let modal = document.createElement('div');
-    modal.className = 'modal-content';
-    modal.style.background = '#fff';
-    modal.style.borderRadius = '12px';
-    modal.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)';
-    modal.style.color = '#222';
-    modal.style.padding = '24px 18px';
-    modal.style.maxWidth = '400px';
-    modal.style.width = '90%';
-    modal.style.textAlign = 'center';
-    modal.innerHTML = contentHtml;
-
-    // Přidání do overlay
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    // Zavření kliknutím mimo modal (použijte 'click', ne 'mousedown')
-    overlay.addEventListener('click', function(e) {
-        if (!modal.contains(e.target)) {
-            closeModal();
-        }
-    });
-
-    // Zabrání zavření při kliknutí uvnitř modalu
-    modal.addEventListener('click', function(e) {
-        e.stopPropagation();
-    });
-
-    window._currentModalOverlay = overlay;
+    // Zavření kliknutím mimo modal-content
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeModal();
+    };
 }
-
-
 
 // Úprava showCustomerSelectionModal – NEpřidávejte tlačítko Zavřít!
 async function showCustomerSelectionModal() {
@@ -200,7 +165,7 @@ async function showCustomerSelectionModal() {
 }
 
 document.querySelectorAll('.payment-button').forEach(button => {
-    let lastClickedButton = null; // Sledování posledního kliknutého tlačítka
+    let lastClickedButton = null;
 
     button.addEventListener('click', async function () {
         const method = this.getAttribute('data-method');
@@ -208,18 +173,19 @@ document.querySelectorAll('.payment-button').forEach(button => {
         // Pokud je tlačítko kliknuto podruhé
         if (lastClickedButton === this) {
             if (method === 'customer') {
-                console.log("🟢 Otevírám formulář pro výběr zákazníka.");
-                showCustomerSelectionModal(); // Otevře formulář pro výběr zákazníka
+                // Otevře modal pro výběr zákazníka, NEODESÍLÁ objednávku!
+                showCustomerSelectionModal();
                 return;
             }
 
+            // Odeslání objednávky pouze pro jiné způsoby platby
             console.log(`📤 Odesílám objednávku se způsobem platby: ${selectedPaymentMethod}`);
             try {
-                await submitOrder(); // Odeslání objednávky
+                await submitOrder();
             } catch (error) {
                 console.error("❌ Chyba při odesílání objednávky:", error);
             }
-            lastClickedButton = null; // Reset stavu po zaplacení
+            lastClickedButton = null;
             return;
         }
 
@@ -233,13 +199,13 @@ document.querySelectorAll('.payment-button').forEach(button => {
         console.log(`✅ Zvolen způsob platby: ${selectedPaymentMethod}`);
 
         if (method === 'customer') {
-            console.log("🟢 Otevírám formulář pro výběr zákazníka.");
-            showCustomerSelectionModal(); // Otevře formulář pro výběr zákazníka
+            showCustomerSelectionModal();
         }
 
-        lastClickedButton = this; // Nastavení aktuálního tlačítka jako posledního kliknutého
+        lastClickedButton = this;
     });
 });
+
 function initializeShift() {
     let shiftID = localStorage.getItem("shiftID");
 
@@ -455,24 +421,7 @@ document.getElementById('close-modal').addEventListener('click', function() {
 });
 
 
-// Způsoby platby - Aktivace výběru platby
-document.querySelectorAll('.payment-button').forEach(button => {
-    button.addEventListener('click', function() {
-        document.querySelectorAll('.payment-button').forEach(btn => {
-            btn.classList.remove('active');
-        });
 
-        this.classList.add('active');
-
-        const method = this.getAttribute('data-method');
-        if (method === 'customer') {
-            selectedPaymentMethod = 'Účet zákazníka';
-            showCustomerSelectionModal(); // Zobrazit modální okno s roletkou
-        } else {
-            selectedPaymentMethod = method === 'cash' ? 'Hotovost' : 'Karta';
-        }
-    });
-});
 
 
 // Funkce pro zobrazení modálního okna s výběrem zákazníka

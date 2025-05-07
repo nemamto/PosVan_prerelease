@@ -1303,10 +1303,15 @@ app.post('/logOrder', (req, res) => {
 
 
 const shiftsFile = path.join(__dirname, 'data', 'shifts.json');
-
+function checkDirExist(dirPath) {
+    if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+    }
+}
 // 🟢 Načtení aktuální směny
 app.get('/currentShift', (req, res) => {
     const shiftsDir = path.join(__dirname, 'data', 'shifts');
+    checkDirExist(shiftsDir); 
     const files = fs.readdirSync(shiftsDir)
         .filter(file => file.endsWith('.xml'))
         .sort((a, b) => fs.statSync(path.join(shiftsDir, b)).mtime - fs.statSync(path.join(shiftsDir, a)).mtime);

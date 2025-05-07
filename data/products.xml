@@ -179,7 +179,7 @@
   <product id="23" active="true">
     <Name>Cider</Name>
     <Description>0,33l</Description>
-    <Quantity>99995</Quantity>
+    <Quantity>99993</Quantity>
     <Price>75</Price>
     <Color>#e0d9b7</Color>
     <Category>Pivo</Category>
@@ -187,7 +187,7 @@
   <product id="24" active="true">
     <Name>Kamenice</Name>
     <Description>0,5l</Description>
-    <Quantity>85</Quantity>
+    <Quantity>82</Quantity>
     <Price>55.00</Price>
     <Color>#b7e0b8</Color>
     <Category>Pivo</Category>
@@ -195,7 +195,7 @@
   <product id="25" active="true">
     <Name>Nealko</Name>
     <Description>pivo 0,33l</Description>
-    <Quantity>11097</Quantity>
+    <Quantity>11094</Quantity>
     <Price>55.00</Price>
     <Color>#b7d6e0</Color>
     <Category>Pivo</Category>
@@ -235,7 +235,7 @@
   <product id="30" active="true">
     <Name>Prosecco</Name>
     <Description>0,1l</Description>
-    <Quantity>110869</Quantity>
+    <Quantity>110867</Quantity>
     <Price>45.00</Price>
     <Color>#e0b7d2</Color>
     <Category>Víno</Category>
