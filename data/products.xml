@@ -5,7 +5,7 @@
     <Description>0,02l</Description>
     <Quantity>61</Quantity>
     <Price>50</Price>
-    <Color>#00ff2a</Color>
+    <Color>#e0b7be</Color>
     <Category>Panáky</Category>
   </product>
   <product id="2" active="true">
@@ -19,7 +19,7 @@
   <product id="3" active="true">
     <Name>Diplomatico</Name>
     <Description>0,02l</Description>
-    <Quantity>91</Quantity>
+    <Quantity>93</Quantity>
     <Price>70.00</Price>
     <Color>#bee0b7</Color>
     <Category>Panáky</Category>
@@ -187,7 +187,7 @@
   <product id="24" active="true">
     <Name>Kamenice</Name>
     <Description>0,5l</Description>
-    <Quantity>84</Quantity>
+    <Quantity>86</Quantity>
     <Price>55.00</Price>
     <Color>#b7e0b8</Color>
     <Category>Pivo</Category>
@@ -195,7 +195,7 @@
   <product id="25" active="true">
     <Name>Nealko</Name>
     <Description>pivo 0,33l</Description>
-    <Quantity>11095</Quantity>
+    <Quantity>11098</Quantity>
     <Price>55.00</Price>
     <Color>#b7d6e0</Color>
     <Category>Pivo</Category>

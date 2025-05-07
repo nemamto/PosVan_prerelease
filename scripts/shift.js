@@ -1,4 +1,4 @@
-const serverEndpoint = 'http://localhost:3000';
+const serverEndpoint = 'http://localhost:666';
 let currentShiftID = null;
 
 document.addEventListener('DOMContentLoaded', async () => {

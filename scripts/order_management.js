@@ -1,7 +1,8 @@
+
 import { serverEndpoint } from './config.js';
 
 document.addEventListener('DOMContentLoaded', function() {
-    const serverEndpoint = 'http://127.0.0.1:3000';
+    
     const orderList = document.getElementById('order-list'); // Element pro renderování (může mít id order-list i když jde o směny)
     const prevPageButton = document.getElementById('prev-page');
     const nextPageButton = document.getElementById('next-page');

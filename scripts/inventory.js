@@ -1,6 +1,4 @@
-// Funkce pro načtení produktů ze serveru
-//const serverEndpoint = 'https://posven00-707895647386.us-central1.run.app';
-const serverEndpoint = 'http://127.0.0.1:3000';
+import { serverEndpoint } from './config.js';
 
 async function loadProducts() {
     try {

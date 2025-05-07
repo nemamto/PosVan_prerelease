@@ -1,5 +1,4 @@
-const serverEndpoint = 'http://localhost:3000'; // Změňte podle potřeby na cloudovou adresu
-
+import { serverEndpoint } from './config.js';
 // Načítání seznamu zákazníků
 async function loadCustomers() {
     try {

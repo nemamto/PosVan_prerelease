@@ -1,4 +1,4 @@
-const serverEndpoint = 'http://127.0.0.1:3000'; // Definice serverEndpoint
+import { serverEndpoint } from './config.js';
 
 document.getElementById('login-form').addEventListener('submit', async function(e) {
     e.preventDefault();
