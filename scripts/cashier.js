@@ -7,17 +7,16 @@ let currentShiftID = null;
 let shiftID 
 
 import { serverEndpoint } from './config.js';
+import { checkActiveShift } from './common.js';
 let loadedCategories = [];
 
 // 🟢 Zavoláme při načtení stránky
 document.addEventListener('DOMContentLoaded', async () => {
     await checkActiveShift(); // ✅ Kontrola směny při načítání
     await fetchProducts(); // ✅ Načtení produktů
-});
-
-document.addEventListener('DOMContentLoaded', async () => {
     await fetchProducts(); // Načtení produktů při načítání stránky
 });
+
 // Přidání produktu do objednávky
 function addProductToOrder(product) {
     const existingProduct = order.find(item => item.id === product.id); // Hledáme podle ID
@@ -145,13 +144,7 @@ function showModal(contentHtml, center = true) {
     window._currentModalOverlay = overlay;
 }
 
-// Funkce pro zavření modalu
-function closeModal() {
-    if (window._currentModalOverlay) {
-        window._currentModalOverlay.remove();
-        window._currentModalOverlay = null;
-    }
-}
+
 
 // Úprava showCustomerSelectionModal – NEpřidávejte tlačítko Zavřít!
 async function showCustomerSelectionModal() {

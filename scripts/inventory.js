@@ -1,5 +1,5 @@
 import { serverEndpoint } from './config.js';
-
+import { closeModal } from './common.js';
 async function loadProducts() {
     try {
         const response = await fetch(`${serverEndpoint}/products`);
@@ -417,36 +417,6 @@ function showModalConfirm(message, onConfirm) {
         });
 
     }, 50);
-}
-
-async function deleteOrder(orderId) {
-    console.log(`🟢 Požadavek na stornování objednávky ID: ${orderId}`);
-
-    showModalConfirm(`Opravdu chcete stornovat objednávku ${orderId}?`, async () => {
-        try {
-            console.log("📡 Odesílám DELETE request na server...");
-
-            const response = await fetch(`${serverEndpoint}/orders/${orderId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            });
-
-            if (!response.ok) {
-                throw new Error('Chyba při mazání objednávky.');
-            }
-
-            const data = await response.json();
-            console.log(`✅ Server odpověděl: ${data.message}`);
-
-            setTimeout(async () => {
-                await refreshInventory();
-                fetchShifts();
-                closeDeleteModal();
-            }, 300);
-        } catch (error) {
-            console.error('❌ Chyba při mazání objednávky:', error);
-        }
-    });
 }
 
 let loadedCategories = [];

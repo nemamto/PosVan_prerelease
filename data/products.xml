@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <products>
   <product id="1" active="true">
-    <Name>Gin</Name>
+    <Name>Svijany</Name>
     <Description>0,02l</Description>
     <Quantity>61</Quantity>
     <Price>50</Price>
     <Color>#e0b7be</Color>
-    <Category>Panáky</Category>
+    <Category>Víno</Category>
   </product>
   <product id="2" active="true">
     <Name>Malfy</Name>
@@ -70,7 +70,7 @@
     <Quantity>95</Quantity>
     <Price>95</Price>
     <Color>#b7e0cc</Color>
-    <Category>Píčoviny</Category>
+    <Category>Drinky</Category>
   </product>
   <product id="10" active="true">
     <Name>Virgin</Name>
@@ -116,7 +116,7 @@
     <Name>BioZisch</Name>
     <Description>matcha 0,33l</Description>
     <Quantity>92</Quantity>
-    <Price>75.00</Price>
+    <Price>75</Price>
     <Color>#b7d2e0</Color>
     <Category>Nealko</Category>
   </product>
@@ -180,14 +180,14 @@
     <Name>Cider</Name>
     <Description>0,33l</Description>
     <Quantity>99995</Quantity>
-    <Price>75.00</Price>
+    <Price>75</Price>
     <Color>#e0d9b7</Color>
     <Category>Pivo</Category>
   </product>
   <product id="24" active="true">
     <Name>Kamenice</Name>
     <Description>0,5l</Description>
-    <Quantity>86</Quantity>
+    <Quantity>85</Quantity>
     <Price>55.00</Price>
     <Color>#b7e0b8</Color>
     <Category>Pivo</Category>
@@ -195,7 +195,7 @@
   <product id="25" active="true">
     <Name>Nealko</Name>
     <Description>pivo 0,33l</Description>
-    <Quantity>11098</Quantity>
+    <Quantity>11097</Quantity>
     <Price>55.00</Price>
     <Color>#b7d6e0</Color>
     <Category>Pivo</Category>
@@ -211,7 +211,7 @@
   <product id="27" active="true">
     <Name>Radegast</Name>
     <Description>0,5l</Description>
-    <Quantity>9967</Quantity>
+    <Quantity>9966</Quantity>
     <Price>45</Price>
     <Color>#e0b7c6</Color>
     <Category>Pivo</Category>

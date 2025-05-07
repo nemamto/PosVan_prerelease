@@ -676,7 +676,14 @@ border-radius: 4px;
     height: 100%; /* ✅ Zajistí, že sekce bude sahat až dolů */
 }
 
-
+button:disabled,
+.shift-buttons button:disabled {
+    background-color: #ccc !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+    border: 1px solid #bbb !important;
+    opacity: 1 !important;
+}
 
 /* ✅ RESPONSIVE DESIGN – PŘESUN OBJEDNÁVKY POD PRODUKTY PŘI ŠÍŘCE < 700px */
 @media (max-width: 1000px) {
