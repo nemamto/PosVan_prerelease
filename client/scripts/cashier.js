@@ -397,10 +397,13 @@ function renderProductsByCategory(products) {
     });
 }
 // Funkce pro zavření modálního okna
-document.getElementById('close-modal').addEventListener('click', function() {
-    document.getElementById('modal').style.display = 'none';
-});
-
+const closeModalBtn = document.getElementById('close-modal');
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', function() {
+        const modal = document.getElementById('modal');
+        if (modal) modal.style.display = 'none';
+    });
+}
 // Funkce pro zobrazení modálního okna s výběrem zákazníka
 async function fetchCustomersIfNeeded() {
     if (!customers || customers.length === 0) {

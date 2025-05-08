@@ -1,10 +1,10 @@
 {
-  "name": "posvan_prerelease",
+  "name": "posven_prerelease",
   "version": "1.0.0",
-  "description": "POS system for managing shifts, orders, and inventory.",
+  "description": "PosVen",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "nodemon server.js",
     "dev": "nodemon server.js"
   },
   "dependencies": {

@@ -4,9 +4,11 @@ const fs = require('fs');
 const path = require('path');
 const { create, convert } = require('xmlbuilder2');
 const { timeStamp } = require('console');
-
+const products = require('./scripts/service_products');
+const common = require('./scripts/service_common');
 const app = express();
 const PORT = process.env.PORT || '666';  // Fallback na 3000 při lokálním běhu
+
 
 const logDir = path.join(__dirname, 'logs');
 if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
@@ -17,18 +19,14 @@ function getLogFilePath() {
     return path.join(logDir, `${dateStr}.log`);
 }
 
-function appendLog(level, ...args) {
-    const msg = `[${new Date().toISOString()}] [${level}] ${args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ')}\n`;
-    fs.appendFileSync(getLogFilePath(), msg);
-}
 
 const origLog = console.log;
 const origWarn = console.warn;
 const origError = console.error;
 
-console.log = (...args) => { appendLog('INFO', ...args); origLog(...args); };
-console.warn = (...args) => { appendLog('WARN', ...args); origWarn(...args); };
-console.error = (...args) => { appendLog('ERROR', ...args); origError(...args); };
+console.log = (...args) => { common.appendLog('INFO', ...args); origLog(...args); };
+console.warn = (...args) => { common.appendLog('WARN', ...args); origWarn(...args); };
+console.error = (...args) => { common.appendLog('ERROR', ...args); origError(...args); };
 
 app.use(cors());
 app.use(express.json());
@@ -41,16 +39,11 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Pomocná funkce pro zajištění existence složky
-function ensureDirectoryExistence(dirPath) {
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-    }
-}
+
 
 function getNextOrderID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
-    ensureDirectoryExistence(idsDir);
+    common.ensureDirectoryExistence(idsDir);
     const idPath = path.join(idsDir, 'order_id.json');
     let currentID = 1;
     if (fs.existsSync(idPath)) {
@@ -63,7 +56,7 @@ function getNextOrderID() {
 /*
 function getNextShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
-    ensureDirectoryExistence(idsDir);
+    common.ensureDirectoryExistence(idsDir);
     const idPath = path.join(idsDir, 'shift_id.json');
     let currentID = 1;
     if (fs.existsSync(idPath)) {
@@ -74,6 +67,7 @@ function getNextShiftID() {
     return currentID;
 }
     */
+   /*
 function ensureProductsXML() {
     const dataPath = path.join(__dirname, 'data');
     const productsPath = path.join(dataPath, 'products.xml');
@@ -86,19 +80,8 @@ function ensureProductsXML() {
     }
     return productsPath;
 }
+*/
 
-function getNextProductID() {
-    const idsDir = path.join(__dirname, 'data', 'ids');
-    ensureDirectoryExistence(idsDir);
-    const idPath = path.join(idsDir, 'product_id.json');
-    let currentID = 1;
-    if (fs.existsSync(idPath)) {
-        const idData = fs.readFileSync(idPath, 'utf8');
-        currentID = parseInt(idData, 10) + 1;
-    }
-    fs.writeFileSync(idPath, currentID.toString());
-    return currentID;
-}
 
 // Zajistíme, že složka `data/shifts` existuje
 const shiftsDir = path.join(__dirname, 'data', 'shifts');
@@ -113,7 +96,7 @@ app.post('/addCustomer', (req, res) => {
     const dataPath = path.join(__dirname, 'data', 'customer_accounts');
     const customerFilePath = path.join(dataPath, `${name.replace(/\s/g, '_')}.xml`);
 
-    ensureDirectoryExistence(dataPath);
+    common.ensureDirectoryExistence(dataPath);
 
     if (fs.existsSync(customerFilePath)) {
         return res.status(400).json({ message: 'Zákazník již existuje.' });
@@ -166,46 +149,18 @@ app.put('/activateProduct', (req, res) => {
 });
 
 
+
 app.put('/deactivateProduct', (req, res) => {
     const { id } = req.body;
-    const productsPath = ensureProductsXML();
-
-    if (!id) {
-        return res.status(400).json({ message: "Neplatné ID produktu." });
-    }
 
     try {
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        let products = jsonData.products?.product || [];
-        if (!Array.isArray(products)) {
-            products = products ? [products] : [];
-        }
-
-        const productToUpdate = products.find(p => p['@id'] === id);
-
-        if (!productToUpdate) {
-            return res.status(404).json({ message: "Produkt nebyl nalezen." });
-        }
-
-        if (productToUpdate['@active'] === 'false') {
-            return res.status(400).json({ message: "Produkt je již označen jako nepoužitý." });
-        }
-
-        // Nastavíme atribut used na "false"
-        productToUpdate['@active'] = 'false';
-
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log(`✅ Produkt ID ${id} označen jako nepoužitý.`);
-        res.json({ message: `Produkt ID ${id} označen jako nepoužitý.` });
+        const result = products.deactivateProduct(id); // použij products.deactivateProduct
+        res.json(result);
     } catch (error) {
-        console.error("❌ Chyba při aktualizaci produktu:", error);
-        res.status(500).json({ message: "Chyba při aktualizaci produktu." });
+        res.status(400).json({ message: error.message });
     }
 });
+
 /*
 app.put('/orders/:id', (req, res) => {
     const orderId = req.params.id;
@@ -900,7 +855,7 @@ app.post('/startShift', async (req, res) => {
         const formattedDateTime = `${datePart} ${timePart}`;
 
         const shiftsDir = path.join(__dirname, 'data', 'shifts');
-        ensureDirectoryExistence(shiftsDir);
+        common.ensureDirectoryExistence(shiftsDir);
 
         // Vytvoření XML dokumentu s novým ID
         const xmlDoc = create({ version: '1.0' })
@@ -938,7 +893,7 @@ app.post('/endShift', async (req, res) => {
         }
 
         const shiftsDir = path.join(__dirname, 'data', 'shifts');
-        ensureDirectoryExistence(shiftsDir);
+        common.ensureDirectoryExistence(shiftsDir);
 
         const shiftFile = fs.readdirSync(shiftsDir).find(file => file.includes(`_${shiftID}.xml`));
         if (!shiftFile) {
@@ -983,7 +938,7 @@ app.post('/addProduct', (req, res) => {
         return res.status(400).json({ message: "Neplatné vstupy." });
     }
 
-    const productsPath = ensureProductsXML(); // Ujistíme se, že soubor existuje
+    const productsPath = products.ensureProductsXML(); // Ujistíme se, že soubor existuje
     const newProduct = {
         '@id': getNextProductID().toString(),
         Name: name,
@@ -1024,7 +979,7 @@ app.post('/addProduct', (req, res) => {
 function findShiftFileByID(shiftID) {
     try {
         const shiftsDir = path.join(__dirname, 'data', 'shifts');
-        ensureDirectoryExistence(shiftsDir);
+        common.ensureDirectoryExistence(shiftsDir);
 
         // Hledání všech existujících směn
         const files = fs.readdirSync(shiftsDir)
@@ -1223,7 +1178,7 @@ app.put('/updateProduct', (req, res) => {
         return res.status(400).json({ message: "❌ Neplatné ID produktu." });
     }
 
-    const productsPath = ensureProductsXML();
+    const productsPath = products.ensureProductsXML();
 
     try {
         const xmlData = fs.readFileSync(productsPath, 'utf8');
@@ -1264,7 +1219,7 @@ app.put('/updateProduct', (req, res) => {
 function addOrUpdateProduct(product) {
     const dataPath = path.join(__dirname, 'data');
     const productsPath = path.join(dataPath, 'products.xml');
-    ensureDirectoryExistence(dataPath);
+    common.ensureDirectoryExistence(dataPath);
 
     let xmlDoc;
     if (fs.existsSync(productsPath)) {
@@ -1411,7 +1366,7 @@ app.get('/currentShift', (req, res) => {
 // Funkce pro získání nového ID směny z externího souboru shift_id.json
 function getNewShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
-    ensureDirectoryExistence(idsDir);
+    common.ensureDirectoryExistence(idsDir);
     const idFile = path.join(idsDir, 'shift_id.json');
 
     let lastId = 0;
@@ -1438,7 +1393,7 @@ app.get('/categories', (req, res) => {
 });
 
 app.get('/products', (req, res) => {
-    const productsPath = ensureProductsXML();
+    const productsPath = products.ensureProductsXML();
 
     try {
         const xmlData = fs.readFileSync(productsPath, 'utf8');
@@ -1488,7 +1443,7 @@ app.get('/customers', (req, res) => {
     res.json(customers);
 });
 
-ensureProductsXML();
+products.ensureProductsXML();
 
 app.listen(PORT, () => {
     console.log(`Server běží na portu ${PORT}`);
