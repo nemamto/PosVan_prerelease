@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-
+const { create, convert } = require('xmlbuilder2');
 // Zajištění existence složky
 function ensureDirectoryExistence(dirPath) {
     if (!fs.existsSync(dirPath)) {
@@ -23,7 +23,7 @@ function appendLog(level, ...args) {
     fs.appendFileSync(getLogFilePath(), msg);
 }
 function currentShift(req, res) {
-    const shiftsDir = path.join(__dirname, 'data', 'shifts');
+    const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
     ensureDirectoryExistence(shiftsDir); 
     const files = fs.readdirSync(shiftsDir)
         .filter(file => file.endsWith('.xml'))
