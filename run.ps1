@@ -1,9 +1,9 @@
 # PosVenInstaller.ps1
 $ErrorActionPreference = 'Stop'
 
-Write-Host "[INFO] Spouštím instalační skript PosVen..." -ForegroundColor Cyan
+Write-Host "`n[INFO] Spou�t�m instala?n� skript PosVen..." -ForegroundColor Cyan
 
-# === Nastavení proměnných ===
+# === Cesty a verze ===
 $nodeVersion = "node-v20.16.0-x64.msi"
 $nodeUrl = "https://nodejs.org/dist/v20.16.0/$nodeVersion"
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
@@ -11,50 +11,51 @@ $serverDir = Join-Path $scriptDir "service"
 $clientDir = Join-Path $scriptDir "client"
 $nodeInstallerPath = Join-Path $scriptDir $nodeVersion
 
-# === Kontrola Node.js ===
+# === Node.js ===
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    Write-Host "[INFO] Node.js není nainstalovaný. Stahuji..." -ForegroundColor Yellow
+    Write-Host "[INFO] Node.js nen� nainstalovan�. Stahuji..." -ForegroundColor Yellow
     Invoke-WebRequest -Uri $nodeUrl -OutFile $nodeInstallerPath
     Start-Process msiexec.exe -ArgumentList "/i `"$nodeInstallerPath`" /qn /norestart" -Wait
     Remove-Item $nodeInstallerPath -Force
+    Write-Host "[OK] Node.js byl nainstalov�n." -ForegroundColor Green
+} else {
+    Write-Host "[OK] Node.js je ji� nainstalovan�: $(node -v)" -ForegroundColor Green
 }
 
-# === Kontrola npm ===
+# === npm ===
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
-    throw "npm není dostupné. Instalace Node.js pravděpodobně selhala."
+    throw "? npm nen� dostupn� � instalace Node.js pravd?podobn? selhala."
 }
 
-# === Kontrola nodemon ===
+# === nodemon ===
 if (-not (Get-Command nodemon -ErrorAction SilentlyContinue)) {
     Write-Host "[INFO] Instalace nodemon..." -ForegroundColor Yellow
     npm install -g nodemon
+    Write-Host "[OK] nodemon byl nainstalov�n." -ForegroundColor Green
 }
 
-# === Instalace závislostí ===
+# === Instalace z�vislost� ===
 if (Test-Path "$serverDir\package.json") {
-    Write-Host "[INFO] Instalace závislostí v service/..." -ForegroundColor Cyan
+    Write-Host "[INFO] Instalace z�vislost� v slo�ce 'service'..." -ForegroundColor Cyan
     Push-Location $serverDir
     npm install
     Pop-Location
 } else {
-    Write-Warning "package.json nenalezen v $serverDir"
+    Write-Warning "??  Nenalezen package.json v $serverDir"
 }
 
-# === Otevření klienta ===
-$cashierPage = Join-Path $clientDir "cashier.html"
-if (Test-Path $cashierPage) {
-    Start-Process $cashierPage
-} else {
-    Write-Warning "cashier.html nenalezen v $clientDir"
+# === Otev?en� klienta ===
+Start-Process "http://localhost:666/cashier.html"
+
+# === Spu�t?n� serveru v tomto okn? ===
+Write-Host "`n[INFO] Spou�t�m server pomoc� nodemon (v tomto okn?)..." -ForegroundColor Green
+cd $serverDir
+
+try {
+    nodemon server.js
+} catch {
+    Write-Host "`n[ERROR] Server spadl nebo se ukon?il s chybou!" -ForegroundColor Red
 }
 
-# === Spuštění serveru ===
-$serverScript = Join-Path $serverDir "server.js"
-if (Test-Path $serverScript) {
-    Write-Host "[INFO] Spouštím server pomocí nodemon..." -ForegroundColor Green
-    Start-Process "cmd.exe" -ArgumentList "/k cd /d `"$serverDir`" && nodemon server.js"
-} else {
-    throw "server.js nenalezen ve složce service/"
-}
-
-Write-Host "[INFO] Instalace dokončena." -ForegroundColor Green
+Write-Host "`n[INFO] Skript byl dokon?en. Stiskni Enter pro ukon?en�..." -ForegroundColor Cyan
+Read-Host
