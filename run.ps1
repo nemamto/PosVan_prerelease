@@ -1,5 +1,5 @@
 # PosVenInstaller.ps1
-$ErrorActionPreference = 'Stop'
+$ErrorActionPreference = 'Continue'
 
 Write-Host "`n[INFO] Starting PosVen installation script..." -ForegroundColor Cyan
 
