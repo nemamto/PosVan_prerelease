@@ -1,7 +1,42 @@
-# Ignoruj vše ve složce data/
-data/*
+# Ignoruj vše ve složce service/data/
+service/data/*
 
-# ALE povol konkrétní soubory
-!data/categories.json
-!data/products.xml
-!data/ids/*
+# ALE povol konkrétní soubory uvnitř service/data/
+#!service/data/categories.json
+#!service/data/products.xml
+#!service/data/ids/*
+
+# Ignoruj node_modules v service/
+service/node_modules/
+service/package-lock.json
+
+# Logy a dočasné soubory
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Systémové soubory
+.DS_Store
+Thumbs.db
+
+# VSCode workspace nastavení
+.vscode/
+
+# Dočasné soubory a zálohy
+*.tmp
+*.swp
+*.bak
+
+# Ignoruj service_account.json (pokud obsahuje citlivé údaje)
+service/service_account.json
+
+# Ignoruj vše v client/scripts/ co není JS
+client/scripts/*.map
+client/scripts/*.tmp
+client/scripts/*.bak
+
+# Ignoruj vše v client/styles/ co není CSS
+client/styles/*.map
+client/styles/*.tmp
+client/styles/*.bak
