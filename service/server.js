@@ -147,80 +147,8 @@ app.put('/orders/:id/restore', (req, res) => {
     orders.restoreOrder(req, res);
 });
 
-app.get('/shiftSummary', (req, res) => {
-    const { shiftID } = req.query;
 
-    if (!shiftID) {
-        return res.status(400).json({ message: "❌ Shift ID není definováno!" });
-    }
-
-    const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
-    const files = fs.readdirSync(shiftsDir);
-    const matchingFile = files.find(name => name.endsWith(`_${shiftID}.xml`));
-
-    if (!matchingFile) {
-        return res.status(404).json({ message: "❌ Směna nebyla nalezena." });
-    }
-
-    const filePath = path.join(shiftsDir, matchingFile);
-
-    try {
-        const xmlData = fs.readFileSync(filePath, 'utf8');
-        const jsonData = convert(xmlData, { format: 'object' });
-
-        // === 💡 Načtení všech objednávek, ať už jsou ve <orders> nebo přímo pod <shift> ===
-        let orderList = [];
-
-        // Z vnořeného <orders><order>...</order></orders>
-        if (jsonData.shift?.orders?.order) {
-            const nestedOrders = jsonData.shift.orders.order;
-            orderList = Array.isArray(nestedOrders) ? nestedOrders : [nestedOrders];
-        }
-
-        // Z přímých <order> tagů mimo <orders>
-        if (jsonData.shift?.order) {
-            const flatOrders = Array.isArray(jsonData.shift.order)
-                ? jsonData.shift.order
-                : [jsonData.shift.order];
-            orderList = orderList.concat(flatOrders);
-        }
-
-        // === 🔢 Výpočty tržeb ===
-        let totalRevenue = 0;
-        let cashRevenue = 0;
-        let cardRevenue = 0;
-        let employeeAccountRevenue = 0;
-
-        orderList.forEach(order => {
-            const paymentMethod = order.paymentMethod || "Neznámé";
-            const totalPrice = Number(order.totalPrice || 0);
-
-            if (isNaN(totalPrice)) return;
-
-            totalRevenue += totalPrice;
-
-            if (paymentMethod === "Hotovost") {
-                cashRevenue += totalPrice;
-            } else if (paymentMethod === "Karta") {
-                cardRevenue += totalPrice;
-            } else  {
-                employeeAccountRevenue += totalPrice;
-            }
-        });
-
-        res.json({
-            totalRevenue: totalRevenue.toFixed(2),
-            cashRevenue: cashRevenue.toFixed(2),
-            cardRevenue: cardRevenue.toFixed(2),
-            employeeAccountRevenue: employeeAccountRevenue.toFixed(2)
-        });
-
-    } catch (error) {
-        console.error("❌ Chyba při načítání směny:", error);
-        res.status(500).json({ message: "❌ Interní chyba serveru." });
-    }
-});
-
+app.get('/shiftSummary', shifts.getShiftSummary);
 
 
 // Smazání zákazníka
