@@ -8,6 +8,28 @@ const { timeStamp } = require('console');
 const app = express();
 const PORT = process.env.PORT || '666';  // Fallback na 3000 při lokálním běhu
 
+const logDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+
+function getLogFilePath() {
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    return path.join(logDir, `${dateStr}.log`);
+}
+
+function appendLog(level, ...args) {
+    const msg = `[${new Date().toISOString()}] [${level}] ${args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ')}\n`;
+    fs.appendFileSync(getLogFilePath(), msg);
+}
+
+const origLog = console.log;
+const origWarn = console.warn;
+const origError = console.error;
+
+console.log = (...args) => { appendLog('INFO', ...args); origLog(...args); };
+console.warn = (...args) => { appendLog('WARN', ...args); origWarn(...args); };
+console.error = (...args) => { appendLog('ERROR', ...args); origError(...args); };
+
 app.use(cors());
 app.use(express.json());
 
