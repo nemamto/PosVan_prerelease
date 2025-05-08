@@ -7,8 +7,8 @@ service/data/*
 #!service/data/ids/*
 
 # Ignoruj node_modules v service/
-service/node_modules/
-service/package-lock.json
+#service/node_modules/
+#service/package-lock.json
 
 # Logy a dočasné soubory
 *.log
