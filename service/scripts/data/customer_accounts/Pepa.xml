@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<customer name="Pepa">
+  <orders>
+    <order id="7" payed="false">
+      <Date>2025-05-08 23:01:38</Date>
+      <TotalPrice>100</TotalPrice>
+      <Products>2x Svijany (ID: 1, 100 Kč)</Products>
+    </order>
+    <order id="11" payed="false">
+      <Date>2025-05-08 23:05:14</Date>
+      <TotalPrice>55</TotalPrice>
+      <Products>1x Kamenice (ID: 24, 55.00 Kč)</Products>
+    </order>
+  </orders>
+</customer>

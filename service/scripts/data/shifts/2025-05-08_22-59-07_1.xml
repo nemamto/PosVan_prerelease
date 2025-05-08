@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<shift id="1">
+  <startTime>2025-05-08 22-59-07</startTime>
+  <orders/>
+  <order id="4">
+    <time>2025-05-08 22:59:07</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>150</totalPrice>
+    <products>2x Cider (ID: 23, 150 Kč)</products>
+  </order>
+  <order id="5">
+    <time>2025-05-08 22:59:37</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>55</totalPrice>
+    <products>1x Kamenice (ID: 24, 55.00 Kč)</products>
+  </order>
+  <order id="6">
+    <time>2025-05-08 23:00:02</time>
+    <paymentMethod>Pepa</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč)</products>
+  </order>
+  <order id="7">
+    <time>2025-05-08 23:01:38</time>
+    <paymentMethod>Pepa</paymentMethod>
+    <totalPrice>100</totalPrice>
+    <products>2x Svijany (ID: 1, 100 Kč)</products>
+  </order>
+  <order id="8">
+    <time>2025-05-08 23:04:49</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>150</totalPrice>
+    <products>3x Svijany (ID: 1, 150 Kč)</products>
+  </order>
+  <order id="9">
+    <time>2025-05-08 23:04:56</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>150</totalPrice>
+    <products>2x Cider (ID: 23, 150 Kč)</products>
+  </order>
+  <order id="10">
+    <time>2025-05-08 23:05:06</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>110</totalPrice>
+    <products>1x Prosecco (ID: 30, 45.00 Kč), 1x Víno (3) (ID: 33, 65.00 Kč)</products>
+  </order>
+  <order id="11">
+    <time>2025-05-08 23:05:14</time>
+    <paymentMethod>Pepa</paymentMethod>
+    <totalPrice>55</totalPrice>
+    <products>1x Kamenice (ID: 24, 55.00 Kč)</products>
+  </order>
+  <order id="12">
+    <time>2025-05-08 23:07:36</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>125</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč), 1x Cider (ID: 23, 75 Kč)</products>
+  </order>
+  <order id="13">
+    <time>2025-05-08 23:08:05</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč)</products>
+  </order>
+  <order id="14">
+    <time>2025-05-08 23:21:58</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>125</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč), 1x Cider (ID: 23, 75 Kč)</products>
+  </order>
+  <order id="15">
+    <time>2025-05-08 23:22:45</time>
+    <paymentMethod>Lojza</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč)</products>
+  </order>
+  <order id="16">
+    <time>2025-05-08 23:23:00</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>50</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč)</products>
+  </order>
+  <order id="17">
+    <time>2025-05-08 23:27:05</time>
+    <paymentMethod>Hotovost</paymentMethod>
+    <totalPrice>75</totalPrice>
+    <products>1x Platba účtu zaměstnance Pepa (ID: undefined, 75 Kč)</products>
+  </order>
+  <order id="18">
+    <time>2025-05-08 23:29:32</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>130</totalPrice>
+    <products>1x Cider (ID: 23, 75 Kč), 1x Kamenice (ID: 24, 55.00 Kč)</products>
+  </order>
+  <order id="19">
+    <time>2025-05-08 23:31:58</time>
+    <paymentMethod>Karta</paymentMethod>
+    <totalPrice>125</totalPrice>
+    <products>1x Svijany (ID: 1, 50 Kč), 1x Cider (ID: 23, 75 Kč)</products>
+  </order>
+</shift>

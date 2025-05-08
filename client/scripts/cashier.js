@@ -31,20 +31,8 @@ function addProductToOrder(product) {
     totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0);
     updateOrderSummary();
 }
-/*
-function getNextShiftID() {
-    const idsDir = path.join(__dirname, 'data', 'ids');
-    ensureDirectoryExistence(idsDir);
-    const idPath = path.join(idsDir, 'shift_id.json');
-    let currentID = 1;
-    if (fs.existsSync(idPath)) {
-        const idData = fs.readFileSync(idPath, 'utf8');
-        currentID = parseInt(idData, 10) + 1;
-    }
-    fs.writeFileSync(idPath, currentID.toString());
-    return currentID;
-}
-*/
+
+
 // Aktualizace zobrazení objednávky
 function updateOrderSummary() {
     const productListSummary = document.getElementById('product-list-summary');
