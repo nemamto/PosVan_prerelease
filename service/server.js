@@ -109,9 +109,14 @@ app.post('/addCustomer', (req, res) => {
 });
 
 app.put('/activateProduct', (req, res) => {
-products.activateProduct(req, res); // použij products.activateProduct
+    try {
+        const { id } = req.body;
+        const result = products.activateProduct(id);
+        res.json(result);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
-
 
 
 app.put('/deactivateProduct', (req, res) => {

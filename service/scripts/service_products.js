@@ -3,6 +3,47 @@ const path = require('path');
 const { create, convert } = require('xmlbuilder2');
 const common = require('./service_common');
 
+
+function activateProduct(id) {
+    const productsPath = ensureProductsXML();
+
+    if (!id) {
+        throw new Error("Neplatné ID produktu.");
+    }
+
+    try {
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        let products = jsonData.products?.product || [];
+        if (!Array.isArray(products)) {
+            products = products ? [products] : [];
+        }
+
+        const productToUpdate = products.find(p => String(p['@id']) === String(id));
+
+        if (!productToUpdate) {
+            throw new Error("Produkt nebyl nalezen.");
+        }
+
+        if (productToUpdate['@active'] === 'true') {
+            throw new Error("Produkt je již aktivní.");
+        }
+
+        // Nastavíme atribut active na "true"
+        productToUpdate['@active'] = 'true';
+
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        console.log(`✅ Produkt ID ${id} byl úspěšně aktivován.`);
+        return { message: `Produkt ID ${id} byl úspěšně aktivován.` };
+    } catch (error) {
+        console.error("❌ Chyba při aktivaci produktu:", error);
+        throw new Error("Chyba při aktivaci produktu.");
+    }
+}
+
 function deactivateProduct(id) {
     const productsPath = ensureProductsXML();
 
@@ -108,46 +149,6 @@ function updateProduct({ id, name, description, price, quantity, color, category
     } catch (error) {
         console.error("❌ Chyba při aktualizaci produktu:", error);
         throw new Error("❌ Chyba při aktualizaci produktu.");
-    }
-}
-function activateProduct(req, res) {
-    const { id } = req.body;
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-
-    if (!id) {
-        return res.status(400).json({ message: "❌ Neplatné ID produktu." });
-    }
-
-    try {
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        let products = jsonData.products?.product || [];
-        if (!Array.isArray(products)) {
-            products = products ? [products] : [];
-        }
-
-        const productToUpdate = products.find(p => p['@id'] === id);
-
-        if (!productToUpdate) {
-            return res.status(404).json({ message: `⚠️ Produkt s ID ${id} nebyl nalezen.` });
-        }
-
-        if (productToUpdate['@active'] === 'true') {
-            return res.status(400).json({ message: `⚠️ Produkt ID ${id} je již aktivní.` });
-        }
-
-        // ✅ **Aktivujeme produkt**
-        productToUpdate['@active'] = 'true';
-
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log(`✅ Produkt ID ${id} byl úspěšně aktivován.`);
-        res.json({ message: `✅ Produkt ID ${id} byl úspěšně aktivován.` });
-    } catch (error) {
-        console.error("❌ Chyba při aktivaci produktu:", error);
-        res.status(500).json({ message: "❌ Chyba při aktivaci produktu." });
     }
 }
 
