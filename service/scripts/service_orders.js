@@ -405,6 +405,8 @@ function restoreOrder(req, res) {
 }
 
 
+
+
 module.exports = {
-    cancelOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift
+    cancelOrder, restoreOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift
 };

@@ -4,6 +4,93 @@ const { create, convert } = require('xmlbuilder2');
 const common = require('./service_common');
 const { get } = require('http');
 
+function startShift(req, res) {
+    try {
+        const { bartender } = req.body;
+        if (!bartender) {
+            return res.status(400).json({ message: "❌ Jméno barmana je povinné!" });
+        }
+
+        const newShiftID = getNextShiftID();
+
+        const now = new Date();
+        const datePart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const timePart = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
+        const formattedDateTime = `${datePart} ${timePart}`;
+
+        const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
+        common.ensureDirectoryExistence(shiftsDir);
+
+        // Vytvoření XML dokumentu s novým ID
+        const xmlDoc = create({ version: '1.0' })
+            .ele('shift', { id: newShiftID })
+                .ele('startTime').txt(formattedDateTime).up()
+                .ele('bartender').txt(bartender).up()
+                .ele('orders').up()
+            .up();
+
+        const fileName = `${datePart}_${timePart}_${newShiftID}.xml`;
+        const filePath = path.join(shiftsDir, fileName);
+        fs.writeFileSync(filePath, xmlDoc.end({ prettyPrint: true }));
+
+        console.log(`✅ Vytvořena nová směna: ${fileName} (ID: ${newShiftID}, Barman: ${bartender})`);
+        res.json({
+            message: `✅ Směna ${newShiftID} byla zahájena.`,
+            shiftID: newShiftID,
+            bartender,
+            startTime: formattedDateTime
+        });
+    } catch (error) {
+        console.error('❌ Chyba při zahájení směny:', error);
+        res.status(500).json({ message: 'Interní chyba serveru při zahájení směny.' });
+    }
+}
+
+function endShift(req, res) {
+    try {
+        console.log('🔚 Ukončení směny:', req.body);
+        const { shiftID } = req.body;
+        if (!shiftID) {
+            return res.status(400).json({ message: "❌ ID směny je povinné!" });
+        }
+
+        const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
+        common.ensureDirectoryExistence(shiftsDir);
+
+        const shiftFile = fs.readdirSync(shiftsDir).find(file => file.includes(`_${shiftID}.xml`));
+        if (!shiftFile) {
+            return res.status(404).json({ message: "❌ Směna nebyla nalezena!" });
+        }
+
+        const filePath = path.join(shiftsDir, shiftFile);
+        const xmlData = fs.readFileSync(filePath, 'utf8');
+        const jsonData = convert(xmlData, { format: 'object' });
+
+        if (!jsonData.shift) {
+            return res.status(400).json({ message: "❌ Neplatný formát směny!" });
+        }
+
+        if (jsonData.shift.endTime) {
+            return res.status(400).json({ message: "❌ Směna již byla ukončena!" });
+        }
+
+        const now = new Date();
+        const localTime = now.toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' });
+
+        jsonData.shift.endTime = localTime;
+
+        const updatedXmlData = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(filePath, updatedXmlData);
+
+        console.log(`✅ Směna ID ${shiftID} byla ukončena v ${localTime}.`);
+
+        res.json({ message: `✅ Směna ID ${shiftID} byla ukončena.`, endTime: localTime });
+    } catch (error) {
+        console.error('❌ Chyba při ukončení směny:', error);
+        res.status(500).json({ message: 'Interní chyba serveru při ukončení směny.' });
+    }
+}
+
 function findShiftFileByID(shiftID) {
     try {
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
@@ -160,5 +247,7 @@ function getShiftSummary(req, res) {
 module.exports = {
     findShiftFileByID,
     getNextShiftID,
-    getShiftSummary
+    getShiftSummary,
+    startShift,
+    endShift
 };
