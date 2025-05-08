@@ -572,6 +572,7 @@ async function handleSaveInline(id, row) {
     }
 
     try {
+        console.log("Odesílám na server:", { id, name, description, category, quantity, price, color });
         const response = await fetch(`${serverEndpoint}/updateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },

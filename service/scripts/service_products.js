@@ -67,7 +67,51 @@ function ensureProductsXML() {
     }
     return productsPath;
 }
-module.exports = {
-    deactivateProduct, getNextProductID, ensureProductsXML
-};
 
+function updateProduct({ id, name, description, price, quantity, color, category }) {
+    if (!id) {
+        throw new Error("❌ Neplatné ID produktu.");
+    }
+
+    const productsPath = ensureProductsXML();
+
+    try {
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        let products = jsonData.products?.product || [];
+        if (!Array.isArray(products)) {
+            products = [products];
+        }
+
+        const productToUpdate = products.find(p => String(p['@id']) === String(id));
+
+        if (!productToUpdate) {
+            throw new Error("❌ Produkt nebyl nalezen.");
+        }
+
+        // ✅ Aktualizace pouze odeslaných vlastností
+        if (name !== undefined) productToUpdate.Name = name;
+        if (description !== undefined) productToUpdate.Description = description || '';
+        if (price !== undefined) productToUpdate.Price = price.toString();
+        if (quantity !== undefined) productToUpdate.Quantity = quantity.toString();
+        if (category !== undefined) productToUpdate.Category = category || 'Nezařazeno';
+        if (color !== undefined) productToUpdate.Color = color || '#FFFFFF';
+
+        // Zápis zpět do XML
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        console.log(`✅ Produkt ID ${id} byl úspěšně aktualizován.`);
+        return { message: `✅ Produkt ID ${id} byl úspěšně aktualizován.` };
+
+    } catch (error) {
+        console.error("❌ Chyba při aktualizaci produktu:", error);
+        throw new Error("❌ Chyba při aktualizaci produktu.");
+    }
+}
+
+
+module.exports = {
+    deactivateProduct, getNextProductID, ensureProductsXML, updateProduct
+};

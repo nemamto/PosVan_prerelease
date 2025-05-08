@@ -1172,47 +1172,13 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
 
 
 app.put('/updateProduct', (req, res) => {
-    const { id, name, description, price, quantity, color, category } = req.body;
-
-    if (!id) {
-        return res.status(400).json({ message: "❌ Neplatné ID produktu." });
-    }
-
-    const productsPath = products.ensureProductsXML();
-
+    console.log("PUT /updateProduct", req.body);
     try {
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        let products = jsonData.products?.product || [];
-        if (!Array.isArray(products)) {
-            products = [products];
-        }
-
-        const productToUpdate = products.find(p => p['@id'] === id);
-
-        if (!productToUpdate) {
-            return res.status(404).json({ message: "❌ Produkt nebyl nalezen." });
-        }
-
-        // ✅ Aktualizace pouze odeslaných vlastností
-        if (name !== undefined) productToUpdate.Name = name;
-        if (description !== undefined) productToUpdate.Description = description || ''; // Ponecháme prázdný řetězec, pokud není description
-        if (price !== undefined) productToUpdate.Price = price.toString();
-        if (quantity !== undefined) productToUpdate.Quantity = quantity.toString();
-        if (category !== undefined) productToUpdate.Category = category || 'Nezařazeno'; // Přidáno pro kategorii
-        if (color !== undefined) productToUpdate.Color = color || '#FFFFFF'; // Ponecháme výchozí barvu, pokud není color
-
-        // Zápis zpět do XML
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log(`✅ Produkt ID ${id} byl úspěšně aktualizován.`);
-        res.json({ message: `✅ Produkt ID ${id} byl úspěšně aktualizován.` });
-
+        const result = products.updateProduct(req.body);
+        res.json(result);
     } catch (error) {
-        console.error("❌ Chyba při aktualizaci produktu:", error);
-        res.status(500).json({ message: "❌ Chyba při aktualizaci produktu." });
+        console.error("Chyba v updateProduct:", error);
+        res.status(400).json({ message: error.message });
     }
 });
 /*
