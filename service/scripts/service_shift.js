@@ -215,6 +215,7 @@ function getShiftSummary(req, res) {
         let employeeAccountRevenue = 0;
 
         orderList.forEach(order => {
+            if (String(order['@cancelled']).toLowerCase() === 'true') return;
             const paymentMethod = order.paymentMethod || "Neznámé";
             const totalPrice = Number(order.totalPrice || 0);
 

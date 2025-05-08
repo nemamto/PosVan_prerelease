@@ -1,4 +1,3 @@
-
 import { serverEndpoint } from './config.js';
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -127,28 +126,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
                 // Řazení objednávek od nejnovějších po nejstarší
                 shift.orderItems
-                    .sort((a, b) => new Date(b.time) - new Date(a.time)) // Řazení podle času
+                    .sort((a, b) => new Date(b.time) - new Date(a.time))
                     .forEach(order => {
-                        const totalPrice = Number(order.totalPrice || 0);
-                        totalRevenue += totalPrice;
+                        const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
+                        const totalPrice = Number(order.totalPrice || order.TotalPrice || order.Price || 0);
     
-                        if (order.paymentMethod === 'Hotovost' || order.paymentMethod === 'cash') {
-                            totalCash += totalPrice;
-                            totalPaid += totalPrice;
-                        } else if (order.paymentMethod === 'Karta' || order.paymentMethod === 'card') {
-                            totalCard += totalPrice;
-                            totalPaid += totalPrice;   
+                        // Do souhrnu přičti jen nestornované objednávky
+                        if (!isCancelled) {
+                            totalRevenue += totalPrice;
+    
+                            if (order.paymentMethod === 'Hotovost' || order.paymentMethod === 'cash') {
+                                totalCash += totalPrice;
+                                totalPaid += totalPrice;
+                            } else if (order.paymentMethod === 'Karta' || order.paymentMethod === 'card') {
+                                totalCard += totalPrice;
+                                totalPaid += totalPrice;
+                            }
                         }
     
+                        // Vykresli řádek vždy (i pro stornované)
                         detailHtml += `
-                            <tr ${order['@cancelled'] === 'true' ? 'class="cancelled-order"' : ''}>
+                            <tr ${isCancelled ? 'class="cancelled-order"' : ''}>
                                 <td>${order['@id']}</td>
                                 <td>${order.time}</td>
                                 <td>${order.paymentMethod}</td>
                                 <td>${totalPrice} Kč</td>
                                 <td class="products-column">${order.products}</td>
                                 <td>
-                                    ${order['@cancelled'] === 'true' 
+                                    ${isCancelled
                                         ? `<button class="restore-order" data-id="${order['@id']}">Obnovit</button>`
                                         : `<button class="cancell-order" data-id="${order['@id']}">Stornovat</button>`
                                     }
