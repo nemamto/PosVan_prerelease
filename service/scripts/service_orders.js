@@ -7,6 +7,74 @@ const shiftsDir = path.join(baseDir, 'data', 'shifts');
 const productsPath = path.join(baseDir, 'data', 'products.xml');
 const customersFolder = path.join(baseDir, 'data', 'customer_accounts');
 
+
+function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount) {
+    try {
+        console.log("📦 Ukládám objednávku do zákaznického souboru:", orderLog, selectedCustomer, orderID, totalAmount);
+
+        // 📌 Nastavení složky pro zákaznické účty
+        const customersFolder = path.join(__dirname, 'data', 'customer_accounts');
+        if (!fs.existsSync(customersFolder)) {
+            fs.mkdirSync(customersFolder, { recursive: true });
+        }
+
+        // 📌 Oprava názvu souboru (mezery -> podtržítka)
+        const sanitizeFileName = (name) => name.replace(/\s+/g, "_");
+        const customerFileName = sanitizeFileName(selectedCustomer) + ".xml";
+        const customerFilePath = path.join(customersFolder, customerFileName);
+
+        let xmlDoc;
+
+        // 🟢 Pokud soubor existuje, načteme ho
+        if (fs.existsSync(customerFilePath)) {
+            const existingData = fs.readFileSync(customerFilePath, 'utf8');
+
+            try {
+                xmlDoc = convert(existingData, { format: 'object', trim: true, ignoreComments: false });
+            } catch (parseError) {
+                console.error("❌ Chyba při parsování XML souboru zákazníka:", parseError);
+                xmlDoc = { customer: { "@name": selectedCustomer, orders: { order: [] } } };
+            }
+        } else {
+            // 🟢 Pokud neexistuje, vytvoříme nový
+            xmlDoc = { customer: { "@name": selectedCustomer, orders: { order: [] } } };
+        }
+
+        // 📌 Zkontrolujeme, zda `orders` existuje
+        if (!xmlDoc.customer.orders) {
+            xmlDoc.customer.orders = { order: [] };
+        }
+        if (!Array.isArray(xmlDoc.customer.orders.order)) {
+            xmlDoc.customer.orders.order = xmlDoc.customer.orders.order ? [xmlDoc.customer.orders.order] : [];
+        }
+
+        // 📌 Vytvoření nové objednávky
+        const now = new Date();
+        const formattedDateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+        const newOrder = {
+            "@id": orderID,
+            "@payed": false,
+            "Date": formattedDateTime,
+            "TotalPrice": totalAmount.toString(),
+            "Products": orderLog.OrderDetails.map(p => `${p.Quantity}x ${p.Product} (ID: ${p.ProductID}, ${p.TotalProductPrice} Kč)`).join(", ")
+        };
+
+        // 📌 Přidání nové objednávky do XML
+        xmlDoc.customer.orders.order.push(newOrder);
+
+        // 📌 Uložení zpět do souboru
+        const updatedXml = create(xmlDoc).end({ prettyPrint: true });
+        fs.writeFileSync(customerFilePath, updatedXml);
+
+        console.log(`✅ Objednávka ID ${orderID} byla přidána do zákaznického účtu: ${customerFilePath}`);
+    } catch (error) {
+        console.error("❌ Chyba při ukládání objednávky do zákaznického souboru:", error);
+    }
+}
+
+
+
 function cancelOrder(req, res) {
     const orderId = req.params.id;
 
@@ -156,5 +224,5 @@ function cancelOrder(req, res) {
 }
 
 module.exports = {
-    cancelOrder
+    cancelOrder, savecustomerOrderAsXML
 };
