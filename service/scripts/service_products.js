@@ -110,8 +110,80 @@ function updateProduct({ id, name, description, price, quantity, color, category
         throw new Error("❌ Chyba při aktualizaci produktu.");
     }
 }
+function activateProduct(req, res) {
+    const { id } = req.body;
+    const productsPath = path.join(__dirname, 'data', 'products.xml');
 
+    if (!id) {
+        return res.status(400).json({ message: "❌ Neplatné ID produktu." });
+    }
 
+    try {
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        let products = jsonData.products?.product || [];
+        if (!Array.isArray(products)) {
+            products = products ? [products] : [];
+        }
+
+        const productToUpdate = products.find(p => p['@id'] === id);
+
+        if (!productToUpdate) {
+            return res.status(404).json({ message: `⚠️ Produkt s ID ${id} nebyl nalezen.` });
+        }
+
+        if (productToUpdate['@active'] === 'true') {
+            return res.status(400).json({ message: `⚠️ Produkt ID ${id} je již aktivní.` });
+        }
+
+        // ✅ **Aktivujeme produkt**
+        productToUpdate['@active'] = 'true';
+
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        console.log(`✅ Produkt ID ${id} byl úspěšně aktivován.`);
+        res.json({ message: `✅ Produkt ID ${id} byl úspěšně aktivován.` });
+    } catch (error) {
+        console.error("❌ Chyba při aktivaci produktu:", error);
+        res.status(500).json({ message: "❌ Chyba při aktivaci produktu." });
+    }
+}
+
+function deleteProduct(req, res) {
+    const { id } = req.body;
+    const productsPath = ensureProductsXML();
+
+    try {
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        let products = jsonData.products?.product || [];
+        if (!Array.isArray(products)) products = [products];
+
+        // Debug log
+        console.log("Mazání produktu s ID:", id);
+
+        const index = products.findIndex(p => String(p['@id']) === String(id));
+        if (index === -1) {
+            return res.status(404).json({ message: "Produkt nebyl nalezen." });
+        }
+
+        products.splice(index, 1);
+
+        // Pokud je jen jeden produkt, musíš správně nastavit strukturu
+        jsonData.products.product = products.length === 1 ? products[0] : products;
+
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        res.json({ message: "Produkt byl úspěšně smazán." });
+    } catch (error) {
+        console.error("Chyba při mazání produktu:", error);
+        res.status(500).json({ message: "Chyba při mazání produktu." });
+    }
+}
 module.exports = {
-    deactivateProduct, getNextProductID, ensureProductsXML, updateProduct
+    activateProduct, deactivateProduct, deleteProduct, getNextProductID, ensureProductsXML, updateProduct
 };

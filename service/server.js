@@ -5,6 +5,7 @@ const path = require('path');
 const { create, convert } = require('xmlbuilder2');
 const { timeStamp } = require('console');
 const products = require('./scripts/service_products');
+const orders = require('./scripts/service_orders');
 const common = require('./scripts/service_common');
 const app = express();
 const PORT = process.env.PORT || '666';  // Fallback na 3000 při lokálním běhu
@@ -108,44 +109,7 @@ app.post('/addCustomer', (req, res) => {
 });
 
 app.put('/activateProduct', (req, res) => {
-    const { id } = req.body;
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-
-    if (!id) {
-        return res.status(400).json({ message: "❌ Neplatné ID produktu." });
-    }
-
-    try {
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        let products = jsonData.products?.product || [];
-        if (!Array.isArray(products)) {
-            products = products ? [products] : [];
-        }
-
-        const productToUpdate = products.find(p => p['@id'] === id);
-
-        if (!productToUpdate) {
-            return res.status(404).json({ message: `⚠️ Produkt s ID ${id} nebyl nalezen.` });
-        }
-
-        if (productToUpdate['@active'] === 'true') {
-            return res.status(400).json({ message: `⚠️ Produkt ID ${id} je již aktivní.` });
-        }
-
-        // ✅ **Aktivujeme produkt**
-        productToUpdate['@active'] = 'true';
-
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log(`✅ Produkt ID ${id} byl úspěšně aktivován.`);
-        res.json({ message: `✅ Produkt ID ${id} byl úspěšně aktivován.` });
-    } catch (error) {
-        console.error("❌ Chyba při aktivaci produktu:", error);
-        res.status(500).json({ message: "❌ Chyba při aktivaci produktu." });
-    }
+products.activateProduct(req, res); // použij products.activateProduct
 });
 
 
@@ -208,194 +172,15 @@ app.put('/orders/:id', (req, res) => {
 */
 
 app.delete('/deleteProduct', (req, res) => {
-    const { id } = req.body;
-    if (!id) {
-        return res.status(400).json({ message: "Chybí ID produktu." });
-    }
-
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-    if (!fs.existsSync(productsPath)) {
-        return res.status(404).json({ message: "Soubor s produkty neexistuje." });
-    }
-
-    try {
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        let products = jsonData.products?.product || [];
-        if (!Array.isArray(products)) {
-            products = products ? [products] : [];
-        }
-
-        const initialLength = products.length;
-        products = products.filter(p => p['@id'] !== id);
-
-        if (products.length === initialLength) {
-            return res.status(404).json({ message: "Produkt nebyl nalezen." });
-        }
-
-        jsonData.products.product = products;
-
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log(`✅ Produkt ID ${id} byl trvale odstraněn.`);
-        res.json({ message: `Produkt ID ${id} byl trvale odstraněn.` });
-    } catch (error) {
-        console.error("❌ Chyba při mazání produktu:", error);
-        res.status(500).json({ message: "Chyba při mazání produktu." });
-    }
+    products.deleteProduct(req, res); 
 });
 
 app.delete('/orders/:id', (req, res) => {
-    const orderId = req.params.id;
-    const shiftsDir = path.join(__dirname, 'data', 'shifts');
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-    const customersFolder = path.join(__dirname, 'data', 'customer_accounts');
-
-    let orderFound = false;
-    let customerName = null;
-    let orderProducts = [];
-
-    console.log(`🛠 Zahajuji storno objednávky ID: ${orderId}`);
-
-    // Projdeme všechny směny a hledáme objednávku
-    const files = fs.readdirSync(shiftsDir).filter(file => file.endsWith('.xml'));
-
-    files.forEach(file => {
-        const filePath = path.join(shiftsDir, file);
-        const xmlData = fs.readFileSync(filePath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        if (jsonData.shift && jsonData.shift.order) {
-            let orders = Array.isArray(jsonData.shift.order) ? jsonData.shift.order : [jsonData.shift.order];
-
-            orders.forEach(order => {
-                if (order['@id'] === orderId) {
-                    console.log(`✅ Nalezena objednávka v souboru ${file}`);
-                    order['@cancelled'] = 'true';
-                    orderFound = true;
-
-                    const productRegex = /(\d+x .+? \(ID: \d+, [\d.]+ Kč\))/g;
-                    const matches = order.products.match(productRegex) || [];
-                    
-                    matches.forEach(productEntry => {
-                        console.log(`📦 Parsování produktu: ${productEntry}`);
-                        const match = productEntry.match(/^(\d+)x (.+?) \(ID: (\d+), ([\d.]+) Kč\)$/);
-                        console.log(`🔍 Výsledek parsování:`, match);
-                        if (match) {
-                            const quantity = parseInt(match[1], 10);
-                            const productName = match[2].trim();
-                            const productId = match[3];
-                            const productPrice = parseFloat(match[4]);
-                            orderProducts.push({
-                                id: productId,
-                                name: productName,
-                                quantity: quantity,
-                                price: productPrice
-                            });
-                            console.log(`↩️ Připraveno k vrácení: ${quantity}x ${productName} (ID: ${productId}, Cena: ${productPrice} Kč)`);
-                        } else {
-                            console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
-                        }
-                    });
-                    
-
-                    // 📌 Získání zákaznického jména
-                    if (order.paymentMethod) {
-                        customerName = order.paymentMethod.trim();
-                        console.log(`📌 Jméno zákazníka získáno z paymentMethod: ${customerName}`);
-                    } else {
-                        console.warn('⚠️ Jméno zákazníka nebylo nalezeno v paymentMethod.');
-                    }
-                }
-            });
-
-            if (orderFound) {
-                const updatedXml = create(jsonData).end({ prettyPrint: true });
-                fs.writeFileSync(filePath, updatedXml);
-                console.log(`✅ Soubor ${file} aktualizován, objednávka stornována.`);
-            }
-        }
+orders.cancelOrder(req, res);
     });
 
-    // ✅ Vrácení produktů do skladu
-    if (fs.existsSync(productsPath)) {
-        try {
-            const xmlData = fs.readFileSync(productsPath, 'utf8');
-            let productsDoc = convert(xmlData, { format: 'object' });
 
-            if (!Array.isArray(productsDoc.products.product)) {
-                productsDoc.products.product = [productsDoc.products.product];
-            }
 
-            orderProducts.forEach(returnedProduct => {
-                const productInXml = productsDoc.products.product.find(p =>
-                    p['@id'] === returnedProduct.id
-                );
-            
-                if (productInXml) {
-                    const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
-                    const updatedQuantity = currentQuantity + returnedProduct.quantity;
-                    productInXml.Quantity = updatedQuantity.toString();
-                    console.log(`🔄 Aktualizován sklad: ${returnedProduct.name} -> nové množství: ${updatedQuantity}`);
-                } else {
-                    console.warn(`⚠️ Produkt '${returnedProduct.name}' nenalezen v XML skladu!`);
-                }
-            });
-
-            const updatedProductsXml = create(productsDoc).end({ prettyPrint: true });
-            fs.writeFileSync(productsPath, updatedProductsXml);
-            console.log('✅ Sklad úspěšně aktualizován po stornu objednávky.');
-
-        } catch (error) {
-            console.error('❌ Chyba při aktualizaci skladu:', error);
-        }
-    } else {
-        console.error('❌ Skladový soubor neexistuje, produkty nelze vrátit.');
-    }
-
-    // ✅ Úprava zákaznického účtu
-    if (!customerName) {
-        console.warn('⚠️ Jméno zákazníka nebylo nalezeno, přeskočena aktualizace zákaznického účtu.');
-    } else {
-        console.log(`📌 Aktualizuji účet zákazníka: ${customerName}`);
-        const customerFilePath = path.join(customersFolder, `${customerName.replace(/\s/g, '_')}.xml`);
-        if (fs.existsSync(customerFilePath)) {
-            try {
-                const xmlData = fs.readFileSync(customerFilePath, 'utf8');
-                let customerDoc = convert(xmlData, { format: 'object' });
-
-                let orders = customerDoc.customer.orders?.order || [];
-                if (!Array.isArray(orders)) {
-                    orders = [orders];
-                }
-
-                // Nastavení atributu `cancelled` na "true"
-                orders.forEach(order => {
-                    if (order['@id'] === orderId) {
-                        order['@cancelled'] = 'true';
-                        console.log(`✅ Objednávka ID ${orderId} označena jako stornovaná v souboru zákazníka ${customerName}.`);
-                    }
-                });
-
-                const updatedCustomerXml = create(customerDoc).end({ prettyPrint: true });
-                fs.writeFileSync(customerFilePath, updatedCustomerXml);
-            } catch (error) {
-                console.error('❌ Chyba při aktualizaci zákaznického účtu:', error);
-            }
-        } else {
-            console.warn(`⚠️ Soubor pro zákazníka ${customerName} neexistuje!`);
-        }
-    }
-
-    if (!orderFound) {
-        console.error(`❌ Objednávka ID ${orderId} nebyla nalezena.`);
-        return res.status(404).json({ message: `Objednávka ${orderId} nebyla nalezena.` });
-    }
-
-    res.status(200).json({ message: `✅ Objednávka ${orderId} byla stornována a produkty vráceny do skladu.` });
-});
 app.put('/orders/:id/restore', (req, res) => {
     const orderId = req.params.id;
     const shiftsDir = path.join(__dirname, 'data', 'shifts');
@@ -1286,49 +1071,9 @@ app.post('/logOrder', (req, res) => {
 
 
 const shiftsFile = path.join(__dirname, 'data', 'shifts.json');
-function checkDirExist(dirPath) {
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-    }
-}
+
 // 🟢 Načtení aktuální směny
-app.get('/currentShift', (req, res) => {
-    const shiftsDir = path.join(__dirname, 'data', 'shifts');
-    checkDirExist(shiftsDir); 
-    const files = fs.readdirSync(shiftsDir)
-        .filter(file => file.endsWith('.xml'))
-        .sort((a, b) => fs.statSync(path.join(shiftsDir, b)).mtime - fs.statSync(path.join(shiftsDir, a)).mtime);
-
-    if (files.length === 0) {
-        return res.json({ active: false, message: "Žádná směna nenalezena." });
-    }
-
-    const latestShiftFile = path.join(shiftsDir, files[0]);
-    const xmlData = fs.readFileSync(latestShiftFile, 'utf8');
-    const jsonData = convert(xmlData, { format: 'object' });
-
-    if (!jsonData.shift) {
-        return res.json({ active: false, message: "Neplatná struktura směny." });
-    }
-
-    const shiftID = jsonData.shift['@id'];
-    const startTime = jsonData.shift['@startTime'];
-    const bartender = jsonData.shift.bartender || "Neznámý";
-    const endTime = jsonData.shift.endTime;
-
-    if (endTime) {
-        return res.json({ active: false, endTime, message: `Poslední směna (${shiftID}) byla ukončena.` });
-    }
-
-    return res.json({
-        active: true,
-        shiftID,
-        startTime,
-        bartender,
-        endTime
-    });
-
-});
+app.get('/currentShift', common.currentShift);
 // Funkce pro získání nového ID směny z externího souboru shift_id.json
 function getNewShiftID() {
     const idsDir = path.join(__dirname, 'data', 'ids');
