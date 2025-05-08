@@ -331,6 +331,7 @@ app.put('/orders/:id/restore', (req, res) => {
 
     res.status(200).json({ message: `Objednávka ${orderId} byla obnovena a produkty odečteny ze skladu.` });
 });
+
 app.get('/shiftSummary', (req, res) => {
     const { shiftID } = req.query;
 
