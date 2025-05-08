@@ -56,21 +56,21 @@ function renderInventory(products) {
                 <th>Kategorie</th>
                 <th>Množství</th>
                 <th>Cena</th>
-                <th>Barva</th>
                 <th>Akce</th>
             </tr>
-        `;
+        `;  
+
 
         categories[category].forEach((product) => {
             if (!product || !product.id || !product.name) return;
-
+        
             const row = document.createElement('tr');
             row.setAttribute('data-id', product.id);
-
+        
             const isDeactivated = product.active === "false";
             row.style.backgroundColor = isDeactivated ? "#ccc" : product.color || "#fff";
             row.style.opacity = isDeactivated ? "0.5" : "1";
-
+        
             row.innerHTML = `
                 <td>${product.id}</td>
                 <td>${product.name}</td>
@@ -79,19 +79,16 @@ function renderInventory(products) {
                 <td>${product.quantity}</td>
                 <td>${product.price} Kč</td>
                 <td>
-                    <div style="width: 32px; height: 32px; border-radius: 4px; border: 1px solid #ccc; background: ${product.color || '#fff'}"></div>
-                </td>
-                <td>
                     <div class="btn-container">
                         <button class="edit-btn">Upravit</button>
                         ${product.active === "false" 
                             ? `<button class="activateProduct-btn" data-id="${product.id}">Aktivovat</button>`
-                            : `<button class="deactivateProduct-btn" data-id="${product.id}">Deaktivovat</button>`
+                            : ""
                         }
                     </div>
                 </td>
             `;
-
+        
             table.appendChild(row);
         });
 
@@ -260,20 +257,20 @@ async function handleAddProduct() {
     const quantity = parseInt(document.getElementById('productQuantity').value, 10);
     const price = parseFloat(document.getElementById('productPrice').value);
     const color = document.getElementById('productColor').value;
+    const category = document.getElementById('productCategory').value; // ← přidej toto
 
-    // Oprava: použij showModal místo openModal a kontroluj všechny hodnoty
-    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(price) || price <= 0 || !color) {
-        showModal("❌ Vyplňte všechna pole správně a vyberte barvu!", true, true);
+    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(price) || price <= 0 || !color || !category) {
+        showModal("❌ Vyplňte všechna pole správně a vyberte barvu i kategorii!", true, true);
         return;
     }
 
-    console.log("🛒 Přidávám nový produkt:", { name, description, quantity, price, color });
+    console.log("🛒 Přidávám nový produkt:", { name, description, quantity, price, color, category });
 
     try {
         const response = await fetch(`${serverEndpoint}/addProduct`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, quantity, price, color })
+            body: JSON.stringify({ name, description, quantity, price, color, category }) // ← přidej category
         });
 
         if (!response.ok) {
@@ -289,6 +286,7 @@ async function handleAddProduct() {
         document.getElementById('productQuantity').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productColor').value = '';
+        document.getElementById('productCategory').value = ''; // Vymaž kategorii
 
         showModal("✅ Produkt byl úspěšně přidán!", false, true);
 
@@ -454,8 +452,7 @@ async function enableEditing(row) {
     const categoryCell = row.children[3];
     const quantityCell = row.children[4];
     const priceCell = row.children[5];
-    const colorCell = row.children[6];
-    const actionCell = row.children[7];
+    const actionCell = row.children[6]; // POZOR: teď je actionCell na indexu 6!
 
     if (!id) {
         console.error("❌ Chyba: ID produktu nebylo nalezeno.");
@@ -482,17 +479,32 @@ async function enableEditing(row) {
     `;
     quantityCell.innerHTML = `<input type="number" min="0" value="${currentQuantity}">`;
     priceCell.innerHTML = `<input type="number" min="0" step="0.01" value="${currentPrice}">`;
-    colorCell.innerHTML = `<input type="color" value="${currentColor}">`;
 
+    // Color picker a tlačítka do jedné buňky
     actionCell.innerHTML = `
-        <div class="btn-container">
+        <input type="color" value="${currentColor}" style="width: 32px; height: 32px; padding: 0; border: none; margin-right: 8px; vertical-align: middle; cursor: pointer;">
+        <div class="btn-container" style="display:inline-block;">
             <button class="save-btn">Uložit</button>
             <button class="cancel-btn">Zrušit</button>
+            <button class="deactivate-btn">Deaktivovat</button>
+            <button class="delete-btn">Odstranit</button>
         </div>
     `;
 
     actionCell.querySelector('.save-btn').addEventListener('click', () => handleSaveInline(id, row));
     actionCell.querySelector('.cancel-btn').addEventListener('click', () => loadProducts());
+    actionCell.querySelector('.deactivate-btn').addEventListener('click', async () => {
+        if (confirm("Opravdu chcete produkt deaktivovat?")) {
+            await deactivateProduct(id);
+            loadProducts();
+        }
+    });
+    actionCell.querySelector('.delete-btn').addEventListener('click', async () => {
+        if (confirm("Opravdu chcete produkt trvale odstranit?")) {
+            await deleteProduct(id);
+            loadProducts();
+        }
+    });
 }
 
 function rgbToHex(rgb) {
@@ -509,6 +521,26 @@ function rgbToHex(rgb) {
     );
 }
 
+async function deleteProduct(productId) {
+    try {
+        const response = await fetch(`${serverEndpoint}/deleteProduct`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: productId })
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || "Chyba při mazání produktu.");
+        }
+        showModal("✅ Produkt byl trvale odstraněn.", false, true);
+        await loadProducts();
+    } catch (error) {
+        console.error("❌ Chyba při mazání produktu:", error);
+        showModal("❌ Chyba při mazání produktu!", true, true);
+    }
+}
+
+
 async function handleSaveInline(id, row) {
     if (!id) {
         console.error("❌ Chyba: ID produktu je null nebo undefined.");
@@ -520,7 +552,7 @@ async function handleSaveInline(id, row) {
     const categorySelect = row.children[3].querySelector('select');
     const quantityInput = row.children[4].querySelector('input');
     const priceInput = row.children[5].querySelector('input');
-    const colorInput = row.children[6].querySelector('input[type="color"]');
+    const colorInput = row.children[6].querySelector('input[type="color"]'); // změna: index 6
 
     if (!nameInput || !descriptionInput || !categorySelect || !quantityInput || !priceInput || !colorInput) {
         console.error("❌ Chyba: Některé vstupy nebyly nalezeny.");
@@ -581,8 +613,8 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.addEventListener('input', function () {
             const query = this.value.trim().toLowerCase();
             const filtered = allProducts.filter(product =>
-                product.name.toLowerCase().includes(query) ||
-                (product.description && product.description.toLowerCase().includes(query)) ||
+                (product.name && product.name.toLowerCase().includes(query)) ||
+                (typeof product.description === "string" && product.description.toLowerCase().includes(query)) ||
                 (product.category && product.category.toLowerCase().includes(query))
             );
             renderInventory(filtered);

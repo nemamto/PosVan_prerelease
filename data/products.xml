@@ -5,7 +5,7 @@
     <Description>0,02l</Description>
     <Quantity>60</Quantity>
     <Price>50</Price>
-    <Color>#d9c4c8</Color>
+    <Color>#ea1f44</Color>
     <Category>Pivo</Category>
   </product>
   <product id="2" active="true">
@@ -23,14 +23,6 @@
     <Price>70.00</Price>
     <Color>#bee0b7</Color>
     <Category>Panáky</Category>
-  </product>
-  <product id="4" active="false">
-    <Name>blbost</Name>
-    <Description>558</Description>
-    <Quantity>888</Quantity>
-    <Price>888</Price>
-    <Color>#006d0d</Color>
-    <Category>Víno</Category>
   </product>
   <product id="5" active="true">
     <Name>Whiskey</Name>
@@ -264,13 +256,6 @@
     <Color>#b7bee0</Color>
     <Category>Víno</Category>
   </product>
-  <product id="4">
-    <Name>blbost</Name>
-    <Description>558</Description>
-    <Quantity>888</Quantity>
-    <Price>888</Price>
-    <Color>#006d0d</Color>
-  </product>
   <product id="101">
     <Name>Voda</Name>
     <Description>je základ</Description>
@@ -278,14 +263,6 @@
     <Price>10</Price>
     <Color>#76b0c5</Color>
     <Category>Nealko</Category>
-  </product>
-  <product id="102">
-    <Name>Tráva</Name>
-    <Description/>
-    <Quantity>100</Quantity>
-    <Price>200</Price>
-    <Color>#77dd77</Color>
-    <Category>Ostatní</Category>
   </product>
   <product id="103">
     <Name>Brambory</Name>
@@ -302,5 +279,12 @@
     <Price>10</Price>
     <Color>#458fd8</Color>
     <Category>Ostatní</Category>
+  </product>
+  <product id="105">
+    <Name>Vláknina</Name>
+    <Description>je důležitá</Description>
+    <Quantity>10000</Quantity>
+    <Price>1</Price>
+    <Color>#e28221</Color>
   </product>
 </products>

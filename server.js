@@ -230,6 +230,45 @@ app.put('/orders/:id', (req, res) => {
 });
 */
 
+app.delete('/deleteProduct', (req, res) => {
+    const { id } = req.body;
+    if (!id) {
+        return res.status(400).json({ message: "Chybí ID produktu." });
+    }
+
+    const productsPath = path.join(__dirname, 'data', 'products.xml');
+    if (!fs.existsSync(productsPath)) {
+        return res.status(404).json({ message: "Soubor s produkty neexistuje." });
+    }
+
+    try {
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        let products = jsonData.products?.product || [];
+        if (!Array.isArray(products)) {
+            products = products ? [products] : [];
+        }
+
+        const initialLength = products.length;
+        products = products.filter(p => p['@id'] !== id);
+
+        if (products.length === initialLength) {
+            return res.status(404).json({ message: "Produkt nebyl nalezen." });
+        }
+
+        jsonData.products.product = products;
+
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        console.log(`✅ Produkt ID ${id} byl trvale odstraněn.`);
+        res.json({ message: `Produkt ID ${id} byl trvale odstraněn.` });
+    } catch (error) {
+        console.error("❌ Chyba při mazání produktu:", error);
+        res.status(500).json({ message: "Chyba při mazání produktu." });
+    }
+});
 
 app.delete('/orders/:id', (req, res) => {
     const orderId = req.params.id;
