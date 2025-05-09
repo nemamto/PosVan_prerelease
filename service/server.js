@@ -281,7 +281,7 @@ app.post('/payOrder', (req, res) => {
 
         const now = new Date();
         const formattedDateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        const newOrderId = getNextOrderID();
+        const newOrderId = orders.getNextOrderID();
 
         const newOrder = {
             "@id": newOrderId.toString(),
@@ -389,7 +389,7 @@ app.post('/addProduct', (req, res) => {
 
     const productsPath = products.ensureProductsXML(); // Ujistíme se, že soubor existuje
     const newProduct = {
-        '@id': getNextProductID().toString(),
+        '@id': products.getNextProductID().toString(),
         Name: name,
         Description: description ? description.toString() : '',
         Quantity: quantity.toString(),
