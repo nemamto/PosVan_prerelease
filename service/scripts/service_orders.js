@@ -9,6 +9,8 @@ const productsPath = path.join(baseDir, 'data', 'products.xml');
 const customersFolder = path.join(baseDir, 'data', 'customer_accounts');
 
 
+
+
 function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount) {
     try {
         console.log("📦 Ukládám objednávku do zákaznického souboru:", orderLog, selectedCustomer, orderID, totalAmount);
@@ -237,6 +239,90 @@ function getNextOrderID() {
 }
 
 
+function payOrder({ customerName, totalPrice, paymentMethod }) {
+    if (!customerName || !totalPrice || !paymentMethod) {
+        throw new Error("Chybí povinné údaje (customerName, totalPrice nebo paymentMethod)!");
+    }
+
+    const customerFilePath = path.join(customersFolder, `${customerName.replace(/\s+/g, "_")}.xml`);
+
+    if (!fs.existsSync(customerFilePath)) {
+        throw new Error("Soubor zákazníka neexistuje.");
+    }
+
+    try {
+        // Načti XML a převeď na JSON
+        const xmlData = fs.readFileSync(customerFilePath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object', trim: true, ignoreAttributes: false });
+
+        if (!jsonData.customer || !jsonData.customer.orders || !jsonData.customer.orders.order) {
+            return { message: "Žádné neuhrazené objednávky k aktualizaci." };
+        }
+
+        let updated = false;
+
+        // Zajistíme, že `order` je vždy pole
+        let orders = Array.isArray(jsonData.customer.orders.order)
+            ? jsonData.customer.orders.order
+            : [jsonData.customer.orders.order];
+
+        orders.forEach(order => {
+            if (order.payed === "false" || order["@payed"] === "false") {
+                order.payed = "true"; // Nastavíme `payed="true"`
+                updated = true;
+            }
+        });
+
+        if (!updated) {
+            return { message: "Všechny objednávky již byly uhrazeny." };
+        }
+
+        // Převod zpět do XML a uložení
+        const updatedXml = create({ version: '1.0' }).ele(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(customerFilePath, updatedXml);
+
+        // Přidání objednávky do aktuální směny
+        const shiftFilePath = shift.findShiftFileByID();
+        if (!shiftFilePath) {
+            throw new Error("Nebyla nalezena aktuální směna.");
+        }
+
+        const shiftXmlData = fs.readFileSync(shiftFilePath, 'utf8');
+        let shiftJsonData = convert(shiftXmlData, { format: 'object', trim: true, ignoreAttributes: false });
+
+        if (!shiftJsonData.shift || !shiftJsonData.shift.orders) {
+            shiftJsonData.shift.orders = { order: [] };
+        }
+        if (!Array.isArray(shiftJsonData.shift.orders.order)) {
+            shiftJsonData.shift.orders.order = [shiftJsonData.shift.orders.order];
+        }
+
+        const now = new Date();
+        const formattedDateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        const newOrderId = getNextOrderID();
+
+        const newOrder = {
+            "@id": newOrderId.toString(),
+            "time": formattedDateTime,
+            "paymentMethod": paymentMethod,
+            "totalPrice": totalPrice.toString(),
+            "products": `Účet zákazníka: ${customerName}`
+        };
+
+        shiftJsonData.shift.orders.order.push(newOrder);
+
+        // Uložení zpět do směny
+        const updatedShiftXml = create(shiftJsonData).end({ prettyPrint: true });
+        fs.writeFileSync(shiftFilePath, updatedShiftXml);
+
+        return { message: "Objednávky byly aktualizovány jako zaplacené a přidány do aktuální směny." };
+    } catch (error) {
+        console.error("❌ Chyba při aktualizaci objednávek:", error);
+        throw new Error("Interní chyba serveru při aktualizaci objednávek.");
+    }
+}
+
+
 async function saveOrderToShift(orderLog, shiftID) {
     const filePath = shift.findShiftFileByID(shiftID);
     if (!filePath) {
@@ -408,5 +494,6 @@ function restoreOrder(req, res) {
 
 
 module.exports = {
-    cancelOrder, restoreOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift
+    cancelOrder, restoreOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift, payOrder,
+    
 };

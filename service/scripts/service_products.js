@@ -152,6 +152,51 @@ function updateProduct({ id, name, description, price, quantity, color, category
     }
 }
 
+function addProduct({ name, description, quantity, price, color }) {
+    const productColor = color || "#ccc";
+
+    if (!name || quantity <= 0 || price <= 0) {
+        throw new Error("Neplatné vstupy.");
+    }
+
+    const productsPath = ensureProductsXML(); // Ujistíme se, že soubor existuje
+    const newProduct = {
+        '@id': (getNextProductID()).toString(),
+        Name: name,
+        Description: description ? description.toString() : '',
+        Quantity: quantity.toString(),
+        Price: price.toString(),
+        Color: productColor
+    };
+
+    try {
+        // Načíst existující produkty
+        const xmlData = fs.readFileSync(productsPath, 'utf8');
+        let jsonData = convert(xmlData, { format: 'object' });
+
+        if (!jsonData.products) {
+            jsonData.products = { product: [] };
+        }
+        if (!Array.isArray(jsonData.products.product)) {
+            jsonData.products.product = [jsonData.products.product];
+        }
+
+        // Přidání nového produktu
+        jsonData.products.product.push(newProduct);
+
+        // Zápis zpět do XML
+        const updatedXml = create(jsonData).end({ prettyPrint: true });
+        fs.writeFileSync(productsPath, updatedXml);
+
+        console.log("✅ Produkt přidán do XML:", newProduct);
+        return { message: "Produkt přidán", product: newProduct };
+    } catch (error) {
+        console.error('❌ Chyba při zápisu do XML:', error);
+        throw new Error("Chyba při ukládání produktu.");
+    }
+}
+
+
 function deleteProduct(req, res) {
     const { id } = req.body;
     const productsPath = ensureProductsXML();
@@ -185,6 +230,55 @@ function deleteProduct(req, res) {
         res.status(500).json({ message: "Chyba při mazání produktu." });
     }
 }
+
+function markCustomerOrderAsPaid({ customerName, orderId }) {
+    console.log(`🔍 Zpracovávám platbu pro zákazníka: ${customerName}, objednávka ID: ${orderId}`);
+
+    if (!customerName || !orderId) {
+        throw new Error('Chybí jméno zákazníka nebo ID objednávky.');
+    }
+
+    const customersFolder = path.join(__dirname, '..', 'data', 'customer_accounts');
+    const fileName = customerName.replace(/\s+/g, '_') + '.xml';
+    const customerFilePath = path.join(customersFolder, fileName);
+
+    if (!fs.existsSync(customerFilePath)) {
+        throw new Error(`Soubor pro zákazníka ${customerName} neexistuje.`);
+    }
+
+    try {
+        const xmlData = fs.readFileSync(customerFilePath, 'utf8');
+        const customerDoc = convert(xmlData, { format: 'object' });
+
+        console.log('✅ Načtený XML soubor:', customerDoc);
+
+        let orders = customerDoc.customer.orders?.order || [];
+        if (!Array.isArray(orders)) {
+            orders = [orders];
+        }
+
+        const order = orders.find(o => String(o['@id']) === String(orderId));
+        if (!order) {
+            throw new Error(`Objednávka ID ${orderId} nebyla nalezena.`);
+        }
+
+        console.log('✅ Nalezena objednávka:', order);
+
+        // Aktualizace atributu `@payed`
+        order['@payed'] = 'true';
+
+        const updatedXml = create(customerDoc).end({ prettyPrint: true });
+        fs.writeFileSync(customerFilePath, updatedXml);
+
+        console.log(`✅ Objednávka ID ${orderId} označena jako zaplacená pro zákazníka ${customerName}`);
+        return { message: `Objednávka ${orderId} označena jako zaplacená.` };
+    } catch (error) {
+        console.error('❌ Chyba při aktualizaci zákaznického účtu:', error);
+        throw new Error('Interní chyba serveru.');
+    }
+}
+
 module.exports = {
-    activateProduct, deactivateProduct, deleteProduct, getNextProductID, ensureProductsXML, updateProduct
+    activateProduct, deactivateProduct, deleteProduct, getNextProductID, ensureProductsXML, 
+    updateProduct, addProduct, markCustomerOrderAsPaid
 };

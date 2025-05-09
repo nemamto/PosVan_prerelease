@@ -119,6 +119,7 @@ function renderInventory(products) {
 }
 
 // Funkce pro aktualizaci barvy produktu
+/*
 async function updateProductColor(productId, color) {
     if (!productId || !color) {
         console.error("❌ Chyba: ID produktu nebo barva není definována.");
@@ -141,7 +142,7 @@ async function updateProductColor(productId, color) {
     } catch (error) {
         console.error("❌ Chyba při aktualizaci barvy produktu:", error);
     }
-}
+}*/
 document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('toggleAddItemForm');
     const addItemForm = document.getElementById('addItemForm');
@@ -157,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
 
 async function activateProduct(productId) {
     try {
@@ -250,6 +252,42 @@ document.addEventListener('DOMContentLoaded', () => {
         colorSelect.style.backgroundColor = initialColor;
     }
 });
+
+async function loadCategories() {
+    try {
+        const response = await fetch(`${serverEndpoint}/categories`);
+        if (!response.ok) {
+            throw new Error('Chyba při načítání kategorií.');
+        }
+
+        const categories = await response.json();
+        const categorySelect = document.getElementById('productCategory');
+
+        if (!categorySelect) {
+            console.error('❌ Element s ID "productCategory" nebyl nalezen.');
+            return;
+        }
+
+        // Vyčistíme roletku a přidáme kategorie
+        categorySelect.innerHTML = '<option value="">Vyberte kategorii</option>';
+        categories.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category.name;
+            option.textContent = category.name;
+            categorySelect.appendChild(option);
+        });
+
+        console.log('✅ Kategorie byly úspěšně načteny a přidány do roletky.');
+    } catch (error) {
+        console.error('❌ Chyba při načítání kategorií:', error);
+    }
+}
+
+// Načtení kategorií při načtení stránky
+document.addEventListener('DOMContentLoaded', () => {
+    loadCategories();
+});
+
 // Funkce pro přidání nového produktu
 async function handleAddProduct() {
     const name = document.getElementById('productName').value.trim();
@@ -257,10 +295,26 @@ async function handleAddProduct() {
     const quantity = parseInt(document.getElementById('productQuantity').value, 10);
     const price = parseFloat(document.getElementById('productPrice').value);
     const color = document.getElementById('productColor').value;
-    const category = document.getElementById('productCategory').value; // ← přidej toto
+    const category = document.getElementById('productCategory').value;
 
-    if (!name || isNaN(quantity) || quantity <= 0 || isNaN(price) || price <= 0 || !color || !category) {
-        showModal("❌ Vyplňte všechna pole správně a vyberte barvu i kategorii!", true, true);
+    if (!name) {
+        showModal("❌ Název produktu je povinný!", true);
+        return;
+    }
+    if (isNaN(quantity) || quantity <= 0) {
+        showModal("❌ Množství musí být kladné číslo!", true);
+        return;
+    }
+    if (isNaN(price) || price <= 0) {
+        showModal("❌ Cena musí být kladné číslo!", true);
+        return;
+    }
+    if (!color) {
+        showModal("❌ Vyberte barvu produktu!", true);
+        return;
+    }
+    if (!category) {
+        showModal("❌ Vyberte kategorii produktu!", true);
         return;
     }
 
@@ -270,11 +324,12 @@ async function handleAddProduct() {
         const response = await fetch(`${serverEndpoint}/addProduct`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, quantity, price, color, category }) // ← přidej category
+            body: JSON.stringify({ name, description, quantity, price, color, category })
         });
 
         if (!response.ok) {
-            throw new Error("Chyba při přidávání produktu.");
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Chyba při přidávání produktu.");
         }
 
         const data = await response.json();
@@ -286,17 +341,15 @@ async function handleAddProduct() {
         document.getElementById('productQuantity').value = '';
         document.getElementById('productPrice').value = '';
         document.getElementById('productColor').value = '';
-        document.getElementById('productCategory').value = ''; // Vymaž kategorii
+        document.getElementById('productCategory').value = '';
 
-        showModal("✅ Produkt byl úspěšně přidán!", false, true);
-
+        showModal("✅ Produkt byl úspěšně přidán!", false);
         loadProducts(); // Aktualizace seznamu produktů
     } catch (error) {
         console.error("❌ Chyba při přidávání produktu:", error);
-        showModal("❌ Chyba při přidávání produktu!", true, true);
+        showModal(`❌ ${error.message}`, true);
     }
 }
-
 // Funkce pro odstranění produktu
 let productIdToDelete = null; // Uchování ID pro smazání
 

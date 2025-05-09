@@ -87,51 +87,6 @@ app.put('/deactivateProduct', (req, res) => {
     }
 });
 
-/*
-app.put('/orders/:id', (req, res) => {
-    const orderId = req.params.id;
-    const { payed } = req.body;
-
-    if (!orderId || payed === undefined) {
-        return res.status(400).json({ message: "Chybí povinné údaje (orderId nebo payed)." });
-    }
-
-    const shiftsDir = path.join(__dirname, 'data', 'shifts');
-    const files = fs.readdirSync(shiftsDir).filter(file => file.endsWith('.xml'));
-
-    let orderFound = false;
-
-    files.forEach(file => {
-        const filePath = path.join(shiftsDir, file);
-        const xmlData = fs.readFileSync(filePath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object', trim: true, ignoreAttributes: false });
-
-        if (jsonData.shift && jsonData.shift.orders && jsonData.shift.orders.order) {
-            let orders = Array.isArray(jsonData.shift.orders.order)
-                ? jsonData.shift.orders.order
-                : [jsonData.shift.orders.order];
-
-            orders.forEach(order => {
-                if (order['@id'] === orderId) {
-                    order.payed = payed.toString();
-                    orderFound = true;
-                }
-            });
-
-            if (orderFound) {
-                const updatedXml = create(jsonData).end({ prettyPrint: true });
-                fs.writeFileSync(filePath, updatedXml);
-            }
-        }
-    });
-
-    if (!orderFound) {
-        return res.status(404).json({ message: `Objednávka ID ${orderId} nebyla nalezena.` });
-    }
-
-    res.json({ message: `Objednávka ID ${orderId} byla aktualizována.` });
-});
-*/
 
 app.delete('/deleteProduct', (req, res) => {
     products.deleteProduct(req, res); 
@@ -212,101 +167,13 @@ app.get('/customerOrders', (req, res) => {
 
 app.post('/payOrder', (req, res) => {
     try {
-        const { customerName, totalPrice, paymentMethod } = req.body;
-
-        if (!customerName || !totalPrice || !paymentMethod) {
-            console.error("❌ Chybí povinné údaje v requestu!");
-            return res.status(400).json({ message: "Chybí povinné údaje (customerName, totalPrice nebo paymentMethod)!" });
-        }
-
-        const customerFilePath = path.join(__dirname, '..', 'data', 'customer_accounts', `${customerName.replace(/\s+/g, "_")}.xml`);
-
-        if (!fs.existsSync(customerFilePath)) {
-            console.error(`❌ Soubor zákazníka '${customerFilePath}' neexistuje!`);
-            return res.status(404).json({ message: "Soubor zákazníka neexistuje." });
-        }
-
-        // ✅ Načti XML a převeď na JSON
-        const xmlData = fs.readFileSync(customerFilePath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object', trim: true, ignoreAttributes: false });
-
-        console.log("🔍 Převedený JSON zákazníka:", JSON.stringify(jsonData, null, 2));
-
-        if (!jsonData.customer || !jsonData.customer.orders || !jsonData.customer.orders.order) {
-            console.warn("⚠️ Žádné objednávky nenalezeny.");
-            return res.json({ message: "Žádné neuhrazené objednávky k aktualizaci." });
-        }
-
-        let updated = false;
-
-        // ✅ Zajistíme, že `order` je vždy pole
-        let orders = Array.isArray(jsonData.customer.orders.order)
-            ? jsonData.customer.orders.order
-            : [jsonData.customer.orders.order];
-
-        orders.forEach(order => {
-            if (order.payed === "false" || order["@payed"] === "false") {
-                order.payed = "true"; // Nastavíme `payed="true"`
-                updated = true;
-            }
-        });
-
-        if (!updated) {
-            console.log("❌ Žádné objednávky nebyly aktualizovány!");
-            return res.json({ message: "Všechny objednávky již byly uhrazeny." });
-        }
-
-        // ✅ Převod zpět do XML a uložení
-        const updatedXml = create({ version: '1.0' }).ele(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(customerFilePath, updatedXml);
-
-        console.log(`✅ Objednávky zákazníka '${customerName}' byly úspěšně aktualizovány jako zaplacené.`);
-
-        // ✅ Přidání objednávky do aktuální směny
-        const shiftFilePath = findShiftFileByID(); // Najdeme nebo vytvoříme aktuální směnu
-        if (!shiftFilePath) {
-            console.error("❌ Nebylo možné najít nebo vytvořit aktuální směnu!");
-            return res.status(500).json({ message: "Nebyla nalezena aktuální směna." });
-        }
-
-        const shiftXmlData = fs.readFileSync(shiftFilePath, 'utf8');
-        let shiftJsonData = convert(shiftXmlData, { format: 'object', trim: true, ignoreAttributes: false });
-
-        if (!shiftJsonData.shift || !shiftJsonData.shift.orders) {
-            shiftJsonData.shift.orders = { order: [] };
-        }
-        if (!Array.isArray(shiftJsonData.shift.orders.order)) {
-            shiftJsonData.shift.orders.order = [shiftJsonData.shift.orders.order];
-        }
-
-        const now = new Date();
-        const formattedDateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-        const newOrderId = orders.getNextOrderID();
-
-        const newOrder = {
-            "@id": newOrderId.toString(),
-            "time": formattedDateTime,
-            "paymentMethod": paymentMethod,
-            "totalPrice": totalPrice.toString(),
-            "products": `Účet zákazníka: ${customerName}`
-        };
-
-        shiftJsonData.shift.orders.order.push(newOrder);
-
-        // ✅ Uložení zpět do směny
-        const updatedShiftXml = create(shiftJsonData).end({ prettyPrint: true });
-        fs.writeFileSync(shiftFilePath, updatedShiftXml);
-
-        console.log(`✅ Platba účtu zákazníka '${customerName}' byla přidána do směny jako objednávka ID ${newOrderId}.`);
-
-        res.json({ message: "Objednávky byly aktualizovány jako zaplacené a přidány do aktuální směny." });
-
+        const result = orders.payOrder(req.body);
+        res.status(200).json(result);
     } catch (error) {
-        console.error("❌ Chyba při aktualizaci objednávek:", error);
-        res.status(500).json({ message: "Interní chyba serveru při aktualizaci objednávek." });
+        console.error("❌ Chyba při zpracování platby objednávky:", error.message);
+        res.status(400).json({ message: error.message });
     }
 });
-
 
 // Endpoint pro načítání směn
 app.get('/shifts', (req, res) => {
@@ -378,95 +245,31 @@ app.post('/startShift', shifts.startShift);
 // Endpoint pro ukončení směny
 app.post('/endShift', shifts.endShift);
 
-//přidání produktu
 app.post('/addProduct', (req, res) => {
-    const { name, description, quantity, price, color } = req.body;
-    const productColor = color || "#ccc";
-
-    if (!name || quantity <= 0 || price <= 0) {
-        return res.status(400).json({ message: "Neplatné vstupy." });
-    }
-
-    const productsPath = products.ensureProductsXML(); // Ujistíme se, že soubor existuje
-    const newProduct = {
-        '@id': products.getNextProductID().toString(),
-        Name: name,
-        Description: description ? description.toString() : '',
-        Quantity: quantity.toString(),
-        Price: price.toString(),
-        Color: productColor
-    };
-
     try {
-        // Načíst existující produkty
-        const xmlData = fs.readFileSync(productsPath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
-
-        if (!jsonData.products) {
-            jsonData.products = { product: [] };
-        }
-        if (!Array.isArray(jsonData.products.product)) {
-            jsonData.products.product = [jsonData.products.product];
-        }
-
-        // Přidání nového produktu
-        jsonData.products.product.push(newProduct);
-
-        // Zápis zpět do XML
-        const updatedXml = create(jsonData).end({ prettyPrint: true });
-        fs.writeFileSync(productsPath, updatedXml);
-
-        console.log("✅ Produkt přidán do XML:", newProduct);
-        res.status(201).json({ message: "Produkt přidán", product: newProduct });
-
+        const result = products.addProduct(req.body);
+        res.status(201).json(result);
     } catch (error) {
-        console.error('❌ Chyba při zápisu do XML:', error);
-        res.status(500).json({ message: "Chyba při ukládání produktu." });
+        console.error('❌ Chyba při přidávání produktu:', error);
+        res.status(400).json({ message: error.message });
     }
 });
-// Pomocná funkce pro nalezení souboru směny podle shiftID nebo vytvoření nové směny
-
 
 app.put('/markCustomerOrderAsPaid', (req, res) => {
-    const { customerName, orderId } = req.body;
-
-    if (!customerName || !orderId) {
-        return res.status(400).json({ message: 'Chybí jméno zákazníka nebo ID objednávky.' });
-    }
-
-    const customersFolder = path.join(__dirname, 'data', 'customer_accounts');
-    const fileName = customerName.replace(/\s+/g, '_') + '.xml';
-    const customerFilePath = path.join(customersFolder, fileName);
-
-    if (!fs.existsSync(customerFilePath)) {
-        return res.status(404).json({ message: `Soubor pro zákazníka ${customerName} neexistuje.` });
-    }
-
     try {
-        const xmlData = fs.readFileSync(customerFilePath, 'utf8');
-        const customerDoc = convert(xmlData, { format: 'object' });
+        const { customerName, orderId } = req.body;
 
-        let orders = customerDoc.customer.orders?.order || [];
-
-        if (!Array.isArray(orders)) {
-            orders = [orders];
+        if (!customerName || !orderId) {
+            console.error('❌ Chybí jméno zákazníka nebo ID objednávky.');
+            return res.status(400).json({ message: 'Chybí jméno zákazníka nebo ID objednávky.' });
         }
 
-        const order = orders.find(o => o['@id'] === orderId);
-        if (!order) {
-            return res.status(404).json({ message: `Objednávka ID ${orderId} nebyla nalezena.` });
-        }
-
-        order['@payed'] = 'true';
-
-        const updatedXml = create(customerDoc).end({ prettyPrint: true });
-        fs.writeFileSync(customerFilePath, updatedXml);
-
-        console.log(`✅ Objednávka ID ${orderId} označena jako zaplacená pro zákazníka ${customerName}`);
-        res.status(200).json({ message: `Objednávka ${orderId} označena jako zaplacená.` });
+        const result = products.markCustomerOrderAsPaid(req.body);
+        console.log(`✅ Objednávka ID ${orderId} zákazníka ${customerName} označena jako zaplacená.`);
+        res.status(200).json(result);
     } catch (error) {
-        console.error('❌ Chyba při aktualizaci zákaznického účtu:', error);
-        res.status(500).json({ message: 'Interní chyba serveru.' });
+        console.error('❌ Chyba při označování objednávky jako zaplacené:', error.message);
+        res.status(400).json({ message: error.message });
     }
 });
 
@@ -480,36 +283,7 @@ app.put('/updateProduct', (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-/*
-function addOrUpdateProduct(product) {
-    const dataPath = path.join(__dirname, 'data');
-    const productsPath = path.join(dataPath, 'products.xml');
-    common.ensureDirectoryExistence(dataPath);
 
-    let xmlDoc;
-    if (fs.existsSync(productsPath)) {
-        const existingData = fs.readFileSync(productsPath, 'utf8');
-        xmlDoc = create(existingData).root();
-    } else {
-        xmlDoc = create({ version: '1.0' }).ele('products');
-    }
-
-    let productNode = xmlDoc.find((node) => node.get('id') === product.id.toString());
-
-    if (productNode) {
-        productNode.ele('Name').txt(product.name);
-        productNode.ele('Description').txt(product.description);
-        productNode.ele('Price').txt(product.price);
-    } else {
-        productNode = xmlDoc.ele('product', { id: product.id });
-        productNode.ele('Name').txt(product.name);
-        productNode.ele('Description').txt(product.description);
-        productNode.ele('Price').txt(product.price);
-    }
-
-    fs.writeFileSync(productsPath, xmlDoc.end({ prettyPrint: true, indent: '\t' }));
-}
-*/
 app.post('/logOrder', (req, res) => {
     console.log("📥 Přijatý request body:", req.body); // Debug
     const { order, paymentMethod, totalAmount, selectedCustomer, shiftID } = req.body;
