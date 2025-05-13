@@ -152,25 +152,23 @@ function updateProduct({ id, name, description, price, quantity, color, category
     }
 }
 
-function addProduct({ name, description, quantity, price, color }) {
-    const productColor = color || "#ccc";
-
-    if (!name || quantity <= 0 || price <= 0) {
-        throw new Error("Neplatné vstupy.");
+function addProduct({ name, description, quantity, price, color, category }) {
+    if (!name || !quantity || !price) {
+        throw new Error("Název, množství a cena jsou povinné.");
     }
 
-    const productsPath = ensureProductsXML(); // Ujistíme se, že soubor existuje
+    const productsPath = ensureProductsXML();
     const newProduct = {
-        '@id': (getNextProductID()).toString(),
+        '@id': getNextProductID().toString(),
         Name: name,
-        Description: description ? description.toString() : '',
+        Description: description || '',
         Quantity: quantity.toString(),
         Price: price.toString(),
-        Color: productColor
+        Color: color || '#ccc',
+        Category: category && category.trim() ? category : 'Nezařazeno'
     };
 
     try {
-        // Načíst existující produkty
         const xmlData = fs.readFileSync(productsPath, 'utf8');
         let jsonData = convert(xmlData, { format: 'object' });
 
@@ -181,10 +179,8 @@ function addProduct({ name, description, quantity, price, color }) {
             jsonData.products.product = [jsonData.products.product];
         }
 
-        // Přidání nového produktu
         jsonData.products.product.push(newProduct);
 
-        // Zápis zpět do XML
         const updatedXml = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(productsPath, updatedXml);
 

@@ -246,6 +246,7 @@ app.post('/startShift', shifts.startShift);
 app.post('/endShift', shifts.endShift);
 
 app.post('/addProduct', (req, res) => {
+    console.log("📥 Přijatý požadavek na přidání produktu:", req.body); // Debug log
     try {
         const result = products.addProduct(req.body);
         res.status(201).json(result);
@@ -286,75 +287,13 @@ app.put('/updateProduct', (req, res) => {
 
 app.post('/logOrder', (req, res) => {
     console.log("📥 Přijatý request body:", req.body); // Debug
-    const { order, paymentMethod, totalAmount, selectedCustomer, shiftID } = req.body;
-
-    if (!shiftID) {
-        return res.status(400).json({ message: '❌ Shift ID není definováno!' });
+    try {
+        const result = orders.logOrder(req.body);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("❌ Chyba při logování objednávky:", error.message);
+        res.status(400).json({ message: error.message });
     }
-
-    const orderID = orders.getNextOrderID();
-    const paymentInfo = paymentMethod === 'Účet zákazníka' ? selectedCustomer : paymentMethod;
-
-    const orderLog = {
-        OrderID: orderID,
-        PaymentMethod: paymentInfo,
-        TotalPrice: totalAmount,
-        OrderDetails: order.map(product => ({
-            ProductID: product.id, // Přidáme ID produktu
-            Product: product.name,
-            Quantity: product.quantity,
-            UnitPrice: product.price,
-            TotalProductPrice: product.totalPrice
-        }))
-    };
-
-    // 🟢 Uložení objednávky do směny
-    orders.saveOrderToShift(orderLog, shiftID);
-
-    // 🟢 Uložení do zákaznického účtu, pokud platba je "Účet zákazníka"
-    if (paymentMethod === 'Účet zákazníka' || paymentMethod === selectedCustomer && selectedCustomer) {
-        console.log(`💾 Ukládám zákaznickou objednávku pro: ${selectedCustomer}`);
-        orders.savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount);
-    }
-
-    // 🟢 Aktualizace skladu
-    const productsPath = path.join(__dirname, 'data', 'products.xml');
-    if (fs.existsSync(productsPath)) {
-        try {
-            const xmlData = fs.readFileSync(productsPath, 'utf8');
-            let xmlDoc = convert(xmlData, { format: 'object' });
-
-            let products = xmlDoc.products?.product || [];
-            if (!Array.isArray(products)) products = [products];
-
-            order.forEach(orderedProduct => {
-                if (!orderedProduct.id) {
-                    console.error(`❌ Chybí ID pro produkt: ${orderedProduct.name}`);
-                    return;
-                }
-            
-                const productInXml = products.find(p => p['@id'] === orderedProduct.id.toString());
-                if (productInXml) {
-                    const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
-                    const newQuantity = Math.max(0, currentQuantity - orderedProduct.quantity);
-                    console.log(`🔽 Odečítám produkt ${productInXml.Name}: ${currentQuantity} ➝ ${newQuantity}`);
-                    productInXml.Quantity = newQuantity.toString();
-                } else {
-                    console.warn(`⚠️ Produkt s ID ${orderedProduct.id} nebyl nalezen ve skladu!`);
-                }
-            });
-
-            const updatedXml = create(xmlDoc).end({ prettyPrint: true });
-            fs.writeFileSync(productsPath, updatedXml);
-            console.log('✅ Sklad úspěšně aktualizován.');
-        } catch (error) {
-            console.error('❌ Chyba při aktualizaci skladu:', error);
-        }
-    } else {
-        console.error(`❌ Soubor ${productsPath} neexistuje!`);
-    }
-
-    res.json({ message: `✅ Objednávka ID ${orderID} byla uložena do směny ${shiftID} a sklad byl aktualizován.` });
 });
 
 

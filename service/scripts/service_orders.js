@@ -322,6 +322,78 @@ function payOrder({ customerName, totalPrice, paymentMethod }) {
     }
 }
 
+function logOrder({ order, paymentMethod, totalAmount, selectedCustomer, shiftID }) {
+    if (!shiftID) {
+        throw new Error('❌ Shift ID není definováno!');
+    }
+
+    const orderID = getNextOrderID();
+    const paymentInfo = paymentMethod === 'Účet zákazníka' ? selectedCustomer : paymentMethod;
+
+    const orderLog = {
+        OrderID: orderID,
+        PaymentMethod: paymentInfo,
+        TotalPrice: totalAmount,
+        OrderDetails: order.map(product => ({
+            ProductID: product.id,
+            Product: product.name,
+            Quantity: product.quantity,
+            UnitPrice: product.price,
+            TotalProductPrice: product.totalPrice
+        }))
+    };
+
+    // 🟢 Uložení objednávky do směny
+    saveOrderToShift(orderLog, shiftID);
+
+    // 🟢 Uložení do zákaznického účtu, pokud platba je "Účet zákazníka"
+    if (paymentMethod === 'Účet zákazníka' || (paymentMethod === selectedCustomer && selectedCustomer)) {
+        console.log(`💾 Ukládám zákaznickou objednávku pro: ${selectedCustomer}`);
+        savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount);
+    }
+
+    // 🟢 Aktualizace skladu
+    const productsPath = path.join(__dirname, '..', 'data', 'products.xml');
+    if (fs.existsSync(productsPath)) {
+        try {
+            const xmlData = fs.readFileSync(productsPath, 'utf8');
+            let xmlDoc = convert(xmlData, { format: 'object' });
+
+            let products = xmlDoc.products?.product || [];
+            if (!Array.isArray(products)) products = [products];
+
+            order.forEach(orderedProduct => {
+                if (!orderedProduct.id) {
+                    console.error(`❌ Chybí ID pro produkt: ${orderedProduct.name}`);
+                    return;
+                }
+
+                const productInXml = products.find(p => p['@id'] === orderedProduct.id.toString());
+                if (productInXml) {
+                    const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
+                    const newQuantity = Math.max(0, currentQuantity - orderedProduct.quantity);
+                    console.log(`🔽 Odečítám produkt ${productInXml.Name}: ${currentQuantity} ➝ ${newQuantity}`);
+                    productInXml.Quantity = newQuantity.toString();
+                } else {
+                    console.warn(`⚠️ Produkt s ID ${orderedProduct.id} nebyl nalezen ve skladu!`);
+                }
+            });
+
+            const updatedXml = create(xmlDoc).end({ prettyPrint: true });
+            fs.writeFileSync(productsPath, updatedXml);
+            console.log('✅ Sklad úspěšně aktualizován.');
+        } catch (error) {
+            console.error('❌ Chyba při aktualizaci skladu:', error);
+            throw new Error('Chyba při aktualizaci skladu.');
+        }
+    } else {
+        console.error(`❌ Soubor ${productsPath} neexistuje!`);
+        throw new Error('Soubor skladu neexistuje.');
+    }
+
+    return { message: `✅ Objednávka ID ${orderID} byla uložena do směny ${shiftID} a sklad byl aktualizován.` };
+}
+
 
 async function saveOrderToShift(orderLog, shiftID) {
     const filePath = shift.findShiftFileByID(shiftID);
@@ -494,6 +566,7 @@ function restoreOrder(req, res) {
 
 
 module.exports = {
-    cancelOrder, restoreOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift, payOrder,
+    cancelOrder, restoreOrder, savecustomerOrderAsXML, getNextOrderID, saveOrderToShift,
+     payOrder, logOrder
     
 };
