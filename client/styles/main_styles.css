@@ -25,20 +25,13 @@ main {
 background: #282828;
     padding-bottom: 80px; /* ✅ Rezerva pro footer */
 }
-.category {
-    padding: 10px 16px;
-    margin: 8px 0;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
-}
+
 /* ========================== */
 /*          HEADER            */
 /* ========================== */
 header {
     background-color: #282828;
-    color: #282828;
+    color: #767676;
     padding: 10px;
     text-align: center;
     height: 0px;
@@ -55,7 +48,7 @@ h2, h3, h4 {
     font-size: 22px;
     font-weight: 600;
     margin-bottom: 10px;
-    color: white;
+    color: rgb(118, 118, 118);
 }
 
 
@@ -125,11 +118,12 @@ footer {
     gap: 15px;
     margin-bottom: 20px;
     justify-content: center;
-
+    max-width: 20%; /* Kategorie zabírají 20 % šířky */
+    height: 100%; /* Zabírají celou výšku */
 }
 
 .category {
-    padding: 20px;
+    padding: 10px 16px;
     background-color: #282828;
     border-radius: 8px;
     cursor: pointer;
@@ -143,6 +137,13 @@ footer {
     display: flex;
     align-items: center;
     justify-content: center;
+
+
+    margin: 8px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
 }
 
 .category:hover {
@@ -285,7 +286,7 @@ footer {
 }
 /* Tlačítko Zrušit */
 .cancel-btn {
-    background-color: #732C2C;
+    background-color: #b92929;
     color: white;
     padding: 10px 20px;
     border: none;
@@ -427,7 +428,7 @@ td.products-column {
 
 /* Obsah modálního okna */
 .modal-content {
-    background: white;
+    background: rgba(255, 255, 255, 0.442);
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -438,7 +439,7 @@ td.products-column {
 
 /* Zvýraznění pro chybové hlášky */
 .modal-overlay.error .modal-content {
-    background: #ffebee;
+    background: #a55863;
     border: 2px solid #d32f2f;
 }
 
@@ -543,7 +544,7 @@ background: black;
 
 /* Tlačítka */
 button {
-background: #42401C;
+background: #b6b264;
 color: white;
 border: none;
 padding: 10px 15px;
@@ -574,11 +575,6 @@ border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Kategorie */
-.category-container {
-    max-width: 20%; /* Kategorie zabírají 20 % šířky */
-    height: 100%; /* Zabírají celou výšku */
-}
 
 /* Produkty */
 .product-container {
@@ -621,7 +617,6 @@ border-radius: 4px;
 }
 
 .modal-content {
-    background: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);

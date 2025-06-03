@@ -467,12 +467,6 @@ async function showShiftSummary() {
 async function showCustomerOrders(customerName) {
     console.log(`📋 Zobrazuji objednávky zákazníka: ${customerName}`);
 
-    /* Simulace načtení objednávek zákazníka (nahraďte skutečným API voláním)
-    const orders = [
-        { id: 23, totalPrice: 500, date: '2025-04-13 12:13:14', products: '1x Zonka zelena (50 Kč)', paid: false },
-        { id: 24, totalPrice: 500, date: '2025-04-13 12:13:14', products: '1x Zonka zelena (50 Kč)', paid: false }
-    ];*/
-
     const orderDetails = document.getElementById('orderDetails');
     orderDetails.innerHTML = `<h3>Nezaplacené objednávky zákazníka: ${customerName}</h3>`;
 
