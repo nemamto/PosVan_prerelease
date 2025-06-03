@@ -46,12 +46,12 @@ app.get('/', (req, res) => {
 
 
 // Zajistíme, že složka `data/shifts` existuje
-const shiftsDir = common.ensureDirectoryExistence(__dirname, '..', 'data', 'shifts');
+const shiftsDir = common.ensureDirectoryExistence(__dirname, 'data', 'shifts');
 
 // Přidání zákazníka
 app.post('/addCustomer', (req, res) => {
     const { name } = req.body;
-    const dataPath = path.join(__dirname, '..', 'data', 'customer_accounts');
+    const dataPath = path.join(__dirname, 'data', 'customer_accounts');
     const customerFilePath = path.join(dataPath, `${name.replace(/\s/g, '_')}.xml`);
 
     common.ensureDirectoryExistence(dataPath);
