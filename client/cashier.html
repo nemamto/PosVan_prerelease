@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pokladna | POS Systém</title>
+  <link rel="stylesheet" href="styles/main_styles.css" />
+</head>
+<body>
+  <header>
+    <h1>Pokladna</h1>
+  </header>
+
+  <main>
+    <section id="order-section" class="flex-container">
+        <!-- Kategorie -->
+        <div class="category-container fixed-section">
+            <h2>Kategorie</h2>
+            <!-- Kategorie se zobrazí zde -->
+        </div>
+
+        <!-- Produkty -->
+        <div id="product-container" class="product-container fixed-section">
+
+            <!-- Produkty se zobrazí zde -->
+        </div>
+
+        <!-- Souhrn objednávky -->
+        <div class="order-summary fixed-section">
+    <div id="product-list-summary"></div>
+    
+    <div class="total-and-reset">
+        <h2 id="total-amount">0 Kč</h2>
+        <button class="submit-order" id="reset-order">Vymazat objednávku</button>
+    </div>
+</div>
+    </section>
+
+    <!-- Způsob platby -->
+    <section class="payment-methods">
+        
+        <button class="payment-button" data-method="cash">💵</button>
+        <button class="payment-button" data-method="card">💳</button>
+        <button class="payment-button" data-method="customer">👤</button>
+    </section>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="modal-overlay" style="display:none;">
+      <div id="modal-content" class="modal-content">
+          <p id="modal-message"></p>
+          <button id="close-modal" class="modal-close">Zavřít</button>
+      </div>
+  </div>
+
+  <footer>
+    <button class="footer-button" id="cashier-button">Pokladna</button>
+    <button class="footer-button" id="inventory-button">Sklad</button>
+    <button class="footer-button" id="order-management-button">Historie</button>
+    <button class="footer-button" id="customer-accounts-button">Účty</button>
+    <button class="footer-button" id="shift-button">Směna</button>
+  </footer>
+
+  <!-- Modal okno 
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation();">
+      <p id="modal-message"></p>
+      <button id="close-modal" class="btn btn-danger modal-close">Zavřít</button>
+    </div>
+  </div>
+-->
+
+  <script type="module" src="scripts/cashier.js"></script>
+</body>
+</html>

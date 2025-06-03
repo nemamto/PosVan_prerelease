@@ -1,0 +1,6 @@
+{
+  "ignore": ["data/*", "shift_id.json", "order_id.json"],
+  "watch": ["server.js"],
+  "ext": "js,json"
+}
+  

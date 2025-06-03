@@ -1,0 +1,43 @@
+
+/* ====== SHIFT CONTAINER ====== */
+.shift-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.shift-box {
+    background-color: #282828;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 400px;
+}
+
+.shift-status {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.shift-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+}
+
+/* ====== SHIFT HISTORY TABLE ====== */
+.shift-manage {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #282828;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+  .shift-status {
+    color: white;
+  }
+

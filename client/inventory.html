@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Správa skladu</title>
+    <link rel="stylesheet" href="styles/inventory.css">
+    <link rel="stylesheet" href="styles/main_styles.css">
+</head>
+<body>
+    <header>
+        <h1>Správa skladu</h1>
+    </header>
+
+    <main>
+        <!-- Vyhledávání a filtrování -->
+        <section class="inventory-search">
+            <input type="text" id="search" placeholder="Vyhledat položku...">
+        </section>
+
+        <!-- Tabulka skladu -->
+        <section class="inventory-table">
+            <table id="inventory-list"></table>
+            
+        </section>
+        
+        <!-- Formulář pro přidání nové položky -->
+        <button id="toggleAddItemForm" class="toggle-btn">Přidat novou položku</button>
+
+        <!-- Sekce formuláře -->
+        <section class="add-item-form" id="addItemForm" style="display: none;">
+            <h2>Přidat novou položku</h2>
+            <form id="addProductForm">
+                <label for="productName">Název produktu:</label>
+                <input type="text" id="productName" name="name" required>
+        
+                <label for="productDescription">Popis produktu:</label>
+                <input type="text" id="productDescription" name="description">
+        
+                <label for="productQuantity">Množství:</label>
+                <input type="number" id="productQuantity" name="quantity" required>
+        
+                <label for="productPrice">Cena:</label>
+                <input type="number" id="productPrice" name="price" required>
+                
+                <label for="productCategory">Kategorie:</label>
+                <select id="productCategory" class="styled-select">
+                    <option value="">Vyberte kategorii</option>
+                    <option value="Nápoje">Nápoje</option>
+                    <option value="Jídlo">Jídlo</option>
+                    <option value="Dezerty">Dezerty</option>
+                    <option value="Ostatní">Ostatní</option>
+                </select>
+                </div>
+                <label for="productColor">Barva produktu:</label>
+                <select id="productColor" name="color" class="styled-select" required>
+                    <option value="">Vyberte barvu...</option>
+                    <option value="#faa4b8" style="background-color: #faa4b8; color: black;">Pastel Pink</option>
+                    <option value="#76b0c5" style="background-color: #76b0c5; color: black;">Pastel Blue</option>
+                    <option value="#77DD77" style="background-color: #77DD77; color: black;">Pastel Green</option>
+                    <option value="#dacb77" style="background-color: #dacb77; color: black;">Pastel Yellow</option>
+                    <option value="#9c679c" style="background-color: #9c679c; color: black;">Pastel Purple</option>
+                    <option value="#e28221" style="background-color: #e28221; color: black;">Pastel Orange</option>
+                    <option value="#006d0d" style="background-color: #006d0d; color: black;">Pastel Mint</option>
+                    <option value="#458fd8" style="background-color: #458fd8; color: black;">Pastel Sky Blue</option>
+                </select>
+        
+                <button class="confirm-btn" type="button" id="addProductButton">Přidat položku</button>
+            </form>
+        </section>
+    </main>
+
+<!-- MODÁLNÍ OKNO pro zprávy (např. chybové hlášení) -->
+<div id="modal" class="modal">
+<div class="modal-content">
+    <p id="modal-message"></p>
+    <button id="confirm-action">OK</button>
+</div>
+</div>
+
+
+
+
+    
+<!-- MODÁLNÍ OKNO PRO POTVRZENÍ SMAZÁNÍ -->
+<div id="deleteModal" class="modal" style="display: none; opacity: 0;">
+    <div class="modal-content">
+        <p id="delete-modal-message"></p>
+        <button class="confirm-btn" id="confirmDelete">Ano</button>
+        <button class="cancel-btn" id="cancelDelete">Zrušit</button>
+    </div>
+</div>
+
+
+<footer id="footer">
+    <button class="footer-button" id="cashier-button">Pokladna</button>
+    <button class="footer-button" id="inventory-button">Sklad</button>
+    <button class="footer-button" id="order-management-button">Historie</button>
+    <button class="footer-button" id="customer-accounts-button" class="active">Účty</button>
+    <button class="footer-button" id="shift-button" class="active">Směna</button>
+</footer>
+<script type="module" src="scripts/common.js"></script>
+<script type="module" src="scripts/inventory.js"></script>
+
+</body>
+</html>

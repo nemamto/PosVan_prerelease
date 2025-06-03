@@ -1,0 +1,175 @@
+.hidden {
+    display: none;
+}
+
+.cancelled-order {
+    background-color: rgba(255, 0, 0, 0.1); /* Světle červené pozadí */
+    color: #a30000; /* Tmavě červený text */
+    text-decoration: line-through; /* Přeškrtnutí textu */
+}
+
+/* Kontejner pro správu objednávek */
+.order-management-container {
+    padding: 20px;
+    width: 80lh;
+    margin: 0 auto;
+}
+
+/* Kontejner pro tabulku objednávek */
+.order-list-container {
+    height: 75vh; /* Maximální výška tabulky */
+    overflow-y: auto; /* Povolení vertikálního rolování */
+    border: 0px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+}
+
+
+/* Styl pro tabulku objednávek */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 18px;
+
+}
+
+table th, table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+
+}
+
+/* Barevné oddělení řádků a reakce na přejetí myší */
+tbody tr:nth-child(even) {
+    background-color: #3C3636;
+}
+
+tbody tr:hover {
+    background-color: #483131;
+}
+
+/* Upravené tlačítko "Upravit" a "Odstranit", aby odpovídalo stylu z pokladní části */
+
+
+
+
+/* Styl pro vstupní pole (input), které bude mít pevnou šířku */
+table input {
+    width: 90%; /* Zajistíme, aby input byl o něco menší než šířka buňky */
+    padding: 5px;
+    box-sizing: border-box;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    outline: none;
+    max-width: 100%; /* Zabrání roztažení přes buňku */
+
+}
+
+/* Styl pro dropdown menu */
+select {
+    width: 100%;
+    padding: 5px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+
+}
+
+
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #732C2C;
+    color: white;
+    cursor: pointer;
+}
+
+button#cancel-action {
+    background-color: #f44336;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+/* Styl pro dropdown menu */
+select {
+    width: 100%;
+    padding: 5px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+
+}
+
+
+
+
+/* Styl pro input pole pro počet položek */
+.item-count {
+    width: 50px; /* Nastavení pevné šířky dostatečné pro dvouciferné číslo */
+    text-align: center;
+    padding: 5px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+
+}
+
+
+/* 🟢 Obecné tlačítko plateb */
+.payment-button {
+    flex: 1;
+    padding: 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 12px; /* Mírné zaoblení */
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 22px;
+    text-align: center;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Jemný stín */
+}
+
+/* 🟢 Hover efekt */
+.payment-button:hover {
+    background-color: #45a049;
+    transform: scale(1.05); /* Jemné zvětšení */
+}
+
+/* 🟢 Aktivní tlačítko */
+.payment-button.active {
+    background-color: #ff9800; /* Oranžová pro lepší vizuální efekt */
+    transform: scale(1.1); /* Zvýraznění */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 🟢 Kontejner plateb */
+.payment-methods {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+
+}
+
+#orderDetails {
+    background-color: #000; /* Černé pozadí */
+    color: #fff;            /* Bílý text */
+    padding: 20px;
+    border-radius: 8px;
+}
+
+/* Zajistí, že všechny vnořené elementy v detailech objednávky budou mít také bílé písmo */
+#orderDetails * {
+    color: #fff !important;
+    background-color: transparent !important; /* Zruší pozadí vnořených prvků */
+}

@@ -1,0 +1,64 @@
+.inventory-search input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.inventory-table td {
+    width: auto; /* Zachová přirozenou šířku buněk */
+}
+
+.inventory-table td input {
+    width: 100%; /* Inputy zabírají celou šířku buňky */
+    box-sizing: border-box; /* Zajistí, že padding se přizpůsobí velikosti buňky */
+}
+
+.inventory-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.inventory-table th, .inventory-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+}
+
+.inventory-table th {
+    background-color: #333;
+    color: white;
+}
+
+.add-item-form {
+    margin-top: 20px;
+}
+
+.add-item-form input {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.inventory-table {
+    max-height: 750vh; /* Maximální výška tabulky (60 % výšky okna) */
+    overflow-y: auto; /* Povolení vertikálního rolování */
+    margin-bottom: 20px; /* Odsazení od tlačítka */
+    border: 1px solid #ddd; /* Volitelný rámeček kolem tabulky */
+    border-radius: 8px; /* Volitelné zaoblení rohů */
+    padding: 10px; /* Volitelné vnitřní odsazení */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Jemný stín */
+}
+/* Tlačítka "Odstranit" a "Zrušit" budou červená */
+button.delete-btn, button.cancel-edit-btn {
+    background-color: #dc3545;
+}
+
+button.delete-btn:hover, button.cancel-edit-btn:hover {
+    background-color: #c82333;
+}
+/* Zarovnání tlačítek ve sloupci akcí doprava */
+.inventory-table td:last-child {
+    text-align: right;
+}

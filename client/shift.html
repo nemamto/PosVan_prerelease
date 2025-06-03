@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrace směn</title>
+    <link rel="stylesheet" href="styles/main_styles.css">
+    <link rel="stylesheet" href="styles/shift.css">
+</head>
+<body>
+    <header>
+        <h1>Správa směn</h1>
+    </header>
+
+
+
+
+
+    <main>
+
+        <section class="shift-container">
+          <div class="shift-box">
+              <h2></h2>
+              <div id="shiftStatus" class="shift-status" style="color: white;">Žádná aktivní směna</div>
+
+
+          </div>
+      </section>
+      
+
+        <section class="shift-manage">
+                          <label for="bartender-name">Jméno barmana:</label>
+              <input type="text" id="bartender-name" placeholder="Zadejte jméno barmana">
+              <div class="shift-buttons">
+                  <button id="start-shift-button" class="payment-button">Zahájit směnu</button>
+                  <button id="end-shift-button" class="payment-button" disabled>Ukončit směnu</button>
+              </div>
+        </section>
+    </main>
+
+    <footer id="footer">
+        <button class="footer-button" id="cashier-button">Pokladna</button>
+        <button class="footer-button" id="inventory-button">Sklad</button>
+        <button class="footer-button" id="order-management-button">Historie</button>
+        <button class="footer-button" id="customer-accounts-button">Účty</button>
+        <button class="footer-button active" id="shift-button">Směna</button>
+    </footer>
+
+    <script type="module" src="scripts/common.js"></script>
+    <script type="module" src="scripts/shift.js"></script>
+</body>
+</html>

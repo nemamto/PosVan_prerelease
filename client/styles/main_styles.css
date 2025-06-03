@@ -1,0 +1,916 @@
+/* ========================== */
+/*         GLOBAL STYLING     */
+/* ========================== */
+
+/* 🟢 Zajištění správného formátování */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    color: #fff; /* Doporučeno změnit i barvu textu pro lepší čitelnost */
+    overflow: hidden;
+    background-color: #282828; /* 🔧 Nový styl */
+}
+
+/* 🟢 Hlavní obsah se roztáhne a footer zůstane dole */
+main {
+    flex: 2; /* Automaticky zabere volný prostor mezi headerem a footerem */
+    display: flex;
+    flex-direction: column;
+    height: 87%;
+background: #282828;
+    padding-bottom: 80px; /* ✅ Rezerva pro footer */
+}
+.category {
+    padding: 10px 16px;
+    margin: 8px 0;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+/* ========================== */
+/*          HEADER            */
+/* ========================== */
+header {
+    background-color: #282828;
+    color: #282828;
+    padding: 10px;
+    text-align: center;
+    height: 0px;
+
+}
+
+h1 {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 0;
+}
+
+h2, h3, h4 {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: white;
+}
+
+
+/* ========================== */
+/*         FOOTER             */
+/* ========================== */
+footer {
+    position: fixed; /* ✅ Footer se posune, nebude fixed */
+    height: 50px;
+    bottom: 0;
+    width: 100%;
+    background-color: #282828;
+    color: white;
+    text-align: center;
+    scroll-padding-top: 70px;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 🟢 Tlačítka v zápatí */
+.footer-button {
+    background-color: #988A99;
+    color: #282828;
+    font-size: 18px;
+    height: 40px;
+    font-weight: bold;
+    padding: 0px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.footer-button:hover {
+    background-color: #998F54;
+}
+
+
+
+/* ========================== */
+/*        STRÁNKOVÁNÍ        */
+/* ========================== */
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+    position: relative;
+    bottom: 10px;
+
+}
+
+.pagination button {
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #2d3436;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.pagination button:hover {
+    background-color: #998F54;
+}
+
+.category-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+
+}
+
+.category {
+    padding: 20px;
+    background-color: #282828;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: bold;
+    font-size: 16px;
+    color: white;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.category:hover {
+    background-color: #DDD5AD;
+    color: #DDD5AD;
+}
+
+/* ========================== */
+/*        PRODUKTY            */
+/* ========================== */
+.product-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+.product {
+    padding: 15px;
+    background-color: #282828;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    width: 150px;
+    max-height: 25%; /* Maximální výška */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+}
+
+.product:hover {
+    transform: scale(1.1);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+    background-color: #f0f8ff;
+}
+
+.product-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.product-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.product-description {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    text-align: center;
+}
+
+.product-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+/* 🟠 Tlačítko pro vymazání objednávky */
+.submit-order {
+    display: block;
+    width: 90%;
+    padding: 20px;
+
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    background: linear-gradient(135deg, #F4A6A6, #E88C8C); /* Soft red / muted pink tones */
+    color: #333; /* Tmavší text pro lepší čitelnost */
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+    
+}
+
+/* 🟠 Hover efekt */
+.submit-order:hover {
+    transform: scale(1.05);
+    filter: brightness(1.15);
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* 🟠 Disabled stav (pro případ, že je objednávka prázdná) */
+.submit-order:disabled {
+    background: #ccc;
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+
+/* Tlačítka v modálním okně */
+.payment-method-button {
+    background-color: #323231;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    margin: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.payment-method-button:hover {
+    background-color: #45a049;
+}
+.pay-order-button {
+    background-color: #323231;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.pay-order-button:hover {
+    background-color: #45a049;
+}
+
+.pay-all-orders {
+    background-color: #323231;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.pay-all-orders:hover {
+    background-color: #e67e22;
+}
+/* Tlačítko Zrušit */
+.cancel-btn {
+    background-color: #732C2C;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.cancel-btn:hover {
+    background-color: #d32f2f;
+}
+
+
+/* ========================== */
+/*      TABULKY A ŘÁDKY      */
+/* ========================== */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* ✅ Nastavení pevné výšky řádků */
+tr {
+    height: 45px;
+}
+
+td {
+    line-height: 45px;
+    vertical-align: middle;
+}
+
+/* ✅ Zalomení textu ve sloupci Produkty */
+td.products-column {
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 250px;
+}
+
+
+
+
+
+/* 🟢 Obecné tlačítko plateb */
+.payment-button {
+    flex: 1;
+    padding: 10px;
+    background-color: #E2D02C;
+    color: white;
+    border: none;
+    border-radius: 12px; /* Mírné zaoblení */
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 55px;
+    text-align: center;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Jemný stín */
+}
+
+/* 🟢 Hover efekt */
+.payment-button:hover {
+    background-color: #777038;
+    transform: scale(1.05); /* Jemné zvětšení */
+}
+
+/* 🟢 Aktivní tlačítko */
+.payment-button.active {
+    background-color: #928527; /* gold pro lepší vizuální efekt */
+    transform: scale(1.05); /* Zvýraznění */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+
+
+
+/* 🟢 Nadpis v souhrnu */
+.order-summary h2 {
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 15px;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #ddd;
+}
+
+
+
+
+/* ✅ Aktivní modal */
+.modal-overlay.visible {
+    display: flex;
+    opacity: 1;
+}
+
+/* ✅ Aktivní obsah modalu */
+.modal-overlay.visible .modal-box {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ✅ Zavírací animace */
+.modal-overlay.closing {
+    opacity: 0;
+}
+
+.modal-overlay.closing .modal-box {
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+/* ✅ Chybové hlášení má červený text */
+.error-modal {
+    border: 3px solid #b71c1c;
+    color: #b71c1c;
+}
+
+
+/* ✅ Fullscreen overlay pro modal */
+/* ✅ Výchozí stav modalu */
+/* ✅ Celoplošný overlay s červeným pozadím */
+/* Překryvná vrstva pro modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Poloprůhledná černá */
+    display: none; /* Skrýváme, dokud není třeba */
+    align-items: center;
+    justify-content: center;
+}
+
+/* Obsah modálního okna */
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 80%;
+}
+
+/* Zvýraznění pro chybové hlášky */
+.modal-overlay.error .modal-content {
+    background: #ffebee;
+    border: 2px solid #d32f2f;
+}
+
+/* Zavírací tlačítko */
+.modal-close {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* Animace zavírání */
+.closing {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+}
+
+
+
+
+/* ✅ Text v modalu */
+.modal p {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+
+/* ✅ Efekt při zavírání */
+.modal-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* 🟢 Položky v souhrnu */
+.order-item {
+    display: flex;
+    flex-direction: column;
+    gap: 500px; /* 💡 Nový rozestup mezi položkami */
+    justify-content: space-between;
+    align-items: center;
+    padding: 50px 0;
+    font-size: 108px;
+    border-bottom: 1px solid #eee;
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 50px;
+}
+.order-cont{
+background: black;
+}
+
+
+/* 🟢 Zvýraznění položky při najetí */
+.order-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+}
+
+/* 🟢 Celková cena */
+.total-price {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 15px;
+    padding: 10px;
+    background: linear-gradient(135deg, #ff9800, #f57c00);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.remove-button {
+    background-color: #732C2C; /* Červená */
+    color: white;
+    font-size: 0px;
+    font-weight: bold;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 20px;
+    margin-left: auto; /* Posune tlačítko doprava */
+    margin-top: -20px; /* Odsadí od obsahu výše */
+}
+
+.remove-button:hover {
+    background-color: #c0392b;
+    transform: scale(1.05);
+}
+
+.remove-button:active {
+    transform: scale(0.95);
+}
+
+/* Tlačítka */
+button {
+background: #42401C;
+color: white;
+border: none;
+padding: 10px 15px;
+margin: 5px;
+cursor: pointer;
+border-radius: 4px;
+}
+/* Hlavní kontejner */
+.flex-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    height: calc(100vh - 100px); /* Celá výška okna minus header a footer */
+    overflow: hidden;
+    padding: 10px;
+    gap: 10px;
+}
+
+/* Pevné sekce */
+.fixed-section {
+    flex: 1;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* Umožní scrollování, pokud je obsah větší než výška */
+    border: 0px solid #ddd;
+    border-radius: 8px;
+    background-color: #282828;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Kategorie */
+.category-container {
+    max-width: 20%; /* Kategorie zabírají 20 % šířky */
+    height: 100%; /* Zabírají celou výšku */
+}
+
+/* Produkty */
+.product-container {
+    max-width: 70%; /* Produkty zabírají 50 % šířky */
+    height: 100%; /* Zabírají celou výšku */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
+/* Souhrn objednávky */
+.order-summary {
+    max-width: 15%; /* Souhrn zabírá 25 % šířky */
+    height: 100%; /* Zabírá celou výšku */
+    text-align: center;
+}
+
+/* Způsob platby */
+.payment-methods {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+
+/* Modal Overlay */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Poloprůhledná černá */
+    display: none; /* Skryté ve výchozím stavu */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 80%;
+}
+
+.modal-close {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* ✅ Pokud tlačítko je v kontejneru s produkty */
+
+/* ========================== */
+/*     KONTEJNER STRÁNKY      */
+/* ========================== */
+.order-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    width: 100%;
+}
+
+
+
+/* ✅ Platební metody */
+.payment-methods {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    width: 98%; /* Zajistí, že tlačítka budou stejně široká jako sekce objednávky */
+    /*max-width: 400px; /* Maximální šířka pro lepší vizuální uspořádání */
+    gap: 10px;
+    margin: 20px 0;
+
+}
+
+/* ✅ Každé tlačítko bude mít stejnou šířku */
+
+
+
+/* ✅ Souhrn objednávky (vpravo) */
+
+
+.order-summary {
+    max-width: 30%;
+    height: 100%;
+    display: flex;
+    flex-direction: column; /* Allow children to stack vertically */
+    justify-content: space-between; /* Push button to the bottom */
+    padding: 20px;
+    box-sizing: border-box;
+    border: 0px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+background-color: #282828; /* ✅ opraveno */
+    color: white;              /* ✅ přidáno */
+}
+
+button:disabled,
+.shift-buttons button:disabled {
+    background-color: #ccc !important;
+    color: #888 !important;
+    cursor: not-allowed !important;
+    border: 1px solid #bbb !important;
+    opacity: 1 !important;
+}
+
+/* ✅ RESPONSIVE DESIGN – PŘESUN OBJEDNÁVKY POD PRODUKTY PŘI ŠÍŘCE < 700px */
+@media (max-width: 1000px) {
+    .order-container {
+        flex-direction: column; /* ✅ Přepnutí na vertikální zobrazení */
+        align-items: center;
+    }
+
+    .product-container {
+        max-width: 100%; /* ✅ Produkty nyní zabírají celou šířku */
+    }
+
+    .order-summary {
+        max-width: 100%; /* ✅ Objednávka na plnou šířku */
+        position: static; /* ✅ Zrušení fixace */
+    }
+}
+
+/* 🛑 MODÁLNÍ OKNO */
+/* ✅ MODÁL - Výchozí stav */
+.modal {
+    display: none; /* Skryté při načtení stránky */
+    position: fixed;
+    z-index: 1000; /* Aby bylo nad ostatními prvky */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    background-color: #282828;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+
+
+/* ✅ Aktivní modal */
+.modal.visible {
+    display: flex;
+    opacity: 1;
+}
+
+/* ✅ Zavírání modalu animací */
+.modal.closing {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+/* Tlačítka v modalu */
+.modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+}
+.submit-order-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+.confirm-btn, .save-btn, .edit-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.confirm-btn:hover, .save-btn:hover, .edit-btn:hover {
+    background-color: #45a049;
+}
+
+
+
+/* ========================== */
+/*         CHYBOVÉ STAVY     */
+/* ========================== */
+.modal-error {
+    background-color: #ffcccc !important;
+}
+
+.error-button {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.error-button:hover {
+    background-color: darkred;
+}
+
+.customer-payment-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.customer-select {
+    flex: 1;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    border: 2px solid #8E44AD; /* Fialová barva */
+    border-radius: 10px;
+    background-color: white;
+    color: #8E44AD;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+}
+
+/* ✅ Hover efekt */
+.customer-select:hover {
+    background-color: #8E44AD;
+    color: white;
+}
+
+/* ✅ Aktivní stav */
+.customer-select:focus {
+    outline: none;
+    background-color: #8E44AD;
+    color: white;
+}
+
+
+/* 🔹 Styl pro dropdown výběru zákazníků */
+.styled-select {
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    border: 2px solid #bbb;
+    border-radius: 10px;
+    background-color: #282828;
+    color: #222;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    appearance: none;
+    text-align: center;
+}
+
+.styled-select:hover,
+.styled-select:focus {
+    background-color: #f5f5f5;
+    color: #222;
+    border-color: #888;
+}
+
+.styled-select option {
+    color: #222;
+    background: #fff;
+}
+
+/* 🔹 Tlačítko "Potvrdit" */
+#confirm-customer {
+    margin-top: 15px;
+    width: 100%;
+    padding: 12px;
+    font-size: 18px;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    background-color: #27AE60; /* Zelená */
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+/* ✅ Hover efekt pro tlačítko */
+#confirm-customer:hover {
+    background-color: #1E8449;}
+
+#orderDetails {
+    background-color: #f5f5f5;
+    color: black;            /* Bílý text */
+    padding: 20px;
+    border-radius: 8px;
+}
+
+/* Zajistí, že všechny vnořené elementy v detailech objednávky budou mít také bílé písmo */
+#orderDetails * {
+    color: black;
+
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

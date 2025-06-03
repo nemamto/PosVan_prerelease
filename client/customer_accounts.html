@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Správa zákaznických účtů a směn</title>
+  <link rel="stylesheet" href="styles/main_styles.css">
+</head>
+<body>
+  <header>
+    <h1>Účty zákazníků</h1>
+   
+  </header>
+  <main>
+    <!-- Sekce zákaznických účtů -->
+
+    <section class="customer-list">
+
+        <table id="customerTable">
+            <thead>
+              <tr>
+                <th>Účet zákazníka</th>
+                <th>Datum poslední objednávky</th>
+                <th>Celková cena objednávky</th>
+                <th>Akce</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody">
+              <!-- Řádky budou dynamicky doplňovány -->
+            </tbody>
+          </table>
+          
+      </section>
+      
+    <!-- Přehled objednávek -->
+    <section class="order-overview" id="orderOverview" style="display: none;">
+
+      <div id="orderDetails" class="order-cont"></div>
+    </section>
+
+    <!-- Tlačítko pro zobrazení formuláře přidání zákazníka -->
+    <section class="add-customer">
+      <button id="showAddCustomerFormButton">Přidat nového zákazníka</button>
+    </section>
+
+    <!-- Formulář pro přidání nového zákazníka -->
+    <section class="add-customer-form" id="addCustomerSection" style="display: none;">
+      <h2>Přidat nového zákazníka</h2>
+      <form id="addCustomerForm">
+        <label for="customerName">Jméno:</label>
+        <input type="text" id="customerName" required>
+        <button type="submit">Přidat zákazníka</button>
+        <button type="button" id="hideFormButton">Zrušit</button>
+      </form>
+    </section>
+
+  </main>
+  <div id="confirm-modal" class="modal">
+    <div class="modal-content">
+        <p id="confirm-modal-message"></p>
+        <button id="confirm-modal-yes">Ano</button>
+        <button id="confirm-modal-no">Ne</button>
+    </div>
+</div>
+
+<div id="payment-modal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <h3 id="payment-modal-message">Vyberte způsob platby</h3>
+    <button class="payment-method-button" data-method="Hotovost">Hotovost</button>
+    <button class="payment-method-button" data-method="Karta">Karta</button>
+    <button id="close-payment-modal" class="cancel-btn">Zrušit</button>
+  </div>
+</div>
+
+  <footer id="footer">
+    <button class="footer-button" id="cashier-button">Pokladna</button>
+    <button class="footer-button" id="inventory-button">Sklad</button>
+    <button class="footer-button" id="order-management-button">Historie</button>
+    <button class="footer-button" id="customer-accounts-button">Účty</button>
+    <button class="footer-button" id="shift-button">Směna</button>
+  </footer>
+
+  <!-- Načtení externích JavaScript souborů -->
+  <script type="module" src="scripts/common.js"></script>
+  <script type="module" src="scripts/customer_accounts.js"></script>
+  
+  <!-- Skript pro správu směny -->
+  <script>
+    // Po kliknutí na tlačítko "Zahájit novou směnu" se uživatel vyzve k zadání jména barmana
+    // a poté se odešle POST požadavek na server, který vytvoří novou směnu.
+   
+  </script>
+</body>
+</html>
