@@ -12,7 +12,9 @@ html, body {
     font-family: 'Poppins', sans-serif;
     font-size: 16px;
     color: #fff; /* Doporučeno změnit i barvu textu pro lepší čitelnost */
-    overflow: hidden;
+    overflow-x: hidden;       /* ✅ Skryj vodorovný scroll */
+    overflow-y: auto;         /* ✅ Povolit svislý scroll */
+    -webkit-overflow-scrolling: touch; /* ✅ Plynulé scrollování na iOS */
     background-color: #282828; /* 🔧 Nový styl */
 }
 
@@ -21,9 +23,9 @@ main {
     flex: 2; /* Automaticky zabere volný prostor mezi headerem a footerem */
     display: flex;
     flex-direction: column;
-    height: 87%;
-background: #282828;
-    padding-bottom: 80px; /* ✅ Rezerva pro footer */
+    height: auto;             /* ✅ Neomezovat výšku, nechť roste a stránka scrolluje */
+    background: #282828;
+    padding-bottom: 80px;     /* ✅ Rezerva pro fixed footer */
 }
 
 /* ========================== */

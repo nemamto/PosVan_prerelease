@@ -39,4 +39,4 @@ client/scripts/*.bak
 # Ignoruj vše v client/styles/ co není CSS
 client/styles/*.map
 client/styles/*.tmp
-client/styles/*.bak
+client/styles/*.bakservice/data.zip
