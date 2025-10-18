@@ -132,11 +132,12 @@ const changeProductQuantity = debounce(function(productName, change) {
 }, 100);
 
 // Odeslání objednávky - tlačítko "Odeslat objednávku" - nepoužívá se
+
 /* document.getElementById('submit-order').addEventListener('click', function() {
-    // Uvolnění flagu po aktualizaci DOM pomocí requestAnimationFrame
-    requestAnimationFrame(() => {
-        isUpdating = false;
-    });
+    submitOrder();
+}) */
+//reset objednavky
+document.getElementById('reset-order').addEventListener('click', function() {
     resetOrder();
 });
 
