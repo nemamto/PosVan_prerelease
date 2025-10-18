@@ -60,6 +60,38 @@
   --transition-slow: 500ms ease;
 }
 
+/* ========== LIGHT THEME (explicitni) ========== */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-accent: #dee2e6;
+  
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-tertiary: #adb5bd;
+  --text-inverted: #ffffff;
+  
+  --border-light: #e9ecef;
+  --border-medium: #dee2e6;
+  --border-dark: #adb5bd;
+  
+  --shadow-light: rgba(0, 0, 0, 0.05);
+  --shadow-medium: rgba(0, 0, 0, 0.1);
+  --shadow-dark: rgba(0, 0, 0, 0.15);
+  
+  --brand-primary: #007bff;
+  --brand-secondary: #6c757d;
+  --brand-success: #28a745;
+  --brand-danger: #dc3545;
+  --brand-warning: #ffc107;
+  --brand-info: #17a2b8;
+  
+  --hover-overlay: rgba(0, 0, 0, 0.05);
+  --active-overlay: rgba(0, 0, 0, 0.1);
+  --focus-color: #007bff;
+}
+
 /* ========== DARK THEME ========== */
 [data-theme="dark"] {
   --bg-primary: #1a1a1a;
@@ -90,6 +122,206 @@
   --brand-danger: #ff6b6b;
   --brand-warning: #ffd43b;
   --brand-info: #22b8cf;
+}
+
+/* ========== COLORFUL THEME (Crazy Rainbow Colors!) ========== */
+[data-theme="colorful"] {
+  /* Duhove pozadi */
+  --bg-primary: #ff6b9d;
+  --bg-secondary: #c44569;
+  --bg-tertiary: #ffa502;
+  --bg-accent: #ff6348;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #fff5e1;
+  --text-tertiary: #ffe4e1;
+  --text-inverted: #1a1a2e;
+  
+  --border-light: rgba(255, 255, 255, 0.3);
+  --border-medium: rgba(255, 255, 255, 0.5);
+  --border-dark: rgba(255, 255, 255, 0.7);
+  
+  --shadow-light: rgba(255, 107, 157, 0.3);
+  --shadow-medium: rgba(255, 107, 157, 0.5);
+  --shadow-dark: rgba(255, 107, 157, 0.7);
+  
+  /* Duhove akcenty */
+  --brand-primary: #feca57;
+  --brand-secondary: #ff9ff3;
+  --brand-success: #48dbfb;
+  --brand-danger: #ff6b81;
+  --brand-warning: #ffeaa7;
+  --brand-info: #54a0ff;
+  
+  /* Interactive states */
+  --hover-overlay: rgba(255, 255, 255, 0.2);
+  --active-overlay: rgba(255, 255, 255, 0.3);
+  --focus-color: #feca57;
+}
+
+/* Duhovy gradient pozadi - pomala animace */
+[data-theme="colorful"] body {
+  background: linear-gradient(135deg, 
+    #ff6b9d 0%,
+    #c44569 20%,
+    #ffa502 40%,
+    #48dbfb 60%,
+    #f368e0 80%,
+    #ff6b9d 100%);
+  background-size: 400% 400%;
+  background-attachment: fixed;
+  animation: trippyGradient 20s ease-in-out infinite;
+}
+
+@keyframes trippyGradient {
+  0%, 100% { 
+    background-position: 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  50% { 
+    background-position: 100% 50%;
+    filter: hue-rotate(60deg);
+  }
+}
+
+/* Specialni efekty pro colorful theme */
+[data-theme="colorful"] .card {
+  background: rgba(255, 107, 157, 0.3);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(255, 107, 157, 0.4);
+  transition: transform 0.3s ease;
+}
+
+[data-theme="colorful"] .card:hover {
+  transform: translateY(-2px);
+}
+
+[data-theme="colorful"] .card-header {
+  background: rgba(196, 69, 105, 0.4);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="colorful"] .btn-primary {
+  background: linear-gradient(90deg, #feca57, #ff9ff3, #48dbfb, #feca57);
+  background-size: 300% 100%;
+  border: none;
+  box-shadow: 0 4px 20px rgba(254, 202, 87, 0.6);
+  animation: trippyButton 8s linear infinite;
+}
+
+@keyframes trippyButton {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+[data-theme="colorful"] .btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(254, 202, 87, 0.8);
+}
+
+[data-theme="colorful"] .btn-danger {
+  background: linear-gradient(135deg, #ff6b81 0%, #ee5a6f 100%);
+  border: none;
+}
+
+[data-theme="colorful"] .product-item {
+  background: linear-gradient(90deg, 
+    rgba(255, 159, 243, 0.4),
+    rgba(255, 165, 2, 0.4),
+    rgba(72, 219, 251, 0.4),
+    rgba(255, 159, 243, 0.4));
+  background-size: 300% 100%;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 20px rgba(255, 107, 157, 0.4);
+  animation: trippyProduct 10s linear infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+@keyframes trippyProduct {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+[data-theme="colorful"] .product-item:hover {
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 0 12px 40px rgba(255, 159, 243, 0.7);
+}
+
+[data-theme="colorful"] .product-item:active {
+  transform: scale(0.98);
+}
+
+[data-theme="colorful"] .category-item {
+  background: linear-gradient(90deg, 
+    rgba(254, 202, 87, 0.5),
+    rgba(255, 99, 72, 0.5),
+    rgba(72, 219, 251, 0.5),
+    rgba(254, 202, 87, 0.5));
+  background-size: 300% 100%;
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 15px rgba(254, 202, 87, 0.5);
+  animation: trippyCategory 12s linear infinite;
+  transition: transform 0.3s ease;
+}
+
+@keyframes trippyCategory {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+[data-theme="colorful"] .category-item:hover {
+  transform: scale(1.08);
+  box-shadow: 0 8px 30px rgba(255, 159, 243, 0.7);
+}
+
+[data-theme="colorful"] .category-item.active {
+  background: linear-gradient(90deg, #48dbfb, #f368e0, #feca57, #48dbfb);
+  background-size: 300% 100%;
+  box-shadow: 0 6px 30px rgba(72, 219, 251, 0.8);
+  animation: trippyActive 6s linear infinite;
+  transform: scale(1.05);
+}
+
+@keyframes trippyActive {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+[data-theme="colorful"] header {
+  background: rgba(196, 69, 105, 0.5);
+  backdrop-filter: blur(12px);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 107, 157, 0.4);
+}
+
+[data-theme="colorful"] .payment-footer {
+  background: rgba(196, 69, 105, 0.5);
+  backdrop-filter: blur(12px);
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 -4px 20px rgba(255, 107, 157, 0.4);
+}
+
+[data-theme="colorful"] .order-item {
+  background: rgba(255, 165, 2, 0.4);
+  backdrop-filter: blur(8px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+[data-theme="colorful"] .order-item:hover {
+  background: rgba(255, 159, 243, 0.5);
+  transform: translateX(5px);
+}
+
+[data-theme="colorful"] .total-amount {
+  background: linear-gradient(90deg, #feca57, #ff9ff3, #48dbfb, #feca57);
+  background-size: 300% 100%;
+  animation: trippyButton 8s linear infinite;
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 30px rgba(254, 202, 87, 0.6);
 }
 
 /* ========== AUTO THEME (respektuje systémové nastavení) ========== */

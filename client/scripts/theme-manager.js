@@ -1,13 +1,22 @@
 /**
- * Theme Manager - Moderní systém pro správu témat
- * Podporuje: light, dark, auto (systémové nastavení)
+ * Theme Manager - Moderni system pro spravu temat
+ * Podporuje: light, dark, colorful
  */
 
 class ThemeManager {
     constructor() {
-        this.themes = ['light', 'dark', 'auto'];
-        this.currentTheme = this.getStoredTheme() || 'auto';
-        this.mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        this.themes = ['light', 'dark', 'colorful'];
+        this.themeIcons = {
+            'light': '☀️',
+            'dark': '🌙',
+            'colorful': '🎨'
+        };
+        this.themeNames = {
+            'light': 'Svetle',
+            'dark': 'Tmave',
+            'colorful': 'Barevne'
+        };
+        this.currentTheme = this.getStoredTheme() || 'dark';
         this.toggleElement = null;
         this.toggleOptions = {};
         this.isFallbackToggle = false;
@@ -16,17 +25,10 @@ class ThemeManager {
     }
 
     init() {
-        // Nastav počáteční téma
+        // Nastav pocatecni tema
         this.applyTheme(this.currentTheme);
         
-        // Poslouchej změny systémového tématu
-        this.mediaQuery.addEventListener('change', () => {
-            if (this.currentTheme === 'auto') {
-                this.applyTheme('auto');
-            }
-        });
-        
-        // Přidej plynulé přechody po načtení
+        // Pridej plynule prechody po nacteni
         setTimeout(() => {
             document.documentElement.classList.add('theme-transition');
             if (!this.toggleElement) {
@@ -47,33 +49,21 @@ class ThemeManager {
         try {
             localStorage.setItem('pos-theme', theme);
         } catch (e) {
-            console.warn('Nelze uložit téma do localStorage');
+            console.warn('Nelze ulozit tema do localStorage');
         }
     }
 
     applyTheme(theme) {
         const html = document.documentElement;
         
-        // Odstraň předchozí téma
-        html.removeAttribute('data-theme');
-        
-        switch (theme) {
-            case 'light':
-                html.setAttribute('data-theme', 'light');
-                break;
-            case 'dark':
-                html.setAttribute('data-theme', 'dark');
-                break;
-            case 'auto':
-                // Pro auto nestavíme data-theme, použije se CSS @media query
-                break;
-        }
+        // Nastav tema jako data-theme atribut
+        html.setAttribute('data-theme', theme);
         
         this.currentTheme = theme;
         this.storeTheme(theme);
         this.updateToggleUI();
         
-        // Trigger event pro ostatní komponenty
+        // Trigger event pro ostatni komponenty
         document.dispatchEvent(new CustomEvent('themeChanged', { 
             detail: { theme: this.currentTheme } 
         }));
@@ -139,50 +129,24 @@ class ThemeManager {
             return;
         }
 
-        const icon = this.getToggleIcon();
-        const label = this.getThemeDisplayName();
+        const icon = this.themeIcons[this.currentTheme];
+        const label = this.themeNames[this.currentTheme];
 
         if (this.isFallbackToggle) {
             this.toggleElement.textContent = icon;
-            this.toggleElement.title = `Současné téma: ${label}`;
-            this.toggleElement.setAttribute('aria-label', `Změnit téma (${label})`);
+            this.toggleElement.title = `Soucasne tema: ${label}`;
+            this.toggleElement.setAttribute('aria-label', `Zmenit tema (${label})`);
         } else {
             this.toggleElement.innerHTML = `
                 <span class="header-menu-icon">${icon}</span>
-                <span class="header-menu-text">Téma: ${label}</span>
+                <span class="header-menu-text">Tema: ${label}</span>
             `;
-            this.toggleElement.setAttribute('aria-label', `Změnit téma (${label})`);
-            this.toggleElement.setAttribute('title', `Současné téma: ${label}`);
+            this.toggleElement.setAttribute('aria-label', `Zmenit tema (${label})`);
+            this.toggleElement.setAttribute('title', `Soucasne tema: ${label}`);
         }
     }
 
-    getToggleIcon() {
-        switch (this.currentTheme) {
-            case 'light':
-                return '☀️'; // Slunce pro světlé téma
-            case 'dark':
-                return '🌙'; // Měsíc pro tmavé téma
-            case 'auto':
-                return '⚡'; // Automatické téma
-            default:
-                return '⚡';
-        }
-    }
-
-    getThemeDisplayName() {
-        switch (this.currentTheme) {
-            case 'light':
-                return 'Světlé';
-            case 'dark':
-                return 'Tmavé';
-            case 'auto':
-                return 'Automatické';
-            default:
-                return 'Neznámé';
-        }
-    }
-
-    // Veřejné API
+    // Verejne API
     setTheme(theme) {
         if (this.themes.includes(theme)) {
             this.applyTheme(theme);
@@ -192,16 +156,9 @@ class ThemeManager {
     getCurrentTheme() {
         return this.currentTheme;
     }
-
-    getEffectiveTheme() {
-        if (this.currentTheme === 'auto') {
-            return this.mediaQuery.matches ? 'dark' : 'light';
-        }
-        return this.currentTheme;
-    }
 }
 
-// Globální instance
+// Globalni instance
 window.themeManager = new ThemeManager();
 
 // Export pro moduly
@@ -209,12 +166,12 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = ThemeManager;
 }
 
-// Přidej funkce do globálního scope pro snadné použití
+// Pridej funkce do globalniho scope pro snadne pouziti
 window.setTheme = (theme) => window.themeManager.setTheme(theme);
 window.toggleTheme = () => window.themeManager.toggleTheme();
 window.getCurrentTheme = () => window.themeManager.getCurrentTheme();
 
-// Event listener pro kompletní načtení stránky
+// Event listener pro kompletni nacteni stranky
 document.addEventListener('DOMContentLoaded', () => {
-    console.log(`🎨 Theme Manager inicializován - téma: ${window.themeManager.getThemeDisplayName()}`);
+    console.log(`🎨 Theme Manager inicializovan - tema: ${window.themeManager.themeNames[window.themeManager.currentTheme]}`);
 });
