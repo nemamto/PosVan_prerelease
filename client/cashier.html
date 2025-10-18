@@ -4,71 +4,73 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Pokladna | POS Systém</title>
-  <link rel="stylesheet" href="styles/main_styles.css" />
+  <link rel="stylesheet" href="styles/main-modern.css" />
 </head>
-<body>
-  <header>
-    <h1>Pokladna</h1>
-  </header>
+<body class="page-container has-payment-footer">
+    <header id="app-header"></header>
 
   <main>
-    <section id="order-section" class="flex-container">
+    <section id="order-section" class="cashier-layout">
         <!-- Kategorie -->
-        <div class="category-container fixed-section">
-            <h2>Kategorie</h2>
-            <!-- Kategorie se zobrazí zde -->
+        <div class="card categories-column">
+            <div class="card-header">
+                <h2 class="card-title">Kategorie</h2>
+            </div>
+            <div class="card-body">
+                <div id="category-container" class="flex flex-col gap-sm">
+                    <!-- Kategorie se zobrazí zde -->
+                </div>
+            </div>
         </div>
 
         <!-- Produkty -->
-        <div id="product-container" class="product-container fixed-section">
-
-            <!-- Produkty se zobrazí zde -->
+        <div class="card products-column">
+            <div class="card-header">
+                <h2 class="card-title">Produkty</h2>
+            </div>
+            <div class="card-body">
+                <div id="product-container">
+                    <!-- Produkty se zobrazí zde -->
+                </div>
+            </div>
         </div>
 
         <!-- Souhrn objednávky -->
-        <div class="order-summary fixed-section">
-    <div id="product-list-summary"></div>
-    
-    <div class="total-and-reset">
-        <h2 id="total-amount">0 Kč</h2>
-        <button class="submit-order" id="reset-order">Vymazat objednávku</button>
-    </div>
-</div>
+        <div class="card order-column">
+            <div class="card-header">
+                <h2 class="card-title">Objednávka</h2>
+            </div>
+            <div class="card-body order-card-body">
+                <div class="order-summary-top">
+                    <h3 id="total-amount" class="total-amount text-primary font-bold">0 Kč</h3>
+                    <button class="btn btn-danger" id="reset-order">Vymazat objednávku</button>
+                </div>
+                
+                <div id="product-list-summary" class="order-items-list">
+                    <!-- Produkty v objednávce -->
+                </div>
+            </div>
+        </div>
     </section>
 
-    <!-- Způsob platby -->
-    <section class="payment-methods">
-        
-        <button class="payment-button" data-method="cash">💵</button>
-        <button class="payment-button" data-method="card">💳</button>
-        <button class="payment-button" data-method="customer">👤</button>
-    </section>
-
-    <!-- Modal Overlay -->
+        <!-- Modal Overlay -->
     <div id="modal-overlay" class="modal-overlay" style="display:none;">
       <div id="modal-content" class="modal-content">
           <p id="modal-message"></p>
-
       </div>
-  </div>
-
-  <footer>
-    <button class="footer-button" id="cashier-button">Pokladna</button>
-    <button class="footer-button" id="inventory-button">Sklad</button>
-    <button class="footer-button" id="order-management-button">Historie</button>
-    <button class="footer-button" id="customer-accounts-button">Účty</button>
-    <button class="footer-button" id="shift-button">Směna</button>
+    </div>
+  </main>
+    <footer class="payment-footer">
+        <div class="payment-footer-content payment-buttons">
+            <button class="btn btn-primary btn-lg payment-button" data-method="cash">💵 Hotovost</button>
+            <button class="btn btn-primary btn-lg payment-button" data-method="card">💳 Karta</button>
+            <button class="btn btn-primary btn-lg payment-button" data-method="customer">👤 Zákazník</button>
+        </div>
   </footer>
 
-  <!-- Modal okno 
-  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
-    <div class="modal-content" onclick="event.stopPropagation();">
-      <p id="modal-message"></p>
-      <button id="close-modal" class="btn btn-danger modal-close">Zavřít</button>
-    </div>
-  </div>
--->
-
+  <!-- Skripty -->
+    <script src="scripts/theme-manager.js"></script>
+    <script type="module" src="scripts/common.js"></script>
   <script type="module" src="scripts/cashier.js"></script>
 </body>
 </html>

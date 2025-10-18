@@ -85,7 +85,7 @@ function deactivateProduct(id) {
 }
 
 function getNextProductID() {
-    const idsDir = path.join(__dirname, 'data', 'ids');
+    const idsDir = path.join(__dirname, '..', 'data', 'ids');
     common.ensureDirectoryExistence(idsDir);
     const idPath = path.join(idsDir, 'product_id.json');
     let currentID = 1;
@@ -262,6 +262,9 @@ function markCustomerOrderAsPaid({ customerName, orderId }) {
 
         // Aktualizace atributu `@payed`
         order['@payed'] = 'true';
+        if ('payed' in order) {
+            order.payed = 'true';
+        }
 
         const updatedXml = create(customerDoc).end({ prettyPrint: true });
         fs.writeFileSync(customerFilePath, updatedXml);
@@ -274,7 +277,52 @@ function markCustomerOrderAsPaid({ customerName, orderId }) {
     }
 }
 
+function markCustomerOrderAsUnpaid({ customerName, orderId }) {
+    console.log(`↩️ Vrácení platby pro zákazníka: ${customerName}, objednávka ID: ${orderId}`);
+
+    if (!customerName || !orderId) {
+        throw new Error('Chybí jméno zákazníka nebo ID objednávky.');
+    }
+
+    const customersFolder = path.join(__dirname, '..', 'data', 'customer_accounts');
+    const fileName = customerName.replace(/\s+/g, '_') + '.xml';
+    const customerFilePath = path.join(customersFolder, fileName);
+
+    if (!fs.existsSync(customerFilePath)) {
+        throw new Error(`Soubor pro zákazníka ${customerName} neexistuje.`);
+    }
+
+    try {
+        const xmlData = fs.readFileSync(customerFilePath, 'utf8');
+        const customerDoc = convert(xmlData, { format: 'object' });
+
+        let orders = customerDoc.customer.orders?.order || [];
+        if (!Array.isArray(orders)) {
+            orders = [orders];
+        }
+
+        const order = orders.find(o => String(o['@id']) === String(orderId));
+        if (!order) {
+            throw new Error(`Objednávka ID ${orderId} nebyla nalezena.`);
+        }
+
+        order['@payed'] = 'false';
+        if ('payed' in order) {
+            order.payed = 'false';
+        }
+
+        const updatedXml = create(customerDoc).end({ prettyPrint: true });
+        fs.writeFileSync(customerFilePath, updatedXml);
+
+        console.log(`↩️ Objednávka ID ${orderId} označena jako nezaplacená pro zákazníka ${customerName}`);
+        return { message: `Objednávka ${orderId} označena jako nezaplacená.` };
+    } catch (error) {
+        console.error('❌ Chyba při vracení platby na zákaznickém účtu:', error);
+        throw new Error('Interní chyba serveru.');
+    }
+}
+
 module.exports = {
     activateProduct, deactivateProduct, deleteProduct, getNextProductID, ensureProductsXML, 
-    updateProduct, addProduct, markCustomerOrderAsPaid
+    updateProduct, addProduct, markCustomerOrderAsPaid, markCustomerOrderAsUnpaid
 };

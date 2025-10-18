@@ -3,49 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Administrace směn</title>
-    <link rel="stylesheet" href="styles/main_styles.css">
+    <title>Správa směny</title>
+    <link rel="stylesheet" href="styles/main-modern.css">
     <link rel="stylesheet" href="styles/shift.css">
 </head>
-<body>
-    <header>
-        <h1>Správa směn</h1>
-    </header>
+<body class="page-container">
+    <header id="app-header"></header>
 
+    <main class="content-wrapper">
+        <!-- Aktuální směna -->
+        <section class="card" id="current-shift-section">
+            <header class="card-header">
+                <h2>Aktuální směna</h2>
+                <div class="shift-status-badge" id="shift-status-badge">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Žádná aktivní směna</span>
+                </div>
+            </header>
+            
+            <div class="card-body" id="shift-info-container">
+                <!-- Žádná aktivní směna -->
+                <div id="no-shift-state" class="empty-state">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <p>Není aktivní žádná směna</p>
+                    <p class="text-secondary">Zahajte novou směnu pro sledování tržeb</p>
+                </div>
 
+                <!-- Aktivní směna -->
+                <div id="active-shift-info" class="shift-details" hidden>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Barman/ka</span>
+                            <span class="info-value" id="current-bartender">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ID směny</span>
+                            <span class="info-value" id="current-shift-id">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Zahájeno</span>
+                            <span class="info-value" id="shift-start-time">—</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Trvání</span>
+                            <span class="info-value" id="shift-duration">—</span>
+                        </div>
+                    </div>
 
+                    <!-- Souhrn tržeb -->
+                    <div class="revenue-summary">
+                        <h3>Souhrn tržeb</h3>
+                        <div class="revenue-grid">
+                            <div class="revenue-card revenue-total">
+                                <span class="revenue-label">Celková tržba</span>
+                                <span class="revenue-amount" id="total-revenue">0 Kč</span>
+                            </div>
+                            <div class="revenue-card">
+                                <span class="revenue-label">💵 Hotovost</span>
+                                <span class="revenue-amount" id="cash-revenue">0 Kč</span>
+                            </div>
+                            <div class="revenue-card">
+                                <span class="revenue-label">💳 Karta</span>
+                                <span class="revenue-amount" id="card-revenue">0 Kč</span>
+                            </div>
+                            <div class="revenue-card">
+                                <span class="revenue-label">👤 Účty zákazníků</span>
+                                <span class="revenue-amount" id="customer-revenue">0 Kč</span>
+                            </div>
+                        </div>
 
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <span class="stat-value" id="order-count">0</span>
+                                <span class="stat-label">Objednávek</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="cancelled-count">0</span>
+                                <span class="stat-label">Stornovaných</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-value" id="avg-order-value">0 Kč</span>
+                                <span class="stat-label">Průměr/objednávka</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-    <main>
+        <!-- Ovládání směny -->
+        <section class="card">
+            <header class="card-header">
+                <h2 id="control-title">Zahájit směnu</h2>
+            </header>
+            <div class="card-body">
+                <div class="form-group" id="bartender-input-group">
+                    <label for="bartender-name">Jméno barmana/ky</label>
+                    <input 
+                        type="text" 
+                        id="bartender-name" 
+                        class="form-input"
+                        placeholder="Zadejte jméno..."
+                        autocomplete="off"
+                    >
+                </div>
 
-        <section class="shift-container">
-          <div class="shift-box">
-              <h2></h2>
-              <div id="shiftStatus" class="shift-status" style="color: white;">Žádná aktivní směna</div>
-
-
-          </div>
-      </section>
-      
-
-        <section class="shift-manage">
-                          <label for="bartender-name">Jméno barmana:</label>
-              <input type="text" id="bartender-name" placeholder="Zadejte jméno barmana">
-              <div class="shift-buttons">
-                  <button id="start-shift-button" class="payment-button">Zahájit směnu</button>
-                  <button id="end-shift-button" class="payment-button" disabled>Ukončit směnu</button>
-              </div>
+                <div class="button-group">
+                    <button 
+                        id="start-shift-button" 
+                        class="btn btn-primary btn-lg"
+                    >
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                        </svg>
+                        Zahájit směnu
+                    </button>
+                    <button 
+                        id="end-shift-button" 
+                        class="btn btn-danger btn-lg"
+                        disabled
+                    >
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <rect x="9" y="9" width="6" height="6"></rect>
+                        </svg>
+                        Ukončit směnu
+                    </button>
+                    <button 
+                        id="refresh-button" 
+                        class="btn btn-secondary"
+                        title="Obnovit data"
+                    >
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
         </section>
     </main>
 
-    <footer id="footer">
-        <button class="footer-button" id="cashier-button">Pokladna</button>
-        <button class="footer-button" id="inventory-button">Sklad</button>
-        <button class="footer-button" id="order-management-button">Historie</button>
-        <button class="footer-button" id="customer-accounts-button">Účty</button>
-        <button class="footer-button active" id="shift-button">Směna</button>
-    </footer>
+    <!-- Modal pro potvrzení -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Potvrzení</h3>
+            </div>
+            <div class="modal-body">
+                <p id="modal-message"></p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-confirm" class="btn btn-primary">Potvrdit</button>
+                <button id="modal-cancel" class="btn btn-secondary">Zrušit</button>
+            </div>
+        </div>
+    </div>
 
+    <script src="scripts/theme-manager.js"></script>
     <script type="module" src="scripts/common.js"></script>
     <script type="module" src="scripts/shift.js"></script>
 </body>

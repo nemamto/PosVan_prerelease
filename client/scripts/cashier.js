@@ -40,10 +40,19 @@ function updateOrderSummary() {
     productListSummary.innerHTML = ''; // Vyčištění seznamu
 
     order.forEach(product => {
-        const productElement = document.createElement('p');
+        const productElement = document.createElement('div');
+        productElement.className = 'order-item';
         productElement.innerHTML = `
-            ${product.name} (${product.quantity}x) - ${product.totalPrice} Kč
-            <button class="remove-button" data-name="${product.name}">🗑️ Odebrat</button>
+            <div class="order-item-info">
+                <span class="order-item-name">${product.name}</span>
+                <span class="order-item-details">${product.quantity}x × ${product.price} Kč = ${product.totalPrice} Kč</span>
+            </div>
+            <button class="remove-item-btn" data-name="${product.name}" title="Odebrat">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         `;
         productListSummary.appendChild(productElement);
     });
@@ -51,7 +60,7 @@ function updateOrderSummary() {
     totalAmountElement.textContent = `${totalAmount} Kč`;
 
     // Přidání event listeneru pro odstranění produktů z objednávky
-    document.querySelectorAll('.remove-button').forEach(button => {
+    document.querySelectorAll('.remove-item-btn').forEach(button => {
         button.addEventListener('click', function() {
             const productName = this.getAttribute('data-name');
             removeProductFromOrder(productName);
@@ -335,7 +344,12 @@ async function fetchCategories() {
 // Funkce pro vykreslení kategorií
 async function renderProducts(products) {
     await fetchCategories(); // načti kategorie ze serveru
-    const categoryContainer = document.querySelector('.category-container');
+    const categoryContainer = document.querySelector('#category-container') || document.querySelector('.category-container');
+    if (!categoryContainer) {
+        console.error('❌ Kategorie nelze vykreslit: kontejner nenalezen v DOM.');
+        return;
+    }
+
     categoryContainer.innerHTML = '';
 
     // Seřaď kategorie podle pořadí
@@ -349,30 +363,49 @@ async function renderProducts(products) {
         if (productsInCategory.length === 0) return; // Nezobrazuj prázdné kategorie
 
         const categoryDiv = document.createElement('div');
-        categoryDiv.className = 'category';
+        categoryDiv.className = 'category-item';
         categoryDiv.textContent = cat.name;
-        categoryDiv.style.backgroundColor = cat.color;
-        categoryDiv.addEventListener('click', () => renderProductsByCategory(productsInCategory));
+        if (cat.color) {
+            categoryDiv.style.backgroundColor = cat.color;
+        }
+        categoryDiv.addEventListener('click', () => {
+            document.querySelectorAll('#category-container .category-item').forEach(el => el.classList.remove('active'));
+            categoryDiv.classList.add('active');
+            renderProductsByCategory(productsInCategory);
+        });
         categoryContainer.appendChild(categoryDiv);
     });
+
+    const firstCategoryItem = categoryContainer.querySelector('.category-item');
+    if (firstCategoryItem) {
+        firstCategoryItem.click();
+    } else {
+        productContainer && (productContainer.innerHTML = '<p class="text-secondary">Žádné aktivní produkty k zobrazení.</p>');
+    }
 }
 
 // Funkce pro vykreslení produktů v kategorii
 const productContainer = document.getElementById('product-container'); // Definice kontejneru
 
 function renderProductsByCategory(products) {
+    if (!productContainer) {
+        console.error('❌ Produkty nelze vykreslit: kontejner nenalezen v DOM.');
+        return;
+    }
+
     productContainer.innerHTML = ''; // Vyčistíme obsah kontejneru
 
     products.forEach(product => {
         const productDiv = document.createElement('div');
-        productDiv.className = 'product';
-        productDiv.style.backgroundColor = product.color || '#ccc';
+        productDiv.className = 'product-item';
+        if (product.color) {
+            productDiv.style.backgroundColor = product.color;
+        }
+
         productDiv.innerHTML = `
-            <div class="product-content">
-                <h3 class="product-name">${product.name}</h3>
-                <p class="product-description">${product.description || 'Bez popisu'}</p>
-                <span class="product-price">${product.price} Kč</span>
-            </div>
+            <div class="product-name">${product.name}</div>
+            <div class="product-description">${product.description || 'Bez popisu'}</div>
+            <div class="product-price">${product.price} Kč</div>
         `;
         productDiv.addEventListener('click', () => addProductToOrder({
             id: product.id,

@@ -1,5 +1,5 @@
 import { serverEndpoint } from './config.js';
-import { showModal, closeModal } from './common.js';
+import { showModal, showModalConfirm } from './common.js';
 let allProducts = []; // Globální pole všech produktů
 
 async function loadProducts() {
@@ -12,7 +12,7 @@ async function loadProducts() {
         allProducts = products; // Ulož do globální proměnné
         console.log('Načtené produkty:', products); // Ověření načtených dat
 
-        if (!Array.isArray(products) || products.length === 0) {
+        if (!Array.isArray(products)) {
             console.warn('Žádné produkty nebyly načteny.');
             return;
         }
@@ -24,6 +24,27 @@ async function loadProducts() {
 }
 
 // Funkce pro vykreslení inventáře podle kategorií
+function formatCurrency(value) {
+    if (value === null || value === undefined || value === '') {
+        return '0 Kč';
+    }
+
+    const normalised = typeof value === 'string'
+        ? value.replace(/[^0-9,.-]/g, '').replace(',', '.')
+        : value;
+
+    const number = Number(normalised);
+
+    if (!Number.isFinite(number)) {
+        return `${value} Kč`;
+    }
+
+    return `${number.toLocaleString('cs-CZ', {
+        minimumFractionDigits: number % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2
+    })} Kč`;
+}
+
 function renderInventory(products) {
     const inventoryContainer = document.getElementById('inventory-list');
     if (!inventoryContainer) {
@@ -31,7 +52,16 @@ function renderInventory(products) {
         return;
     }
 
-    // Skupina produktů podle kategorií
+    inventoryContainer.innerHTML = '';
+
+    if (!Array.isArray(products) || products.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'inventory-empty-state';
+        emptyState.innerHTML = 'Žádné položky neodpovídají aktuálnímu filtrování.';
+        inventoryContainer.appendChild(emptyState);
+        return;
+    }
+
     const categories = products.reduce((acc, product) => {
         const category = product.category || 'Nezařazeno';
         if (!acc[category]) acc[category] = [];
@@ -39,78 +69,112 @@ function renderInventory(products) {
         return acc;
     }, {});
 
-    inventoryContainer.innerHTML = '';
+    Object.keys(categories)
+        .sort((a, b) => a.localeCompare(b, 'cs', { sensitivity: 'base' }))
+        .forEach((category) => {
+            const items = categories[category];
+            const categoryCard = document.createElement('div');
+            categoryCard.className = 'inventory-category';
 
-    Object.keys(categories).forEach((category) => {
-        const categoryHeader = document.createElement('h3');
-        categoryHeader.textContent = category;
-        inventoryContainer.appendChild(categoryHeader);
-
-        const table = document.createElement('table');
-        table.classList.add('inventory-table');
-        table.innerHTML = `
-            <tr>
-                <th>ID</th>
-                <th>Název</th>
-                <th>Popis</th>
-                <th>Kategorie</th>
-                <th>Množství</th>
-                <th>Cena</th>
-                <th>Akce</th>
-            </tr>
-        `;  
-
-
-        categories[category].forEach((product) => {
-            if (!product || !product.id || !product.name) return;
-        
-            const row = document.createElement('tr');
-            row.setAttribute('data-id', product.id);
-        
-            const isDeactivated = product.active === "false";
-            row.style.backgroundColor = isDeactivated ? "#ccc" : product.color || "#fff";
-            row.style.opacity = isDeactivated ? "0.5" : "1";
-        
-            row.innerHTML = `
-                <td>${product.id}</td>
-                <td>${product.name}</td>
-                <td>${product.description || 'Bez popisu'}</td>
-                <td>${product.category || 'Nezařazeno'}</td>
-                <td>${product.quantity}</td>
-                <td>${product.price} Kč</td>
-                <td>
-                    <div class="btn-container">
-                        <button class="edit-btn">Upravit</button>
-                        ${product.active === "false" 
-                            ? `<button class="activateProduct-btn" data-id="${product.id}">Aktivovat</button>`
-                            : ""
-                        }
-                    </div>
-                </td>
+            const header = document.createElement('div');
+            header.className = 'inventory-category-header';
+            header.innerHTML = `
+                <h3 class="inventory-category-title">${category}</h3>
+                <span class="inventory-category-count">${items.length} položek</span>
             `;
-        
-            table.appendChild(row);
+
+            const tableWrapper = document.createElement('div');
+            tableWrapper.className = 'inventory-table-wrapper';
+
+            const table = document.createElement('table');
+            table.classList.add('inventory-table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Název</th>
+                        <th>Popis</th>
+                        <th>Kategorie</th>
+                        <th>Množství</th>
+                        <th>Cena</th>
+                        <th>Akce</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+
+            const tbody = table.querySelector('tbody');
+
+            items.forEach((product) => {
+                if (!product || !product.id || !product.name) return;
+
+                const row = document.createElement('tr');
+                row.className = 'inventory-row';
+                row.dataset.id = product.id;
+                row.dataset.color = product.color || '';
+                row.dataset.name = product.name || '';
+                row.dataset.description = product.description || '';
+                row.dataset.category = product.category || '';
+                row.dataset.quantity = product.quantity ?? '';
+                row.dataset.price = product.price ?? '';
+                row.dataset.active = product.active === 'false' ? 'false' : 'true';
+
+                if (product.color) {
+                    row.style.setProperty('--product-color', product.color);
+                    row.setAttribute('data-color', product.color);
+                }
+
+                const isDeactivated = product.active === 'false';
+                if (isDeactivated) {
+                    row.classList.add('is-inactive');
+                }
+
+                const statusChip = `<span class="status-chip">${isDeactivated ? 'Neaktivní' : 'Aktivní'}</span>`;
+
+                row.innerHTML = `
+                    <td>${product.id}</td>
+                    <td>
+                        <div class="inventory-product-name">${product.name}</div>
+                        ${statusChip}
+                    </td>
+                    <td>${product.description || 'Bez popisu'}</td>
+                    <td>${product.category || 'Nezařazeno'}</td>
+                    <td>${product.quantity}</td>
+                    <td>${formatCurrency(product.price)}</td>
+                    <td>
+                        <div class="inventory-actions">
+                            <button class="btn btn-secondary btn-sm edit-btn" type="button">Upravit</button>
+                            ${isDeactivated
+                                ? `<button class="btn btn-success btn-sm activateProduct-btn" type="button" data-id="${product.id}">Aktivovat</button>`
+                                : `<button class="btn btn-warning btn-sm deactivateProduct-btn" type="button" data-id="${product.id}">Deaktivovat</button>`
+                            }
+                        </div>
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            tableWrapper.appendChild(table);
+            categoryCard.append(header, tableWrapper);
+            inventoryContainer.appendChild(categoryCard);
         });
 
-        inventoryContainer.appendChild(table);
-    });
-
-    // Event listenery
-    document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const productId = event.target.getAttribute('data-id');
-            deactivateProduct(productId);
+    inventoryContainer.querySelectorAll('.deactivateProduct-btn').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            const productId = event.currentTarget.getAttribute('data-id');
+            await deactivateProduct(productId);
         });
     });
 
-    document.querySelectorAll('.activateProduct-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const productId = event.target.getAttribute('data-id');
-            activateProduct(productId);
+    inventoryContainer.querySelectorAll('.activateProduct-btn').forEach(button => {
+        button.addEventListener('click', async (event) => {
+            const productId = event.currentTarget.getAttribute('data-id');
+            await activateProduct(productId);
         });
     });
 
-    document.querySelectorAll('.edit-btn').forEach(button => {
+    inventoryContainer.querySelectorAll('.edit-btn').forEach(button => {
         button.addEventListener('click', function () {
             const row = this.closest('tr');
             enableEditing(row);
@@ -147,14 +211,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('toggleAddItemForm');
     const addItemForm = document.getElementById('addItemForm');
 
-    toggleButton.addEventListener('click', () => {
-        // Přepínání viditelnosti formuláře
-        if (addItemForm.style.display === 'none') {
-            addItemForm.style.display = 'block';
+    if (!toggleButton || !addItemForm) {
+        return;
+    }
+
+    const setVisibility = (visible) => {
+        if (visible) {
+            addItemForm.classList.add('is-visible');
             toggleButton.textContent = 'Skrýt formulář';
+            toggleButton.setAttribute('aria-expanded', 'true');
         } else {
-            addItemForm.style.display = 'none';
+            addItemForm.classList.remove('is-visible');
             toggleButton.textContent = 'Přidat novou položku';
+            toggleButton.setAttribute('aria-expanded', 'false');
+        }
+    };
+
+    setVisibility(false);
+
+    toggleButton.addEventListener('click', () => {
+        const isVisible = addItemForm.classList.contains('is-visible');
+        setVisibility(!isVisible);
+        if (!isVisible) {
+            addItemForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     });
 });
@@ -178,63 +257,21 @@ async function activateProduct(productId) {
         console.log(`✅ Produkt ID ${productId} byl úspěšně aktivován:`, result);
     } catch (error) {
         console.error("❌ Chyba při aktivaci produktu:", error);
-        showModal(`❌ Chyba při aktivaci produktu: ${error.message}`, true);
-
-    }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const addProductButton = document.getElementById('addProductButton');
-    const confirmDeleteButton = document.getElementById('confirmDelete');
-    const cancelDeleteButton = document.getElementById('cancelDelete');
-
-    // Kontrola, zda tlačítka existují v DOM
-    if (addProductButton) {
-        addProductButton.addEventListener('click', handleAddProduct);
-    } else {
-        console.error("❌ Tlačítko pro přidání produktu nebylo nalezeno.");
-    }
-
-    if (confirmDeleteButton && cancelDeleteButton) {
-        confirmDeleteButton.addEventListener('click', handleDeleteConfirmed);
-        cancelDeleteButton.addEventListener('click', closeModal);
-    } else {
-        console.error("❌ Tlačítka pro potvrzení a zrušení mazání nebyla nalezena.");
-    }
-
-    // Skryjeme modální okna při načtení stránky
-    const deleteModal = document.getElementById('deleteModal');
-    if (deleteModal) {
-        deleteModal.style.display = 'none';
-    }
-});
-
-async function handleDeleteConfirmed() {
-    try {
-        const response = await fetch(`${serverEndpoint}/deactivateProduct`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: productIdToDelete })
+        await showModal(`❌ Chyba při aktivaci produktu: ${error.message}`, {
+            isError: true,
+            title: 'Aktivace selhala',
+            confirmVariant: 'danger'
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(`⚠️ ${data.message}`);
-        }
-
-        console.log(`✅ Produkt ${productIdToDelete} deaktivován: ${data.message}`);
-
-        // ✅ Počkej 500ms na aktualizaci inventáře
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await loadProducts();
-    } catch (error) {
-        console.error("❌ Chyba při deaktivaci produktu:", error);
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const colorSelect = document.getElementById('productColor');
+
+    if (!colorSelect) {
+        return;
+    }
 
     // Nastavení barvy pozadí při změně výběru
     colorSelect.addEventListener('change', () => {
@@ -290,198 +327,243 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Funkce pro přidání nového produktu
 async function handleAddProduct() {
-    const name = document.getElementById('productName').value.trim();
-    const description = document.getElementById('productDescription').value.trim();
-    const quantity = parseInt(document.getElementById('productQuantity').value, 10);
-    const price = parseFloat(document.getElementById('productPrice').value);
-    const color = document.getElementById('productColor').value;
-    const category = document.getElementById('productCategory').value;
+    const nameInput = document.getElementById('productName');
+    const descriptionInput = document.getElementById('productDescription');
+    const quantityInput = document.getElementById('productQuantity');
+    const priceInput = document.getElementById('productPrice');
+    const colorSelect = document.getElementById('productColor');
+    const categorySelect = document.getElementById('productCategory');
+
+    const name = nameInput.value.trim();
+    const description = descriptionInput.value.trim();
+    const quantityRaw = quantityInput.value.trim();
+    const priceRaw = priceInput.value.trim();
+    const color = colorSelect.value;
+    const category = categorySelect.value;
+
+    const normalisedQuantity = Number(quantityRaw);
+    const normalisedPrice = Number(priceRaw.replace(',', '.'));
 
     if (!name) {
-        showModal("❌ Název produktu je povinný!", true);
-        return;
-    }
-    if (isNaN(quantity) || quantity <= 0) {
-        showModal("❌ Množství musí být kladné číslo!", true);
-        return;
-    }
-    if (isNaN(price) || price <= 0) {
-        showModal("❌ Cena musí být kladné číslo!", true);
-        return;
-    }
-    if (!color) {
-        showModal("❌ Vyberte barvu produktu!", true);
-        return;
-    }
-    if (!category) {
-        showModal("❌ Vyberte kategorii produktu!", true);
+        await showModal('❌ Název produktu je povinný!', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
         return;
     }
 
-    console.log("🛒 Přidávám nový produkt:", { name, description, quantity, price, color, category });
+    const isQuantityValid = quantityRaw !== '' && Number.isFinite(normalisedQuantity) && Number.isInteger(normalisedQuantity) && normalisedQuantity > 0;
+    if (!isQuantityValid) {
+        await showModal('❌ Množství musí být kladné celé číslo!', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    const isPriceValid = priceRaw !== '' && Number.isFinite(normalisedPrice) && normalisedPrice > 0;
+    if (!isPriceValid) {
+        await showModal('❌ Cena musí být kladné číslo!', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    if (!color) {
+        await showModal('❌ Vyberte barvu produktu!', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    if (!category) {
+        await showModal('❌ Vyberte kategorii produktu!', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    console.log('🛒 Přidávám nový produkt:', {
+        name,
+        description,
+        quantity: normalisedQuantity,
+        price: normalisedPrice,
+        color,
+        category
+    });
 
     try {
         const response = await fetch(`${serverEndpoint}/addProduct`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, description, quantity, price, color, category })
+            body: JSON.stringify({
+                name,
+                description,
+                quantity: normalisedQuantity,
+                price: normalisedPrice,
+                color,
+                category
+            })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || "Chyba při přidávání produktu.");
+        let data = null;
+        try {
+            data = await response.json();
+        } catch (parseError) {
+            console.warn('⚠️ Nepodařilo se zpracovat JSON odpovědi při přidávání produktu.', parseError);
         }
 
-        const data = await response.json();
-        console.log("✅ Produkt přidán:", data.product);
+        if (!response.ok) {
+            throw new Error(data?.message || 'Chyba při přidávání produktu.');
+        }
 
-        // Vymaž formulář po úspěchu
-        document.getElementById('productName').value = '';
-        document.getElementById('productDescription').value = '';
-        document.getElementById('productQuantity').value = '';
-        document.getElementById('productPrice').value = '';
-        document.getElementById('productColor').value = '';
-        document.getElementById('productCategory').value = '';
+        console.log('✅ Produkt přidán:', data?.product ?? '(bez detailů)');
 
-        showModal("✅ Produkt byl úspěšně přidán!", false);
-        loadProducts(); // Aktualizace seznamu produktů
+        nameInput.value = '';
+        descriptionInput.value = '';
+        quantityInput.value = '';
+        priceInput.value = '';
+        colorSelect.value = '';
+        colorSelect.style.backgroundColor = '';
+        categorySelect.value = '';
+
+        await showModal('✅ Produkt byl úspěšně přidán!', {
+            title: 'Hotovo',
+            confirmVariant: 'success'
+        });
+
+        await loadProducts();
     } catch (error) {
-        console.error("❌ Chyba při přidávání produktu:", error);
-        showModal(`❌ ${error.message}`, true);
+        console.error('❌ Chyba při přidávání produktu:', error);
+        await showModal(`❌ ${error.message}`, {
+            isError: true,
+            title: 'Přidání produktu selhalo',
+            confirmVariant: 'danger'
+        });
     }
 }
 // Funkce pro odstranění produktu
-let productIdToDelete = null; // Uchování ID pro smazání
-
-async function deactivateProduct(productIdToDelete) {
-    if (!productIdToDelete) {
-        console.error("❌ Chyba: ID produktu není definováno.");
-        return;
+async function deactivateProduct(productId, { skipConfirm = false } = {}) {
+    if (!productId) {
+        console.error('❌ Chyba: ID produktu není definováno.');
+        return false;
     }
 
+    if (!skipConfirm) {
+        const confirmed = await showModalConfirm(
+            'Opravdu chcete produkt deaktivovat?',
+            {
+                title: 'Deaktivace produktu',
+                confirmText: 'Deaktivovat',
+                cancelText: 'Zrušit',
+                variant: 'warning'
+            }
+        );
+
+        if (!confirmed) {
+            return false;
+        }
+    }
+
+    let success = false;
+
     try {
-        console.log(`🛑 Deaktivuji produkt ID: ${productIdToDelete}...`);
+        console.log(`🛑 Deaktivuji produkt ID: ${productId}...`);
 
         const response = await fetch(`${serverEndpoint}/deactivateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: String(productIdToDelete) })
+            body: JSON.stringify({ id: String(productId) })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.message);
+            throw new Error(data?.message || 'Chyba při deaktivaci produktu.');
         }
 
-        if (data.alreadyDeactivated) {
-            console.warn(`⚠️ Produkt ID ${productIdToDelete} byl už dříve deaktivován.`);
+        success = true;
+
+        if (data?.alreadyDeactivated) {
+            console.warn(`⚠️ Produkt ID ${productId} byl už dříve deaktivován.`);
         } else {
-            console.log(`✅ Produkt ${productIdToDelete} deaktivován: ${data.message}`);
+            console.log(`✅ Produkt ${productId} deaktivován: ${data.message}`);
         }
-
     } catch (error) {
-        console.error("❌ Chyba při deaktivaci produktu:", error);
-        showModal("❌ Chyba při deaktivaci produktu!");
+        console.error('❌ Chyba při deaktivaci produktu:', error);
+        await showModal(
+            `❌ Chyba při deaktivaci produktu: ${error.message}`,
+            { isError: true, title: 'Deaktivace selhala', confirmVariant: 'danger' }
+        );
     } finally {
         await loadProducts();
     }
+
+    return success;
 }
 
-function closeDeleteModal() {
-    console.log("🛑 Zavírám modal pro mazání produktu...");
-    
-    const modal = document.getElementById('deleteModal');
-    if (!modal) {
-        console.error("❌ Modal neexistuje!");
-        return;
+async function deleteProduct(productId, { skipConfirm = false } = {}) {
+    if (!productId) {
+        console.error('❌ Chyba: ID produktu není definováno.');
+        return false;
     }
 
-    modal.classList.add('closing'); // Přidáme animaci zavírání
+    if (!skipConfirm) {
+        const confirmed = await showModalConfirm(
+            'Opravdu chcete produkt trvale odstranit?',
+            {
+                title: 'Odstranění produktu',
+                confirmText: 'Odstranit',
+                cancelText: 'Zrušit',
+                variant: 'danger'
+            }
+        );
 
-    setTimeout(() => {
-        modal.style.display = 'none';
-        modal.classList.remove('visible', 'closing'); // Reset tříd
-        console.log("✅ Modal úspěšně skryt.");
-    }, 300); // Čekáme na dokončení animace
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('deleteModal');
-    if (!modal) {
-        console.error("❌ Chyba: Modální okno 'deleteModal' neexistuje v HTML!");
-    } else {
-        console.log("🟢 Modální okno bylo úspěšně nalezeno v DOM.");
+        if (!confirmed) {
+            return false;
+        }
     }
-});
 
-// Event listenery pro tlačítka v modalu
-document.getElementById('confirmDelete').addEventListener('click', handleDeleteConfirmed);
-document.getElementById('cancelDelete').addEventListener('click', closeModal);
+    let success = false;
 
-// Přidání listenerů k tlačítkům smazání v tabulce
-document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.deactivateProduct-btn').forEach(button => {
-        button.addEventListener('click', (event) => {
-            const productId = event.target.getAttribute('data-id');
-            deactivateProduct(productId);
+    try {
+        const response = await fetch(`${serverEndpoint}/deleteProduct`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: productId })
         });
-    });
-});
 
-// Při kliknutí na tlačítko "OK" modál zavře
-document.getElementById('confirm-action').addEventListener('click', () => {
-    closeModal();
-});
+        const data = await response.json();
 
-// Ujistěte se, že modál je skrytý při načtení stránky
-document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('modal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-});
-
-function showModalConfirm(message, onConfirm) {
-    console.log("🟢 Otevírám potvrzovací modal...");
-
-    setTimeout(() => {
-        const modal = document.getElementById('deleteModal');
-        const modalMessage = document.getElementById('delete-modal-message');
-        const confirmButton = document.getElementById('confirmDelete');
-        const cancelButton = document.getElementById('cancelDelete');
-
-        if (!modal || !modalMessage || !confirmButton || !cancelButton) {
-            console.error("❌ Chyba: Některé prvky modálního okna nejsou dostupné!");
-            return;
+        if (!response.ok) {
+            throw new Error(data?.message || 'Chyba při mazání produktu.');
         }
 
-        modalMessage.textContent = message;
-        modal.style.display = 'flex';
-        setTimeout(() => { modal.style.opacity = '1'; }, 10);
+        success = true;
 
-        console.log("✅ Potvrzovací modal byl úspěšně zobrazen.");
-
-        confirmButton.replaceWith(confirmButton.cloneNode(true));
-        cancelButton.replaceWith(cancelButton.cloneNode(true));
-
-        const newConfirmButton = document.getElementById('confirmDelete');
-        const newCancelButton = document.getElementById('cancelDelete');
-
-        newConfirmButton.addEventListener('click', async () => {
-            console.log("🟢 Potvrzeno: Probíhá deaktivace...");
-            await onConfirm();
-            setTimeout(() => {
-                closeDeleteModal();
-            }, 300);
+        await showModal('✅ Produkt byl trvale odstraněn.', {
+            title: 'Hotovo',
+            confirmVariant: 'success'
         });
+    } catch (error) {
+        console.error('❌ Chyba při mazání produktu:', error);
+        await showModal(
+            `❌ Chyba při mazání produktu: ${error.message}`,
+            { isError: true, title: 'Mazání selhalo', confirmVariant: 'danger' }
+        );
+    } finally {
+        await loadProducts();
+    }
 
-        newCancelButton.addEventListener('click', function () {
-            console.log("🛑 Storno: Zavírám modal.");
-            closeDeleteModal();
-        });
-
-    }, 50);
+    return success;
 }
 
 let loadedCategories = [];
@@ -512,12 +594,14 @@ async function enableEditing(row) {
         return;
     }
 
-    const currentName = nameCell.textContent.trim();
-    const currentDescription = descriptionCell.textContent.trim();
-    const currentCategory = categoryCell.textContent.trim();
-    const currentQuantity = parseInt(quantityCell.textContent.trim());
-    const currentPrice = parseFloat(priceCell.textContent.replace(' Kč', '').trim());
-    const currentColor = row.style.backgroundColor ? rgbToHex(row.style.backgroundColor) : "#ffffff";
+    const currentName = row.dataset.name || nameCell.querySelector('.inventory-product-name')?.textContent.trim() || '';
+    const currentDescription = row.dataset.description || descriptionCell.textContent.trim();
+    const currentCategory = row.dataset.category || categoryCell.textContent.trim();
+    const currentQuantity = Number(row.dataset.quantity ?? quantityCell.textContent.trim());
+    const priceText = row.dataset.price !== undefined ? String(row.dataset.price) : priceCell.textContent;
+    const numericPrice = Number(priceText.replace(/[^0-9,.-]/g, '').replace(',', '.'));
+    const currentPrice = Number.isFinite(numericPrice) ? numericPrice : 0;
+    const currentColor = row.dataset.color || '#ffffff';
 
     if (loadedCategories.length === 0) await fetchCategories();
 
@@ -535,28 +619,24 @@ async function enableEditing(row) {
 
     // Color picker a tlačítka do jedné buňky
     actionCell.innerHTML = `
-        <input type="color" value="${currentColor}" style="width: 32px; height: 32px; padding: 0; border: none; margin-right: 8px; vertical-align: middle; cursor: pointer;">
-        <div class="btn-container" style="display:inline-block;">
-            <button class="save-btn">Uložit</button>
-            <button class="cancel-btn">Zrušit</button>
-            <button class="deactivate-btn">Deaktivovat</button>
-            <button class="delete-btn">Odstranit</button>
+        <div class="inventory-inline-actions">
+            <input type="color" class="inventory-color-picker" value="${currentColor}">
+            <div class="inventory-actions">
+                <button class="btn btn-success btn-sm save-btn" type="button">Uložit</button>
+                <button class="btn btn-secondary btn-sm cancel-btn" type="button">Zrušit</button>
+                <button class="btn btn-warning btn-sm deactivate-btn" type="button">Deaktivovat</button>
+                <button class="btn btn-danger btn-sm delete-btn" type="button">Odstranit</button>
+            </div>
         </div>
     `;
 
     actionCell.querySelector('.save-btn').addEventListener('click', () => handleSaveInline(id, row));
     actionCell.querySelector('.cancel-btn').addEventListener('click', () => loadProducts());
     actionCell.querySelector('.deactivate-btn').addEventListener('click', async () => {
-        if (confirm("Opravdu chcete produkt deaktivovat?")) {
-            await deactivateProduct(id);
-            loadProducts();
-        }
+        await deactivateProduct(id);
     });
     actionCell.querySelector('.delete-btn').addEventListener('click', async () => {
-        if (confirm("Opravdu chcete produkt trvale odstranit?")) {
-            await deleteProduct(id);
-            loadProducts();
-        }
+        await deleteProduct(id);
     });
 }
 
@@ -573,26 +653,6 @@ function rgbToHex(rgb) {
             .join("")
     );
 }
-
-async function deleteProduct(productId) {
-    try {
-        const response = await fetch(`${serverEndpoint}/deleteProduct`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: productId })
-        });
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || "Chyba při mazání produktu.");
-        }
-        showModal("✅ Produkt byl trvale odstraněn.", false, true);
-        await loadProducts();
-    } catch (error) {
-        console.error("❌ Chyba při mazání produktu:", error);
-        showModal("❌ Chyba při mazání produktu!", true, true);
-    }
-}
-
 
 async function handleSaveInline(id, row) {
     if (!id) {
@@ -615,27 +675,67 @@ async function handleSaveInline(id, row) {
     const name = nameInput.value.trim();
     const description = descriptionInput.value.trim();
     const category = categorySelect.value;
-    const quantity = parseInt(quantityInput.value, 10);
-    const price = parseFloat(priceInput.value);
+    const quantityRaw = quantityInput.value.trim();
+    const priceRaw = priceInput.value.trim();
+    const quantity = Number(quantityRaw);
+    const price = Number(priceRaw.replace(',', '.'));
     const color = colorInput.value;
 
-    if (!name || isNaN(quantity) || quantity < 0 || isNaN(price) || price < 0) {
-        alert("❌ Neplatná hodnota pro název, množství nebo cenu!");
+    if (!name) {
+        await showModal('❌ Název produktu nesmí být prázdný.', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    const isQuantityValid = quantityRaw !== '' && Number.isFinite(quantity) && Number.isInteger(quantity) && quantity >= 0;
+    if (!isQuantityValid) {
+        await showModal('❌ Množství musí být celé číslo větší nebo rovné nule.', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    const isPriceValid = priceRaw !== '' && Number.isFinite(price) && price >= 0;
+    if (!isPriceValid) {
+        await showModal('❌ Cena musí být číslo větší nebo rovné nule.', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
         return;
     }
 
     try {
-        console.log("Odesílám na server:", { id, name, description, category, quantity, price, color });
+        console.log('Odesílám na server:', {
+            id,
+            name,
+            description,
+            category,
+            quantity,
+            price,
+            color
+        });
         const response = await fetch(`${serverEndpoint}/updateProduct`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id, name, description, category, quantity, price, color })
         });
-        if (!response.ok) throw new Error("Chyba při ukládání produktu.");
+        if (!response.ok) {
+            throw new Error('Chyba při ukládání produktu.');
+        }
         await loadProducts();
     } catch (e) {
-        alert("Chyba při ukládání produktu!");
         console.error(e);
+        await showModal('❌ Chyba při ukládání produktu!', {
+            isError: true,
+            title: 'Uložení selhalo',
+            confirmVariant: 'danger'
+        });
     }
 }
 
@@ -644,20 +744,12 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts(); // Načíst produkty při načtení stránky
 
     // Přidat event listener na tlačítko přidání produktu
-    document.getElementById('addProductButton').addEventListener('click', handleAddProduct);
-});
-
-// Přepínání mezi stránkami přes tlačítka ve footeru
-document.getElementById('cashier-button').addEventListener('click', function() {
-    window.location.href = 'cashier.html'; // Přesměruje na stránku Pokladna
-});
-
-document.getElementById('inventory-button').addEventListener('click', function() {
-    window.location.href = 'inventory.html'; // Přesměruje na stránku Inventář
-});
-
-document.getElementById('order-management-button').addEventListener('click', function() {
-    window.location.href = 'order_management.html'; // Přesměruje na stránku Správa objednávek
+    const addProductButton = document.getElementById('addProductButton');
+    if (addProductButton) {
+        addProductButton.addEventListener('click', handleAddProduct);
+    } else {
+        console.warn('⚠️ Tlačítko pro přidání produktu nebylo nalezeno.');
+    }
 });
 
 // Přidej tento kód pro vyhledávání:

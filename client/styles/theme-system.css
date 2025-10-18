@@ -1,0 +1,152 @@
+/* ========================== */
+/*       THEME SYSTEM         */
+/* ========================== */
+
+:root {
+  /* ========== LIGHT THEME (výchozí) ========== */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-accent: #dee2e6;
+  
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-tertiary: #adb5bd;
+  --text-inverted: #ffffff;
+  
+  --border-light: #e9ecef;
+  --border-medium: #dee2e6;
+  --border-dark: #adb5bd;
+  
+  --shadow-light: rgba(0, 0, 0, 0.05);
+  --shadow-medium: rgba(0, 0, 0, 0.1);
+  --shadow-dark: rgba(0, 0, 0, 0.15);
+  
+  /* Branding colors */
+  --brand-primary: #007bff;
+  --brand-secondary: #6c757d;
+  --brand-success: #28a745;
+  --brand-danger: #dc3545;
+  --brand-warning: #ffc107;
+  --brand-info: #17a2b8;
+  
+  /* Interactive states */
+  --hover-overlay: rgba(0, 0, 0, 0.05);
+  --active-overlay: rgba(0, 0, 0, 0.1);
+  --focus-color: #007bff;
+  
+  /* Layout */
+  --header-height: 60px;
+  --footer-height: 110px;
+  --sidebar-width: 280px;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+  
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 300ms ease;
+  --transition-slow: 500ms ease;
+}
+
+/* ========== DARK THEME ========== */
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #404040;
+  --bg-accent: #525252;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #a3a3a3;
+  --text-inverted: #000000;
+  
+  --border-light: #404040;
+  --border-medium: #525252;
+  --border-dark: #737373;
+  
+  --shadow-light: rgba(0, 0, 0, 0.2);
+  --shadow-medium: rgba(0, 0, 0, 0.3);
+  --shadow-dark: rgba(0, 0, 0, 0.4);
+  
+  /* Interactive states pro dark theme */
+  --hover-overlay: rgba(255, 255, 255, 0.05);
+  --active-overlay: rgba(255, 255, 255, 0.1);
+  
+  /* Upravené brand colors pro dark theme */
+  --brand-primary: #4dabf7;
+  --brand-success: #51cf66;
+  --brand-danger: #ff6b6b;
+  --brand-warning: #ffd43b;
+  --brand-info: #22b8cf;
+}
+
+/* ========== AUTO THEME (respektuje systémové nastavení) ========== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #404040;
+    --bg-accent: #525252;
+    
+    --text-primary: #ffffff;
+    --text-secondary: #d4d4d4;
+    --text-tertiary: #a3a3a3;
+    --text-inverted: #000000;
+    
+    --border-light: #404040;
+    --border-medium: #525252;
+    --border-dark: #737373;
+    
+    --shadow-light: rgba(0, 0, 0, 0.2);
+    --shadow-medium: rgba(0, 0, 0, 0.3);
+    --shadow-dark: rgba(0, 0, 0, 0.4);
+    
+    --hover-overlay: rgba(255, 255, 255, 0.05);
+    --active-overlay: rgba(255, 255, 255, 0.1);
+    
+    --brand-primary: #4dabf7;
+    --brand-success: #51cf66;
+    --brand-danger: #ff6b6b;
+    --brand-warning: #ffd43b;
+    --brand-info: #22b8cf;
+  }
+}
+
+/* ========================== */
+/*      UTILITY CLASSES       */
+/* ========================== */
+
+/* Rychlé přepínání témat */
+.theme-transition * {
+  transition: background-color var(--transition-normal), 
+              color var(--transition-normal), 
+              border-color var(--transition-normal) !important;
+}
+
+/* Status indikátory */
+.status-success { color: var(--brand-success); }
+.status-danger { color: var(--brand-danger); }
+.status-warning { color: var(--brand-warning); }
+.status-info { color: var(--brand-info); }
+
+/* Background utilities */
+.bg-primary { background-color: var(--bg-primary); }
+.bg-secondary { background-color: var(--bg-secondary); }
+.bg-tertiary { background-color: var(--bg-tertiary); }
+
+/* Text utilities */
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }

@@ -1,64 +1,259 @@
-.inventory-search input {
+.inventory-search-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.inventory-search-card .form-input {
+    max-width: 420px;
+}
+
+.inventory-list-card {
+    margin-top: var(--space-lg);
+}
+
+.inventory-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+}
+
+.inventory-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+
+.inventory-empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: var(--space-xl) 0;
+}
+
+.inventory-category {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    background-color: var(--bg-secondary);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+}
+
+.inventory-category-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.inventory-category-title {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.inventory-category-count {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.inventory-table-wrapper {
+    overflow-x: auto;
+}
+
+.inventory-table {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-.inventory-table td {
-    width: auto; /* Zachová přirozenou šířku buněk */
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 720px;
 }
 
-.inventory-table td input {
-    width: 100%; /* Inputy zabírají celou šířku buňky */
-    box-sizing: border-box; /* Zajistí, že padding se přizpůsobí velikosti buňky */
-}
-
-.inventory-table table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.inventory-table th, .inventory-table td {
-    padding: 12px;
-    border: 1px solid #ddd;
-    text-align: left;
+.inventory-table thead {
+    background-color: var(--bg-secondary);
 }
 
 .inventory-table th {
-    background-color: #333;
-    color: white;
+    text-align: left;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-light);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
 }
 
-.add-item-form {
-    margin-top: 20px;
+.inventory-table td {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    transition: background-color var(--transition-fast), transform var(--transition-fast);
 }
 
-.add-item-form input {
-    width: calc(100% - 22px);
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-.inventory-table {
-    max-height: 750vh; /* Maximální výška tabulky (60 % výšky okna) */
-    overflow-y: auto; /* Povolení vertikálního rolování */
-    margin-bottom: 20px; /* Odsazení od tlačítka */
-    border: 1px solid #ddd; /* Volitelný rámeček kolem tabulky */
-    border-radius: 8px; /* Volitelné zaoblení rohů */
-    padding: 10px; /* Volitelné vnitřní odsazení */
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Jemný stín */
-}
-/* Tlačítka "Odstranit" a "Zrušit" budou červená */
-button.delete-btn, button.cancel-edit-btn {
-    background-color: #dc3545;
+.inventory-table tbody tr:last-child td {
+    border-bottom: none;
 }
 
-button.delete-btn:hover, button.cancel-edit-btn:hover {
-    background-color: #c82333;
+.inventory-row {
+    position: relative;
+    background-color: var(--bg-primary);
+    box-shadow: inset 4px 0 0 rgba(0, 0, 0, 0.05);
 }
-/* Zarovnání tlačítek ve sloupci akcí doprava */
-.inventory-table td:last-child {
-    text-align: right;
+
+.inventory-row[data-color] {
+    box-shadow: inset 4px 0 0 var(--product-color, var(--brand-primary));
+}
+
+.inventory-row:hover td {
+    background-color: var(--bg-secondary);
+}
+
+.inventory-row.is-inactive td {
+    opacity: 0.6;
+    background-color: var(--bg-tertiary);
+}
+
+.inventory-row.is-inactive .status-chip {
+    background: rgba(255, 193, 7, 0.15);
+    color: var(--brand-warning);
+}
+
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    background-color: rgba(40, 167, 69, 0.12);
+    color: var(--brand-success);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.inventory-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    justify-content: flex-end;
+}
+
+.inventory-actions .btn {
+    min-width: 120px;
+}
+
+.inventory-inline-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+}
+
+.inventory-inline-actions .inventory-actions {
+    justify-content: flex-start;
+}
+
+.inventory-inline-actions .inventory-actions .btn {
+    min-width: 100px;
+}
+
+.inventory-color-picker {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    cursor: pointer;
+}
+
+.inventory-table td input,
+.inventory-table td select {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.875rem;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.inventory-table td input:focus,
+.inventory-table td select:focus {
+    border-color: var(--focus-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.12);
+}
+
+.add-item-form-card {
+    display: none;
+    margin-top: var(--space-lg);
+}
+
+.add-item-form-card.is-visible {
+    display: block;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-lg);
+}
+
+.form-grid .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.color-select {
+    appearance: none;
+}
+
+.color-select option {
+    color: var(--text-primary);
+}
+
+.toggle-btn {
+    min-width: 220px;
+}
+
+.modal .btn {
+    min-width: 120px;
+}
+
+@media (max-width: 1024px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .inventory-table {
+        min-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .inventory-list-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toggle-btn {
+        width: 100%;
+    }
+
+    .inventory-actions {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .inventory-table th,
+    .inventory-table td {
+        padding: var(--space-sm);
+    }
 }

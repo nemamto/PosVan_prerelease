@@ -1,14 +1,14 @@
-# Ignoruj vše ve složce service/data/
-service/data/*
+# Ignoruj celou složku service/data/ (produkty, směny, účty, ID)
+service/data/
 
-# ALE povol konkrétní soubory uvnitř service/data/
-#!service/data;/categories.json
-#!service/data/products.xml
-#!service/data/ids/*
+# Zachovat pouze categories.json pokud existuje
+!service/data/categories.json
 
 # Ignoruj node_modules v service/
-#service/node_modules/
-#service/package-lock.json
+service/node_modules/
+service/package-lock.json
+node_modules/
+package-lock.json
 
 # Logy a dočasné soubory
 *.log

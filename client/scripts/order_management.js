@@ -1,355 +1,373 @@
 import { serverEndpoint } from './config.js';
+import { showModal, showModalConfirm } from './common.js';
 
-document.addEventListener('DOMContentLoaded', function() {
-    
-    const orderList = document.getElementById('order-list'); // Element pro renderování (může mít id order-list i když jde o směny)
+const CASH_METHODS = ['hotovost', 'cash'];
+const CARD_METHODS = ['karta', 'card'];
+const currencyFormatter = new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: 'CZK',
+    maximumFractionDigits: 0
+});
+const EMPTY_VALUE = '—';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const orderList = document.getElementById('order-list');
     const prevPageButton = document.getElementById('prev-page');
     const nextPageButton = document.getElementById('next-page');
     const pageInfo = document.getElementById('page-info');
 
+    if (!orderList || !prevPageButton || !nextPageButton || !pageInfo) {
+        console.error('❌ Chybí prvky pro stránku Historie objednávek, načtení se přerušuje.');
+        return;
+    }
+
+    const shiftsPerPage = 10;
     let currentPage = 1;
     let totalPages = 1;
 
-    // Tlačítka stránkování
     prevPageButton.addEventListener('click', () => {
         if (currentPage > 1) {
-            currentPage--;
+            currentPage -= 1;
             fetchShifts();
         }
     });
+
     nextPageButton.addEventListener('click', () => {
         if (currentPage < totalPages) {
-            currentPage++;
+            currentPage += 1;
             fetchShifts();
         }
     });
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function formatCurrency(value) {
+        const numeric = Number(value) || 0;
+        return currencyFormatter.format(numeric);
+    }
+
+    function normalisePayment(method = '') {
+        const trimmed = method.trim().toLowerCase();
+        if (CASH_METHODS.includes(trimmed)) {
+            return 'Hotově';
+        }
+        if (CARD_METHODS.includes(trimmed)) {
+            return 'Kartou';
+        }
+        return method || '—';
+    }
+
     function updatePagination() {
-        pageInfo.textContent = `Stránka ${currentPage} z ${totalPages}`;
-    
-        // ✅ Schová tlačítka, pokud jsme na okrajích
-prevPageButton.classList.toggle('hidden', currentPage === 1);
-    nextPageButton.classList.toggle('hidden', currentPage === totalPages);
-}
+        const safeTotal = Math.max(totalPages, 1);
+        pageInfo.textContent = `Stránka ${currentPage} z ${safeTotal}`;
+        prevPageButton.disabled = currentPage <= 1;
+        nextPageButton.disabled = currentPage >= totalPages;
+    }
 
-    // Funkce pro načtení směn ze serveru
-
-    const shiftsPerPage = 10; // ✅ Počet směn na stránku
-    
     async function fetchShifts() {
-        console.log(`📥 Načítání směn pro stránku ${currentPage}...`);
-    
-        // Uchování stavu otevřených řádků
-        const openShiftIds = Array.from(document.querySelectorAll('.shift-detail'))
-            .filter(row => row.style.display !== 'none')
-            .map(row => row.getAttribute('data-shift-id'));
-    
+        const openShiftIds = Array.from(orderList.querySelectorAll('.shift-detail'))
+            .filter(row => !row.hidden)
+            .map(row => row.dataset.shiftId);
+
         try {
             const response = await fetch(`${serverEndpoint}/shifts?page=${currentPage}&limit=${shiftsPerPage}`);
-            if (!response.ok) throw new Error('Chyba při načítání směn!');
-    
-            const responseData = await response.json();
-            console.log('📩 Odpověď ze serveru:', responseData);
-    
-            const { shifts, currentPage: serverPage, totalPages: serverTotalPages } = responseData;
+            if (!response.ok) {
+                throw new Error(`Server vrátil stav ${response.status}`);
+            }
+
+            const data = await response.json();
+            const {
+                shifts = [],
+                currentPage: serverPage = currentPage,
+                totalPages: serverTotalPages = totalPages
+            } = data;
+
             currentPage = serverPage;
             totalPages = serverTotalPages;
-    
-            renderShifts({ shifts, currentPage, totalPages });
-    
-            // Obnovení stavu otevřených řádků
-            openShiftIds.forEach(id => {
-                const detailRow = document.querySelector(`.shift-detail[data-shift-id="${id}"]`);
-                if (detailRow) {
-                    detailRow.style.display = 'table-row';
+
+            renderShifts(shifts);
+            updatePagination();
+
+            openShiftIds.forEach((shiftId) => {
+                const detailRow = orderList.querySelector(`.shift-detail[data-shift-id="${shiftId}"]`);
+                const headerRow = orderList.querySelector(`.shift-header[data-shift-id="${shiftId}"]`);
+                if (detailRow && headerRow) {
+                    detailRow.hidden = false;
+                    headerRow.setAttribute('aria-expanded', 'true');
                 }
             });
-    
-            updatePagination();
         } catch (error) {
             console.error('❌ Chyba při načítání směn:', error);
+            showModal('Nepodařilo se načíst data o směnách. Zkuste to prosím znovu.', {
+                isError: true,
+                title: 'Načítání selhalo',
+                confirmVariant: 'danger'
+            });
         }
     }
-    
-    // Definice funkce renderShifts – musí být definována před tím, než ji voláme ve fetchShifts
-    function renderShifts({ shifts, currentPage, totalPages }) {
-        console.log(`Vykresluji směny – stránka ${currentPage} z ${totalPages}`);
-        orderList.innerHTML = '';
-    
-        if (!shifts || shifts.length === 0) {
-            orderList.innerHTML = '<tr><td colspan="5">Žádné směny nebyly nalezeny.</td></tr>';
+
+    function renderShifts(shifts = []) {
+        const fragment = document.createDocumentFragment();
+
+        if (!Array.isArray(shifts) || shifts.length === 0) {
+            const emptyRow = document.createElement('tr');
+            const emptyCell = document.createElement('td');
+            emptyCell.colSpan = 4;
+            emptyCell.innerHTML = '<div class="order-empty-state">Žádné směny nebyly nalezeny.</div>';
+            emptyRow.appendChild(emptyCell);
+            fragment.appendChild(emptyRow);
+            orderList.replaceChildren(fragment);
             return;
         }
-    
-        shifts.forEach(shift => {
-            // Vytvoříme header řádek se základními informacemi o směně
+
+        shifts.forEach((shift) => {
             const headerRow = document.createElement('tr');
-            headerRow.classList.add('shift-header');
-            headerRow.style.cursor = 'pointer'; // Nastavíme kurzor na pointer
+            headerRow.className = 'shift-header';
+            headerRow.dataset.shiftId = shift.id ?? '';
+            headerRow.setAttribute('role', 'button');
+            headerRow.setAttribute('aria-expanded', 'false');
+            headerRow.tabIndex = 0;
             headerRow.innerHTML = `
-                <td>${shift.id}</td>
-                <td>${shift.startTime}</td>
-                <td>${shift.endTime}</td>
-                <td>${shift.orderCount}</td>
+                <td>${escapeHtml(shift.id ?? EMPTY_VALUE)}</td>
+                <td>${escapeHtml(shift.startTime ?? EMPTY_VALUE)}</td>
+                <td>${escapeHtml(shift.endTime ?? EMPTY_VALUE)}</td>
+                <td>${escapeHtml(shift.orderCount ?? 0)}</td>
             `;
-    
-            // Vytvoříme detailní řádek s objednávkami (skrytý na začátku)
+
             const detailRow = document.createElement('tr');
-            detailRow.classList.add('shift-detail');
-            detailRow.setAttribute('data-shift-id', shift.id); // Přidáme atribut pro identifikaci
-            detailRow.style.display = 'none';
+            detailRow.className = 'shift-detail';
+            detailRow.dataset.shiftId = shift.id ?? '';
+            detailRow.hidden = true;
+
             const detailCell = document.createElement('td');
-            detailCell.colSpan = 4; // Spojíme buňky přes všechny sloupce
-            let detailHtml = '';
-    
-            if (shift.orderItems && shift.orderItems.length > 0) {
-                detailHtml += '<table style="width:100%; border-collapse: collapse;">';
-                detailHtml += `
-                    <thead>
-                        <tr>
-                            <th>ID objednávky</th>
-                            <th>Čas</th>
-                            <th>Způsob platby</th>
-                            <th>Cena</th>
-                            <th>Produkty</th>
-                            <th>Akce</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                `;
-    
-                // Inicializace součtů
-                let totalCash = 0;
-                let totalCard = 0;
-                let totalPaid = 0;
-                let totalRevenue = 0;
-    
-                // Řazení objednávek od nejnovějších po nejstarší
-                shift.orderItems
-                    .sort((a, b) => new Date(b.time) - new Date(a.time))
-                    .forEach(order => {
-                        const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
-                        const totalPrice = Number(order.totalPrice || order.TotalPrice || order.Price || 0);
-    
-                        // Do souhrnu přičti jen nestornované objednávky
-                        if (!isCancelled) {
-                            totalRevenue += totalPrice;
-    
-                            if (order.paymentMethod === 'Hotovost' || order.paymentMethod === 'cash') {
-                                totalCash += totalPrice;
-                                totalPaid += totalPrice;
-                            } else if (order.paymentMethod === 'Karta' || order.paymentMethod === 'card') {
-                                totalCard += totalPrice;
-                                totalPaid += totalPrice;
-                            }
-                        }
-    
-                        // Vykresli řádek vždy (i pro stornované)
-                        detailHtml += `
-                            <tr ${isCancelled ? 'class="cancelled-order"' : ''}>
-                                <td>${order['@id']}</td>
-                                <td>${order.time}</td>
-                                <td>${order.paymentMethod}</td>
-                                <td>${totalPrice} Kč</td>
-                                <td class="products-column">${order.products}</td>
-                                <td>
-                                    ${isCancelled
-                                        ? `<button class="restore-order" data-id="${order['@id']}">Obnovit</button>`
-                                        : `<button class="cancell-order" data-id="${order['@id']}">Stornovat</button>`
-                                    }
-                                </td>
-                            </tr>
-                        `;
-                    });
-    
-                // Přidání řádku shrnutí
-                detailHtml += `
-                    <tr class="shift-summary">
-                        <td colspan="2"><strong>Souhrn směny:</strong></td>
-                        <td><strong>Hotovost:</strong> ${totalCash} Kč</td>
-                        <td><strong>Karta:</strong> ${totalCard} Kč</td>
-                        <td><strong>Celkem zaplaceno:</strong> ${totalPaid} Kč</td>
-                        <td></td>
-                        <td><strong>Celkem:</strong> ${totalRevenue} Kč</td>
-                        <td></td>
-                    </tr>
-                `;
-    
-                detailHtml += '</tbody></table>';
-            } else {
-                detailHtml = 'Žádné objednávky nejsou k dispozici.';
-            }
-            detailCell.innerHTML = detailHtml;
+            detailCell.colSpan = 4;
+            detailCell.appendChild(buildDetailContent(shift));
             detailRow.appendChild(detailCell);
-    
-            // Event listener pro kliknutí na řádek
-            headerRow.addEventListener('click', function () {
-                detailRow.style.display = (detailRow.style.display === 'none') ? 'table-row' : 'none';
+
+            function toggleDetail() {
+                const willOpen = detailRow.hidden;
+                detailRow.hidden = !willOpen;
+                headerRow.setAttribute('aria-expanded', String(willOpen));
+            }
+
+            headerRow.addEventListener('click', toggleDetail);
+            headerRow.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleDetail();
+                }
             });
-    
-            orderList.appendChild(headerRow);
-            orderList.appendChild(detailRow);
-    
-            // Připojení listenerů na tlačítka "Stornovat" a "Obnovit"
-            setTimeout(() => {
-                detailRow.querySelectorAll('.cancell-order').forEach(button => {
-                    button.addEventListener('click', function (e) {
-                        e.stopPropagation(); // Zabráníme zavření detailního řádku
-                        const orderId = this.getAttribute('data-id');
-                        console.log(`Klik na "Stornovat" pro objednávku ID: ${orderId}`);
-                        showModalConfirm(`Opravdu chcete stornovat objednávku ${orderId}?`, () => {
-                            deleteOrder(orderId);
-                        });
-                    });
-                });
-    
-                detailRow.querySelectorAll('.restore-order').forEach(button => {
-                    button.addEventListener('click', function (e) {
-                        e.stopPropagation(); // Zabráníme zavření detailního řádku
-                        const orderId = this.getAttribute('data-id');
-                        console.log(`Klik na "Obnovit" pro objednávku ID: ${orderId}`);
-                        showModalConfirm(`Opravdu chcete obnovit objednávku ${orderId}?`, () => {
-                            restoreOrder(orderId);
-                        });
-                    });
-                });
-            }, 0);
-        });
-    }
-    // Příklad funkce pro potvrzení akce pomocí confirm()
-// Nahrazuje standardní confirm() modálním oknem
-function showModalConfirm(message, onConfirm) {
-    console.log("🟢 Otevírám potvrzovací modal...");
 
-    const modal = document.getElementById('deleteModal');
-    const modalMessage = document.getElementById('delete-modal-message');
-    const confirmButton = document.getElementById('confirmDelete');
-    const cancelButton = document.getElementById('cancelDelete');
-
-    // 🛑 Zkontroluj, zda jsou prvky dostupné
-    if (!modal) {
-        console.error("❌ Chyba: Element 'deleteModal' nebyl nalezen v DOM.");
-        return;
-    }
-    if (!modalMessage) {
-        console.error("❌ Chyba: Element 'delete-modal-message' nebyl nalezen.");
-        return;
-    }
-    if (!confirmButton) {
-        console.error("❌ Chyba: Element 'confirmDelete' nebyl nalezen.");
-        return;
-    }
-    if (!cancelButton) {
-        console.error("❌ Chyba: Element 'cancelDelete' nebyl nalezen.");
-        return;
-    }
-
-    // Nastavení zprávy do modalu
-    modalMessage.textContent = message;
-
-    // Zobrazení modalu s animací
-    modal.style.display = 'flex';
-    setTimeout(() => {
-        modal.style.opacity = '1';
-    }, 10);
-
-    // ✅ Odebrání starých event listenerů (aby se nekumulovaly)
-    confirmButton.replaceWith(confirmButton.cloneNode(true));
-    cancelButton.replaceWith(cancelButton.cloneNode(true));
-
-    const newConfirmButton = document.getElementById('confirmDelete');
-    const newCancelButton = document.getElementById('cancelDelete');
-
-    // ✅ Přidání nových listenerů
-    newConfirmButton.addEventListener('click', function () {
-        console.log("🟢 Potvrzeno: Probíhá mazání...");
-        closeDeleteModal();
-        if (onConfirm) onConfirm();
-    });
-
-    newCancelButton.addEventListener('click', function () {
-        console.log("🛑 Storno: Zavírám modal.");
-        closeDeleteModal();
-    });
-
-    console.log("✅ Potvrzovací modal byl úspěšně zobrazen.");
-}
-
-function closeDeleteModal() {
-    console.log("🛑 Zavírám modal pro mazání objednávky...");
-
-    const modal = document.getElementById('deleteModal');
-    if (!modal) {
-        console.error("❌ Modal 'deleteModal' neexistuje!");
-        return;
-    }
-
-    modal.style.opacity = '0';
-    setTimeout(() => {
-        modal.style.display = 'none';
-        console.log("✅ Modal úspěšně skryt.");
-    }, 300); // Čekáme na dokončení animace
-}
-
-
-async function restoreOrder(orderId) {
-    try {
-        console.log(`🔄 Obnovuji objednávku ${orderId}...`);
-        const response = await fetch(`${serverEndpoint}/orders/${orderId}/restore`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' }
+            fragment.appendChild(headerRow);
+            fragment.appendChild(detailRow);
         });
 
-        if (!response.ok) {
-            throw new Error('Chyba při obnovení objednávky.');
+        orderList.replaceChildren(fragment);
+    }
+
+    function buildDetailContent(shift) {
+        const wrapper = document.createElement('div');
+
+        if (!Array.isArray(shift.orderItems) || shift.orderItems.length === 0) {
+            wrapper.innerHTML = '<div class="order-empty-state">Tato směna neobsahuje žádné objednávky.</div>';
+            return wrapper;
         }
 
-        console.log(`✅ Objednávka ${orderId} byla úspěšně obnovena.`);
-        
-        // 🟢 Po obnovení objednávky aktualizujeme sklad i směny
-        await new Promise(resolve => setTimeout(resolve, 500)); // Počkej na aktualizaci souboru
-        await refreshInventory();
-        fetchShifts();
+        const table = document.createElement('table');
+        table.className = 'order-detail-table';
+        table.innerHTML = `
+            <thead>
+                <tr>
+                    <th>ID objednávky</th>
+                    <th>Čas</th>
+                    <th>Způsob platby</th>
+                    <th>Cena</th>
+                    <th>Produkty</th>
+                    <th>Akce</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        `;
 
-    } catch (error) {
-        console.error('❌ Chyba při obnovení objednávky:', error);
+        const tbody = table.querySelector('tbody');
+
+        let totalCash = 0;
+        let totalCard = 0;
+        let totalRevenue = 0;
+
+        const sortedOrders = [...shift.orderItems].sort((a, b) => {
+            const timeA = new Date(a.time ?? a.Time ?? 0);
+            const timeB = new Date(b.time ?? b.Time ?? 0);
+            return timeB - timeA;
+        });
+
+        sortedOrders.forEach((order) => {
+            const orderIdRaw = order['@id'] ?? order.id;
+            const hasValidId = orderIdRaw !== undefined && orderIdRaw !== null && orderIdRaw !== '';
+            const paymentMethodRaw = order.paymentMethod ?? '';
+            const paymentMethod = normalisePayment(paymentMethodRaw);
+            const timeValue = order.time ?? order.Time ?? EMPTY_VALUE;
+            const rawPrice = Number(order.totalPrice ?? order.TotalPrice ?? order.Price ?? 0);
+            const productsValue = order.products ?? EMPTY_VALUE;
+            const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
+
+            if (!isCancelled) {
+                totalRevenue += rawPrice;
+                const methodKey = paymentMethodRaw.trim().toLowerCase();
+                if (CASH_METHODS.includes(methodKey)) {
+                    totalCash += rawPrice;
+                } else if (CARD_METHODS.includes(methodKey)) {
+                    totalCard += rawPrice;
+                }
+            }
+
+            const row = document.createElement('tr');
+            if (hasValidId) {
+                row.dataset.orderId = String(orderIdRaw);
+            }
+            if (isCancelled) {
+                row.classList.add('is-cancelled');
+            }
+
+            const productsHtml = escapeHtml(productsValue).replace(/\n/g, '<br>');
+            const orderIdDisplay = hasValidId ? escapeHtml(orderIdRaw) : EMPTY_VALUE;
+            const actionHtml = hasValidId
+                ? (isCancelled
+                    ? `<button type="button" class="btn btn-success btn-sm order-action" data-action="restore" data-id="${escapeHtml(orderIdRaw)}">Obnovit</button>`
+                    : `<button type="button" class="btn btn-warning btn-sm order-action" data-action="cancel" data-id="${escapeHtml(orderIdRaw)}">Stornovat</button>`)
+                : '<span class="text-secondary">Nedostupné</span>';
+
+            row.innerHTML = `
+                <td>${orderIdDisplay}</td>
+                <td>${escapeHtml(timeValue)}</td>
+                <td>${escapeHtml(paymentMethod)}</td>
+                <td>${formatCurrency(rawPrice)}</td>
+                <td class="products-column">${productsHtml}</td>
+                <td>
+                    <div class="order-detail-actions">
+                        ${actionHtml}
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        const summaryRow = document.createElement('tr');
+        summaryRow.className = 'shift-summary';
+        const totalPaid = totalCash + totalCard;
+        summaryRow.innerHTML = `
+            <td colspan="2"><strong>Souhrn směny</strong></td>
+            <td><strong>Hotově:</strong> ${formatCurrency(totalCash)}</td>
+            <td><strong>Kartou:</strong> ${formatCurrency(totalCard)}</td>
+            <td><strong>Zaplaceno:</strong> ${formatCurrency(totalPaid)}</td>
+            <td><strong>Obrat:</strong> ${formatCurrency(totalRevenue)}</td>
+        `;
+        tbody.appendChild(summaryRow);
+
+        wrapper.appendChild(table);
+
+        wrapper.querySelectorAll('.order-action').forEach((button) => {
+            button.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const action = button.dataset.action;
+                const orderId = button.dataset.id;
+                if (!orderId) {
+                    return;
+                }
+
+                if (action === 'cancel') {
+                    const confirmed = await showModalConfirm(`Opravdu chcete stornovat objednávku ${orderId}?`, {
+                        title: 'Stornování objednávky',
+                        confirmText: 'Stornovat',
+                        cancelText: 'Zrušit',
+                        variant: 'warning'
+                    });
+
+                    if (confirmed) {
+                        await deleteOrder(orderId);
+                    }
+                } else if (action === 'restore') {
+                    const confirmed = await showModalConfirm(`Opravdu chcete obnovit objednávku ${orderId}?`, {
+                        title: 'Obnovení objednávky',
+                        confirmText: 'Obnovit',
+                        cancelText: 'Zrušit',
+                        variant: 'success'
+                    });
+
+                    if (confirmed) {
+                        await restoreOrder(orderId);
+                    }
+                }
+            });
+        });
+
+        return wrapper;
     }
-}
 
-
-
-
-// Příklad funkce pro smazání objednávky (stornování)
-async function deleteOrder(orderId) {
-    console.log(`🟢 Volám deleteOrder() pro objednávku ID: ${orderId}`);
-
-
+    async function restoreOrder(orderId) {
         try {
-            console.log("📡 Odesílám DELETE request na server...");
+            const response = await fetch(`${serverEndpoint}/orders/${orderId}/restore`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server vrátil stav ${response.status}`);
+            }
+
+            await showModal(`Objednávka ${orderId} byla obnovena.`, {
+                title: 'Objednávka obnovena',
+                confirmVariant: 'success'
+            });
+
+            await refreshInventory();
+            await fetchShifts();
+        } catch (error) {
+            console.error('❌ Chyba při obnovení objednávky:', error);
+            await showModal('Objednávku se nepodařilo obnovit. Zkuste to prosím znovu.', {
+                isError: true,
+                title: 'Obnovení selhalo',
+                confirmVariant: 'danger'
+            });
+        }
+    }
+
+    async function deleteOrder(orderId) {
+        try {
             const response = await fetch(`${serverEndpoint}/orders/${orderId}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });
 
             if (!response.ok) {
-                throw new Error(`❌ Chyba při mazání objednávky. Server vrátil: ${response.status}`);
+                throw new Error(`Server vrátil stav ${response.status}`);
             }
 
-            const data = await response.json();
-            console.log(`✅ Server odpověděl: ${data.message}`);
+            await showModal(`Objednávka ${orderId} byla stornována.`, {
+                title: 'Objednávka stornována',
+                confirmVariant: 'warning'
+            });
 
-            // ✅ Aktualizace
             await refreshInventory();
-            fetchShifts();
+            await fetchShifts();
         } catch (error) {
-            console.error('❌ Chyba při mazání objednávky:', error);
+            console.error('❌ Chyba při stornování objednávky:', error);
+            await showModal('Objednávku se nepodařilo stornovat. Zkuste to prosím znovu.', {
+                isError: true,
+                title: 'Stornování selhalo',
+                confirmVariant: 'danger'
+            });
         }
-   
-}
+    }
 
-
-
-    // Inicializace – načteme směny při načtení stránky
     fetchShifts();
 });
 

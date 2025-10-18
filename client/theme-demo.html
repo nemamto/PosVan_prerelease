@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo moderního tématu | POS Systém</title>
+    <link rel="stylesheet" href="styles/main-modern.css">
+</head>
+<body class="page-container">
+    <header>
+        <div class="header-content">
+            <h1 class="header-title">🎨 Demo moderního tématu</h1>
+            <!-- Theme toggle se přidá automaticky -->
+        </div>
+    </header>
+
+    <main>
+        <!-- Demonstrace témat -->
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">Ovládání témat</h2>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-4">
+                    Klikněte na ikonu v pravém horním rohu pro přepínání mezi světlým, tmavým a automatickým tématem.
+                    Automatické téma se přizpůsobí systémovému nastavení vašeho zařízení.
+                </p>
+                <div class="flex gap-md">
+                    <button class="btn btn-primary" onclick="setTheme('light')">☀️ Světlé téma</button>
+                    <button class="btn btn-secondary" onclick="setTheme('dark')">🌙 Tmavé téma</button>
+                    <button class="btn btn-secondary" onclick="setTheme('auto')">⚡ Automatické</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demonstrace komponent -->
+        <section class="grid grid-cols-2 gap-lg mt-lg">
+            <!-- Tlačítka -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tlačítka</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex flex-col gap-sm">
+                        <button class="btn btn-primary">Primární tlačítko</button>
+                        <button class="btn btn-secondary">Sekundární</button>
+                        <button class="btn btn-success">Úspěch</button>
+                        <button class="btn btn-danger">Varování</button>
+                        <button class="btn btn-primary btn-sm">Malé</button>
+                        <button class="btn btn-primary btn-lg">Velké</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formuláře -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Formuláře</h3>
+                </div>
+                <div class="card-body">
+                    <form class="flex flex-col gap-md">
+                        <div class="form-group">
+                            <label class="form-label">Textové pole</label>
+                            <input type="text" class="form-input" placeholder="Zadejte text...">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Výběr</label>
+                            <select class="form-select">
+                                <option>Možnost 1</option>
+                                <option>Možnost 2</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Odeslat</button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demonstrace POS komponent -->
+        <section class="grid grid-cols-3 gap-lg mt-lg">
+            <!-- Produkty -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Produkty</h3>
+                </div>
+                <div class="card-body">
+                    <div class="grid grid-cols-2 gap-sm">
+                        <div class="product-item">
+                            <div class="product-name">Káva</div>
+                            <div class="product-price">45 Kč</div>
+                        </div>
+                        <div class="product-item">
+                            <div class="product-name">Čaj</div>
+                            <div class="product-price">35 Kč</div>
+                        </div>
+                        <div class="product-item">
+                            <div class="product-name">Voda</div>
+                            <div class="product-price">25 Kč</div>
+                        </div>
+                        <div class="product-item">
+                            <div class="product-name">Džus</div>
+                            <div class="product-price">40 Kč</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Objednávka -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Objednávka</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex flex-col gap-sm mb-4">
+                        <div class="order-item">
+                            <div class="order-item-info">
+                                <div class="order-item-name">Káva</div>
+                                <div class="order-item-price">45 Kč</div>
+                            </div>
+                            <div class="order-item-controls">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn">-</button>
+                                    <span class="quantity-display">2</span>
+                                    <button class="quantity-btn">+</button>
+                                </div>
+                                <button class="remove-item-btn">×</button>
+                            </div>
+                        </div>
+                        <div class="order-item">
+                            <div class="order-item-info">
+                                <div class="order-item-name">Čaj</div>
+                                <div class="order-item-price">35 Kč</div>
+                            </div>
+                            <div class="order-item-controls">
+                                <div class="quantity-control">
+                                    <button class="quantity-btn">-</button>
+                                    <span class="quantity-display">1</span>
+                                    <button class="quantity-btn">+</button>
+                                </div>
+                                <button class="remove-item-btn">×</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="total-amount">Celkem: 125 Kč</div>
+                </div>
+            </div>
+
+            <!-- Status indikátory -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Status indikátory</h3>
+                </div>
+                <div class="card-body">
+                    <div class="flex flex-col gap-sm">
+                        <div class="status-indicator status-success">
+                            ✓ Úspěšně dokončeno
+                        </div>
+                        <div class="status-indicator status-warning">
+                            ⚠ Upozornění
+                        </div>
+                        <div class="status-indicator status-danger">
+                            ✗ Chyba
+                        </div>
+                        <div class="status-indicator status-info">
+                            ℹ Informace
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Barevná paleta -->
+        <section class="card mt-lg">
+            <div class="card-header">
+                <h3 class="card-title">Barevná paleta</h3>
+            </div>
+            <div class="card-body">
+                <div class="grid grid-cols-4 gap-md">
+                    <div style="padding: 20px; background-color: var(--bg-primary); border: 1px solid var(--border-light); border-radius: var(--radius-md); text-align: center;">
+                        <strong>Primární pozadí</strong><br>
+                        <small>--bg-primary</small>
+                    </div>
+                    <div style="padding: 20px; background-color: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-md); text-align: center;">
+                        <strong>Sekundární pozadí</strong><br>
+                        <small>--bg-secondary</small>
+                    </div>
+                    <div style="padding: 20px; background-color: var(--brand-primary); color: var(--text-inverted); border-radius: var(--radius-md); text-align: center;">
+                        <strong>Brand Primary</strong><br>
+                        <small>--brand-primary</small>
+                    </div>
+                    <div style="padding: 20px; background-color: var(--brand-success); color: var(--text-inverted); border-radius: var(--radius-md); text-align: center;">
+                        <strong>Success</strong><br>
+                        <small>--brand-success</small>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <button class="btn btn-secondary">Domů</button>
+            <button class="btn btn-secondary">Pokladna</button>
+            <button class="btn btn-secondary">Sklad</button>
+            <button class="btn btn-secondary">Nastavení</button>
+        </div>
+    </footer>
+
+    <!-- Skripty -->
+    <script src="scripts/theme-manager.js"></script>
+    <script>
+        // Demo funkcionalita
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎨 Demo stránka načtena');
+            
+            // Přidej event listener pro theme změny
+            document.addEventListener('themeChanged', (e) => {
+                console.log(`Téma změněno na: ${e.detail.theme}`);
+            });
+        });
+    </script>
+</body>
+</html>

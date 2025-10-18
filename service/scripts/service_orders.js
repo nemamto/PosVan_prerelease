@@ -8,27 +8,83 @@ const shiftsDir = path.join(baseDir, 'data', 'shifts');
 const productsPath = path.join(baseDir, 'data', 'products.xml');
 const customersFolder = path.join(baseDir, 'data', 'customer_accounts');
 
-
-
+/**
+ * Kontroluje, zda objednávka je platba zákaznického účtu
+ * Takové objednávky nesmí být stornovány přes běžné storno
+ */
+function isCustomerAccountSettlement(order) {
+    if (!order) {
+        console.log('🔍 isCustomerAccountSettlement: order je null/undefined');
+        return false;
+    }
+    
+    console.log('🔍 isCustomerAccountSettlement: Kontroluji objednávku', {
+        hasMetadata: !!order.metadata,
+        hasCustomerOrderIds: !!order.customerOrderIds,
+        products: order.products,
+        productsType: typeof order.products
+    });
+    
+    // Kontrola podle metadata
+    if (order.metadata) {
+        try {
+            const meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+            if (meta && meta.type === 'customer-account-payment') {
+                console.log('✅ Detekována platba účtu podle metadata');
+                return true;
+            }
+        } catch (e) {
+            console.warn('⚠️ Chyba při parsování metadata:', e);
+        }
+    }
+    
+    // Kontrola podle ID zákaznických objednávek
+    if (order.customerOrderIds && String(order.customerOrderIds).trim()) {
+        console.log('✅ Detekována platba účtu podle customerOrderIds');
+        return true;
+    }
+    
+    // Kontrola podle obsahu products - pokud obsahuje "customer-order-"
+    if (order.products && typeof order.products === 'string') {
+        const hasCustomerOrder = order.products.includes('customer-order-');
+        const hasUhrada = order.products.includes('Úhrada objednávky');
+        const hasUcet = order.products.includes('Účet zákazníka:');
+        const hasZakaznik = order.products.includes('Zákazník:');
+        
+        console.log('🔍 Kontrola products:', {
+            hasCustomerOrder,
+            hasUhrada,
+            hasUcet,
+            hasZakaznik,
+            productsPreview: order.products.substring(0, 100)
+        });
+        
+        if (hasCustomerOrder || hasUhrada || hasUcet || hasZakaznik) {
+            console.log('✅ Detekována platba účtu podle obsahu products');
+            return true;
+        }
+    }
+    
+    console.log('❌ Objednávka NENÍ platba účtu');
+    return false;
+}
 
 function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount) {
     try {
         console.log("📦 Ukládám objednávku do zákaznického souboru:", orderLog, selectedCustomer, orderID, totalAmount);
 
-        // 📌 Nastavení složky pro zákaznické účty
-        //const customersFolder = path.join(__dirname, '..', 'data', 'customer_accounts');
         if (!fs.existsSync(customersFolder)) {
             fs.mkdirSync(customersFolder, { recursive: true });
         }
 
-        // 📌 Oprava názvu souboru (mezery -> podtržítka)
+        // Oprava názvu souboru (mezery -> podtržítka)
         const sanitizeFileName = (name) => name.replace(/\s+/g, "_");
         const customerFileName = sanitizeFileName(selectedCustomer) + ".xml";
         const customerFilePath = path.join(customersFolder, customerFileName);
 
         let xmlDoc;
 
-        // 🟢 Pokud soubor existuje, načteme ho
+        // Pokud soubor existuje, načteme ho
         if (fs.existsSync(customerFilePath)) {
             const existingData = fs.readFileSync(customerFilePath, 'utf8');
 
@@ -39,11 +95,11 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
                 xmlDoc = { customer: { "@name": selectedCustomer, orders: { order: [] } } };
             }
         } else {
-            // 🟢 Pokud neexistuje, vytvoříme nový
+            // Pokud neexistuje, vytvoříme nový
             xmlDoc = { customer: { "@name": selectedCustomer, orders: { order: [] } } };
         }
 
-        // 📌 Zkontrolujeme, zda `orders` existuje
+        // Zkontrolujeme, zda `orders` existuje
         if (!xmlDoc.customer.orders) {
             xmlDoc.customer.orders = { order: [] };
         }
@@ -51,22 +107,23 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
             xmlDoc.customer.orders.order = xmlDoc.customer.orders.order ? [xmlDoc.customer.orders.order] : [];
         }
 
-        // 📌 Vytvoření nové objednávky
+        // Vytvoření nové objednávky
         const now = new Date();
         const formattedDateTime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
         const newOrder = {
             "@id": orderID,
-            "@payed": false,
+            "@payed": "false",
+            "@cancelled": "false",
             "Date": formattedDateTime,
             "TotalPrice": totalAmount.toString(),
             "Products": orderLog.OrderDetails.map(p => `${p.Quantity}x ${p.Product} (ID: ${p.ProductID}, ${p.TotalProductPrice} Kč)`).join(", ")
         };
 
-        // 📌 Přidání nové objednávky do XML
+        // Přidání nové objednávky do XML
         xmlDoc.customer.orders.order.push(newOrder);
 
-        // 📌 Uložení zpět do souboru
+        // Uložení zpět do souboru
         const updatedXml = create(xmlDoc).end({ prettyPrint: true });
         fs.writeFileSync(customerFilePath, updatedXml);
 
@@ -76,112 +133,226 @@ function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount
     }
 }
 
-
-
 function cancelOrder(req, res) {
     const orderId = req.params.id;
 
-
     let orderFound = false;
     let customerName = null;
-    let orderProducts = [];
+    const orderProducts = [];
+    let jsonDataToWrite = null;
+    let filePathToWrite = null;
 
-    console.log(`🛠 Zahajuji storno objednávky ID: ${orderId}`);
+    console.log(`� Zahajuji storno objednávky ID: ${orderId}`);
 
-    // Projdeme všechny směny a hledáme objednávku
     const files = fs.readdirSync(shiftsDir).filter(file => file.endsWith('.xml'));
 
-    files.forEach(file => {
+    outerLoop:
+    for (const file of files) {
         const filePath = path.join(shiftsDir, file);
         const xmlData = fs.readFileSync(filePath, 'utf8');
-        let jsonData = convert(xmlData, { format: 'object' });
+        const jsonData = convert(xmlData, { format: 'object' });
 
-        if (jsonData.shift && jsonData.shift.order) {
-            let orders = Array.isArray(jsonData.shift.order) ? jsonData.shift.order : [jsonData.shift.order];
+        if (!jsonData.shift) {
+            continue;
+        }
 
-            orders.forEach(order => {
-                if (order['@id'] === orderId) {
-                    console.log(`✅ Nalezena objednávka v souboru ${file}`);
-                    order['@cancelled'] = 'true';
-                    orderFound = true;
+        let orders = jsonData.shift.order || jsonData.shift.orders?.order || [];
+        if (!Array.isArray(orders)) {
+            orders = orders ? [orders] : [];
+        }
 
-                    const productRegex = /(\d+x .+? \(ID: \d+, [\d.]+ Kč\))/g;
-                    const matches = order.products.match(productRegex) || [];
+        for (const order of orders) {
+            if (String(order['@id']) !== String(orderId)) {
+                continue;
+            }
+
+            // Debug: Vypíšeme celou objednávku
+            console.log(`🔍 DEBUG: Kontroluji objednávku ${orderId}:`, JSON.stringify(order, null, 2));
+
+            if (isCustomerAccountSettlement(order)) {
+                console.warn(`⚠️ Pokus o storno platby zákaznického účtu (order ${orderId}) ve směně ${file}.`);
+                
+                // Vrátit objednávky zákazníka zpět na nezaplacené
+                try {
+                    const relatedOrderIds = [];
                     
-                    matches.forEach(productEntry => {
-                        console.log(`📦 Parsování produktu: ${productEntry}`);
-                        const match = productEntry.match(/^(\d+)x (.+?) \(ID: (\d+), ([\d.]+) Kč\)$/);
-                        console.log(`🔍 Výsledek parsování:`, match);
-                        if (match) {
-                            const quantity = parseInt(match[1], 10);
-                            const productName = match[2].trim();
-                            const productId = match[3];
-                            const productPrice = parseFloat(match[4]);
-                            orderProducts.push({
-                                id: productId,
-                                name: productName,
-                                quantity: quantity,
-                                price: productPrice
-                            });
-                            console.log(`↩️ Připraveno k vrácení: ${quantity}x ${productName} (ID: ${productId}, Cena: ${productPrice} Kč)`);
-                        } else {
-                            console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
-                        }
-                    });
-                    
-
-                    // 📌 Získání zákaznického jména
-                    if (order.paymentMethod) {
-                        customerName = order.paymentMethod.trim();
-                        console.log(`📌 Jméno zákazníka získáno z paymentMethod: ${customerName}`);
-                    } else {
-                        console.warn('⚠️ Jméno zákazníka nebylo nalezeno v paymentMethod.');
+                    // Získáme ID objednávek z customerOrderIds
+                    if (order.customerOrderIds) {
+                        const ids = String(order.customerOrderIds).split(',').map(id => id.trim()).filter(Boolean);
+                        relatedOrderIds.push(...ids);
                     }
+                    
+                    // Pokud nemáme customerOrderIds, zkusíme parsovat z products
+                    if (relatedOrderIds.length === 0 && order.products) {
+                        const matches = order.products.match(/customer-order-(\d+)/g);
+                        if (matches) {
+                            matches.forEach(match => {
+                                const id = match.replace('customer-order-', '');
+                                if (id) relatedOrderIds.push(id);
+                            });
+                        }
+                    }
+                    
+                    // Získáme jméno zákazníka
+                    let targetCustomer = null;
+                    if (order.customerName) {
+                        targetCustomer = order.customerName.trim();
+                    } else if (order.metadata) {
+                        try {
+                            const meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+                            if (meta && meta.customerName) {
+                                targetCustomer = meta.customerName;
+                            }
+                        } catch (e) {
+                            // Ignorujeme
+                        }
+                    }
+                    
+                    // Pokud máme zákazníka a ID objednávek, vrátíme je na nezaplacené
+                    if (targetCustomer && relatedOrderIds.length > 0) {
+                        console.log(`🔄 Vracím objednávky ${relatedOrderIds.join(', ')} zákazníka ${targetCustomer} zpět na nezaplacené`);
+                        const customerFilePath = path.join(customersFolder, `${targetCustomer.replace(/\s/g, '_')}.xml`);
+                        
+                        if (fs.existsSync(customerFilePath)) {
+                            const custXmlData = fs.readFileSync(customerFilePath, 'utf8');
+                            let custDoc = convert(custXmlData, { format: 'object' });
+                            
+                            let custOrders = custDoc.customer.orders?.order || [];
+                            if (!Array.isArray(custOrders)) {
+                                custOrders = [custOrders];
+                            }
+                            
+                            custOrders.forEach(custOrder => {
+                                if (relatedOrderIds.includes(String(custOrder['@id']))) {
+                                    custOrder['@payed'] = 'false';
+                                    console.log(`✅ Objednávka ${custOrder['@id']} vrácena na nezaplacenou`);
+                                }
+                            });
+                            
+                            const updatedCustXml = create(custDoc).end({ prettyPrint: true });
+                            fs.writeFileSync(customerFilePath, updatedCustXml);
+                            console.log(`✅ Zákaznický účet ${targetCustomer} aktualizován`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Chyba při vracení objednávek na nezaplacené:', error);
                 }
+                
+                // Nyní stornujeme platební objednávku ve směně
+                order['@cancelled'] = 'true';
+                order.cancelled = 'true';
+                orderFound = true;
+                jsonDataToWrite = jsonData;
+                filePathToWrite = filePath;
+                
+                // Platba účtu nemá skladové položky, takže je přeskočíme
+                console.log('ℹ️ Platba zákaznického účtu stornována (bez vlivu na sklad)');
+                break outerLoop;
+            }
+
+            console.log(`✅ Nalezena objednávka v souboru ${file}`);
+            order['@cancelled'] = 'true';
+            order.cancelled = 'true';
+            orderFound = true;
+            jsonDataToWrite = jsonData;
+            filePathToWrite = filePath;
+
+            const productsText = typeof order.products === 'string' ? order.products : '';
+            const productRegex = /(\d+x .+? \(ID: [^,]+, [\d.,]+ Kč\))/g;
+            const matches = productsText.match(productRegex) || [];
+
+            matches.forEach((productEntry) => {
+                const match = productEntry.match(/^(\d+)x (.+?) \(ID: ([^,]+), ([\d.,]+) Kč\)$/);
+                if (!match) {
+                    console.warn(`⚠️ Chyba při parsování produktu: ${productEntry}`);
+                    return;
+                }
+
+                const quantity = parseInt(match[1], 10);
+                const productName = match[2].trim();
+                const productId = match[3].trim();
+                const productPrice = parseFloat(match[4].replace(',', '.'));
+
+                if (!/^\d+$/.test(productId)) {
+                    console.log(`ℹ️ Položka ${productName} (ID: ${productId}) není skladová položka, přeskočeno.`);
+                    return;
+                }
+
+                orderProducts.push({
+                    id: productId,
+                    name: productName,
+                    quantity,
+                    price: productPrice
+                });
+                console.log(`↩️ Připraveno k vrácení: ${quantity}x ${productName} (ID: ${productId}, Cena: ${productPrice} Kč)`);
             });
 
-            if (orderFound) {
-                const updatedXml = create(jsonData).end({ prettyPrint: true });
-                fs.writeFileSync(filePath, updatedXml);
-                console.log(`✅ Soubor ${file} aktualizován, objednávka stornována.`);
+            if (order.customerName) {
+                customerName = order.customerName.trim();
             }
+
+            if (!customerName && order.metadata) {
+                try {
+                    const parsedMeta = typeof order.metadata === 'string'
+                        ? JSON.parse(order.metadata)
+                        : order.metadata;
+                    if (parsedMeta && parsedMeta.customerName) {
+                        customerName = String(parsedMeta.customerName).trim();
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Nepodařilo se parsovat metadata objednávky při stornu:', error);
+                }
+            }
+
+            if (!customerName && order.paymentMethod) {
+                customerName = order.paymentMethod.trim();
+            }
+
+            break outerLoop;
         }
-    });
+    }
+
+    if (customerName === '') {
+        customerName = null;
+    }
 
     // ✅ Vrácení produktů do skladu
-    if (fs.existsSync(productsPath)) {
-        try {
-            const xmlData = fs.readFileSync(productsPath, 'utf8');
-            let productsDoc = convert(xmlData, { format: 'object' });
+    if (orderProducts.length > 0) {
+        if (fs.existsSync(productsPath)) {
+            try {
+                const xmlData = fs.readFileSync(productsPath, 'utf8');
+                let productsDoc = convert(xmlData, { format: 'object' });
 
-            if (!Array.isArray(productsDoc.products.product)) {
-                productsDoc.products.product = [productsDoc.products.product];
-            }
-
-            orderProducts.forEach(returnedProduct => {
-                const productInXml = productsDoc.products.product.find(p =>
-                    p['@id'] === returnedProduct.id
-                );
-            
-                if (productInXml) {
-                    const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
-                    const updatedQuantity = currentQuantity + returnedProduct.quantity;
-                    productInXml.Quantity = updatedQuantity.toString();
-                    console.log(`🔄 Aktualizován sklad: ${returnedProduct.name} -> nové množství: ${updatedQuantity}`);
-                } else {
-                    console.warn(`⚠️ Produkt '${returnedProduct.name}' nenalezen v XML skladu!`);
+                if (!Array.isArray(productsDoc.products.product)) {
+                    productsDoc.products.product = [productsDoc.products.product];
                 }
-            });
 
-            const updatedProductsXml = create(productsDoc).end({ prettyPrint: true });
-            fs.writeFileSync(productsPath, updatedProductsXml);
-            console.log('✅ Sklad úspěšně aktualizován po stornu objednávky.');
+                orderProducts.forEach((returnedProduct) => {
+                    const productInXml = productsDoc.products.product.find((p) =>
+                        p['@id'] === returnedProduct.id
+                    );
 
-        } catch (error) {
-            console.error('❌ Chyba při aktualizaci skladu:', error);
+                    if (productInXml) {
+                        const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
+                        const updatedQuantity = currentQuantity + returnedProduct.quantity;
+                        productInXml.Quantity = updatedQuantity.toString();
+                        console.log(`🔄 Aktualizován sklad: ${returnedProduct.name} -> nové množství: ${updatedQuantity}`);
+                    } else {
+                        console.warn(`⚠️ Produkt '${returnedProduct.name}' nenalezen v XML skladu!`);
+                    }
+                });
+
+                const updatedProductsXml = create(productsDoc).end({ prettyPrint: true });
+                fs.writeFileSync(productsPath, updatedProductsXml);
+                console.log('✅ Sklad úspěšně aktualizován po stornu objednávky.');
+            } catch (error) {
+                console.error('❌ Chyba při aktualizaci skladu:', error);
+            }
+        } else {
+            console.error('❌ Skladový soubor neexistuje, produkty nelze vrátit.');
         }
     } else {
-        console.error('❌ Skladový soubor neexistuje, produkty nelze vrátit.');
+        console.log('ℹ️ Žádné skladové položky k vrácení.');
     }
 
     // ✅ Úprava zákaznického účtu
@@ -221,6 +392,12 @@ function cancelOrder(req, res) {
     if (!orderFound) {
         console.error(`❌ Objednávka ID ${orderId} nebyla nalezena.`);
         return res.status(404).json({ message: `Objednávka ${orderId} nebyla nalezena.` });
+    }
+
+    if (jsonDataToWrite && filePathToWrite) {
+        const updatedXml = create(jsonDataToWrite).end({ prettyPrint: true });
+        fs.writeFileSync(filePathToWrite, updatedXml);
+        console.log(`✅ Soubor ${path.basename(filePathToWrite)} aktualizován, objednávka stornována.`);
     }
 
     res.status(200).json({ message: `✅ Objednávka ${orderId} byla stornována a produkty vráceny do skladu.` });
@@ -322,7 +499,7 @@ function payOrder({ customerName, totalPrice, paymentMethod }) {
     }
 }
 
-function logOrder({ order, paymentMethod, totalAmount, selectedCustomer, shiftID }) {
+function logOrder({ order, paymentMethod, totalAmount, selectedCustomer, shiftID, metadata }) {
     if (!shiftID) {
         throw new Error('❌ Shift ID není definováno!');
     }
@@ -330,17 +507,27 @@ function logOrder({ order, paymentMethod, totalAmount, selectedCustomer, shiftID
     const orderID = getNextOrderID();
     const paymentInfo = paymentMethod === 'Účet zákazníka' ? selectedCustomer : paymentMethod;
 
+    const normalizedOrder = Array.isArray(order) ? order : [];
+    const metadataPayload = (typeof metadata === 'object' && metadata !== null) ? metadata : {};
+    const customerOrderIds = Array.isArray(metadataPayload.orderIds)
+        ? metadataPayload.orderIds.map((id) => String(id).trim()).filter(Boolean)
+        : [];
+    const metadataCustomerName = metadataPayload.customerName ? String(metadataPayload.customerName).trim() : null;
+
     const orderLog = {
         OrderID: orderID,
         PaymentMethod: paymentInfo,
         TotalPrice: totalAmount,
-        OrderDetails: order.map(product => ({
+        OrderDetails: normalizedOrder.map(product => ({
             ProductID: product.id,
             Product: product.name,
             Quantity: product.quantity,
             UnitPrice: product.price,
             TotalProductPrice: product.totalPrice
-        }))
+        })),
+        CustomerOrderIds: customerOrderIds,
+        CustomerName: metadataCustomerName || selectedCustomer || null,
+        Metadata: metadataPayload
     };
 
     // 🟢 Uložení objednávky do směny
@@ -362,9 +549,14 @@ function logOrder({ order, paymentMethod, totalAmount, selectedCustomer, shiftID
             let products = xmlDoc.products?.product || [];
             if (!Array.isArray(products)) products = [products];
 
-            order.forEach(orderedProduct => {
+            normalizedOrder.forEach(orderedProduct => {
                 if (!orderedProduct.id) {
                     console.error(`❌ Chybí ID pro produkt: ${orderedProduct.name}`);
+                    return;
+                }
+
+                if (!/^\d+$/.test(String(orderedProduct.id))) {
+                    console.log(`ℹ️ Účetní položka ${orderedProduct.name} neovlivňuje sklad.`);
                     return;
                 }
 
@@ -410,10 +602,34 @@ async function saveOrderToShift(orderLog, shiftID) {
     orderNode.ele('paymentMethod').txt(orderLog.PaymentMethod);
     orderNode.ele('totalPrice').txt(orderLog.TotalPrice);
     
-    const productsSummary = orderLog.OrderDetails.map(product =>
+    // Vytvoření popisu produktů - pokud jde o platbu účtu, přidáme jméno zákazníka
+    let productsSummary = orderLog.OrderDetails.map(product =>
         `${product.Quantity}x ${product.Product} (ID: ${product.ProductID}, ${product.TotalProductPrice} Kč)`
     ).join(', ');
+    
+    // Pokud jde o platbu zákaznického účtu, přidáme jméno zákazníka na začátek
+    const isAccountPayment = orderLog.Metadata && orderLog.Metadata.type === 'customer-account-payment';
+    if (isAccountPayment && orderLog.CustomerName) {
+        productsSummary = `Zákazník: ${orderLog.CustomerName} | ${productsSummary}`;
+    }
+    
     orderNode.ele('products').txt(productsSummary);
+
+    if (orderLog.CustomerName) {
+        orderNode.ele('customerName').txt(orderLog.CustomerName);
+    }
+
+    if (Array.isArray(orderLog.CustomerOrderIds) && orderLog.CustomerOrderIds.length > 0) {
+        orderNode.ele('customerOrderIds').txt(orderLog.CustomerOrderIds.join(','));
+    }
+
+    if (orderLog.Metadata && Object.keys(orderLog.Metadata).length > 0) {
+        try {
+            orderNode.ele('metadata').txt(JSON.stringify(orderLog.Metadata));
+        } catch (error) {
+            console.warn('⚠️ Nepodařilo se serializovat metadata objednávky:', error);
+        }
+    }
     
     fs.writeFileSync(filePath, xmlDoc.end({ prettyPrint: true }));
     console.log(`Objednávka ID ${orderLog.OrderID} byla uložena do směny ${shiftID} (lokálně).`);
@@ -426,105 +642,230 @@ function restoreOrder(req, res) {
     const customersFolder = path.join(__dirname, '..', 'data', 'customer_accounts');
 
     let orderFound = false;
-    let orderProducts = [];
+    const orderProducts = [];
     let customerName = null;
+    let jsonDataToWrite = null;
+    let filePathToWrite = null;
 
     const files = fs.readdirSync(shiftsDir).filter(file => file.endsWith('.xml'));
 
-    files.forEach(file => {
+    outerLoop:
+    for (const file of files) {
         const filePath = path.join(shiftsDir, file);
         const xmlData = fs.readFileSync(filePath, 'utf8');
         const jsonData = convert(xmlData, { format: 'object' });
 
-        if (jsonData.shift) {
-            let orders = jsonData.shift.order || jsonData.shift.orders?.order || [];
-            if (!Array.isArray(orders)) orders = [orders];
-
-            orders.forEach(order => {
-                if (order['@id'] === orderId && order['@cancelled'] === 'true') {
-                    order['@cancelled'] = 'false'; // Restore order
-                    orderFound = true;
-
-                    // Get customer name from paymentMethod
-                    if (order.paymentMethod) {
-                        customerName = order.paymentMethod.trim();
-                        console.log(`📌 Customer name from paymentMethod: ${customerName}`);
-                    }
-
-                    // Parse products for stock deduction
-                    if (order.products) {
-                        const productRegex = /(\d+x .+? \(ID: \d+, [\d.]+ Kč\))/g;
-                        const matches = order.products.match(productRegex) || [];
-
-                        matches.forEach(productEntry => {
-                            const match = productEntry.match(/^(\d+)x (.+?) \(ID: (\d+), ([\d.]+) Kč\)$/);
-                            if (match) {
-                                const quantity = parseInt(match[1], 10);
-                                const productName = match[2].trim();
-                                const productId = match[3];
-                                const productPrice = parseFloat(match[4]);
-                                orderProducts.push({
-                                    id: productId,
-                                    name: productName,
-                                    quantity: quantity,
-                                    price: productPrice
-                                });
-                                console.log(`↩️ To deduct: ${quantity}x ${productName} (ID: ${productId}, Price: ${productPrice} Kč)`);
-                            } else {
-                                console.warn(`⚠️ Error parsing product: ${productEntry}`);
-                            }
-                        });
-                    }
-                }
-            });
-
-            if (orderFound) {
-                const updatedXml = create(jsonData).end({ prettyPrint: true });
-                fs.writeFileSync(filePath, updatedXml);
-                console.log(`✅ Order ID ${orderId} restored in file ${file}`);
-            }
+        if (!jsonData.shift) {
+            continue;
         }
-    });
 
-    // Deduct products from stock after restoring order
-    if (orderFound && fs.existsSync(productsPath)) {
-        try {
-            const xmlData = fs.readFileSync(productsPath, 'utf8');
-            let productsDoc = convert(xmlData, { format: 'object' });
+        let orders = jsonData.shift.order || jsonData.shift.orders?.order || [];
+        if (!Array.isArray(orders)) {
+            orders = orders ? [orders] : [];
+        }
 
-            if (!Array.isArray(productsDoc.products.product)) {
-                productsDoc.products.product = [productsDoc.products.product];
+        for (const order of orders) {
+            if (String(order['@id']) !== String(orderId)) {
+                continue;
             }
 
-            console.log("♻️ Deducting products from stock after restoring order:", orderProducts);
+            if (String(order['@cancelled']).toLowerCase() !== 'true') {
+                continue;
+            }
 
-            orderProducts.forEach(product => {
-                const productInXml = productsDoc.products.product.find(p =>
-                    p['@id'] === product.id
-                );
-                if (productInXml) {
-                    const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
-                    if (currentQuantity >= product.quantity) {
-                        const newQuantity = currentQuantity - product.quantity;
-                        productInXml.Quantity = newQuantity.toString();
-                        console.log(`✅ Deducted ${product.quantity} pcs of product (ID: ${product.id}) -> new quantity: ${newQuantity}`);
-                    } else {
-                        console.warn(`⚠️ Attempt to deduct more than available (ID: ${product.id}).`);
+            if (isCustomerAccountSettlement(order)) {
+                console.log(`🔄 Obnovuji platbu zákaznického účtu (order ${orderId}) ve směně ${file}.`);
+                
+                // Vrátit objednávky zákazníka zpět na zaplacené
+                try {
+                    const relatedOrderIds = [];
+                    
+                    // Získáme ID objednávek z customerOrderIds
+                    if (order.customerOrderIds) {
+                        const ids = String(order.customerOrderIds).split(',').map(id => id.trim()).filter(Boolean);
+                        relatedOrderIds.push(...ids);
                     }
-                } else {
-                    console.warn(`⚠️ Product with ID ${product.id} not found in stock!`);
+                    
+                    // Pokud nemáme customerOrderIds, zkusíme parsovat z products
+                    if (relatedOrderIds.length === 0 && order.products) {
+                        const matches = order.products.match(/customer-order-(\d+)/g);
+                        if (matches) {
+                            matches.forEach(match => {
+                                const id = match.replace('customer-order-', '');
+                                if (id) relatedOrderIds.push(id);
+                            });
+                        }
+                    }
+                    
+                    // Získáme jméno zákazníka
+                    let targetCustomer = null;
+                    if (order.customerName) {
+                        targetCustomer = order.customerName.trim();
+                    } else if (order.metadata) {
+                        try {
+                            const meta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : order.metadata;
+                            if (meta && meta.customerName) {
+                                targetCustomer = meta.customerName;
+                            }
+                        } catch (e) {
+                            // Ignorujeme
+                        }
+                    }
+                    
+                    // Pokud máme zákazníka a ID objednávek, vrátíme je na zaplacené
+                    if (targetCustomer && relatedOrderIds.length > 0) {
+                        console.log(`🔄 Vracím objednávky ${relatedOrderIds.join(', ')} zákazníka ${targetCustomer} zpět na zaplacené`);
+                        const customerFilePath = path.join(customersFolder, `${targetCustomer.replace(/\s/g, '_')}.xml`);
+                        
+                        if (fs.existsSync(customerFilePath)) {
+                            const custXmlData = fs.readFileSync(customerFilePath, 'utf8');
+                            let custDoc = convert(custXmlData, { format: 'object' });
+                            
+                            let custOrders = custDoc.customer.orders?.order || [];
+                            if (!Array.isArray(custOrders)) {
+                                custOrders = [custOrders];
+                            }
+                            
+                            custOrders.forEach(custOrder => {
+                                if (relatedOrderIds.includes(String(custOrder['@id']))) {
+                                    custOrder['@payed'] = 'true';
+                                    console.log(`✅ Objednávka ${custOrder['@id']} vrácena na zaplacenou`);
+                                }
+                            });
+                            
+                            const updatedCustXml = create(custDoc).end({ prettyPrint: true });
+                            fs.writeFileSync(customerFilePath, updatedCustXml);
+                            console.log(`✅ Zákaznický účet ${targetCustomer} aktualizován`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Chyba při vracení objednávek na zaplacené:', error);
                 }
+                
+                // Nyní obnovíme platební objednávku ve směně
+                order['@cancelled'] = 'false';
+                order.cancelled = 'false';
+                orderFound = true;
+                jsonDataToWrite = jsonData;
+                filePathToWrite = filePath;
+                
+                // Platba účtu nemá skladové položky, takže je přeskočíme
+                console.log('ℹ️ Platba zákaznického účtu obnovena (bez vlivu na sklad)');
+                break outerLoop;
+            }
+
+            order['@cancelled'] = 'false';
+            order.cancelled = 'false';
+            orderFound = true;
+            jsonDataToWrite = jsonData;
+            filePathToWrite = filePath;
+
+            if (order.customerName) {
+                customerName = order.customerName.trim();
+            }
+
+            if (!customerName && order.metadata) {
+                try {
+                    const parsedMeta = typeof order.metadata === 'string'
+                        ? JSON.parse(order.metadata)
+                        : order.metadata;
+                    if (parsedMeta && parsedMeta.customerName) {
+                        customerName = String(parsedMeta.customerName).trim();
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Nepodařilo se parsovat metadata objednávky při obnovení:', error);
+                }
+            }
+
+            if (!customerName && order.paymentMethod) {
+                customerName = order.paymentMethod.trim();
+            }
+
+            const productRegex = /(\d+x .+? \(ID: [^,]+, [\d.,]+ Kč\))/g;
+            const productsText = typeof order.products === 'string' ? order.products : '';
+            const matches = productsText.match(productRegex) || [];
+
+            matches.forEach((productEntry) => {
+                const match = productEntry.match(/^(\d+)x (.+?) \(ID: ([^,]+), ([\d.,]+) Kč\)$/);
+                if (!match) {
+                    console.warn(`⚠️ Error parsing product: ${productEntry}`);
+                    return;
+                }
+
+                const quantity = parseInt(match[1], 10);
+                const productName = match[2].trim();
+                const productId = match[3].trim();
+                const productPrice = parseFloat(match[4].replace(',', '.'));
+
+                if (!/^\d+$/.test(productId)) {
+                    console.log(`ℹ️ Položka ${productName} (ID: ${productId}) není skladová položka, přeskočeno.`);
+                    return;
+                }
+
+                orderProducts.push({
+                    id: productId,
+                    name: productName,
+                    quantity,
+                    price: productPrice
+                });
+                console.log(`↩️ To deduct: ${quantity}x ${productName} (ID: ${productId}, Price: ${productPrice} Kč)`);
             });
 
-            const updatedProductsXml = create(productsDoc).end({ prettyPrint: true });
-            fs.writeFileSync(productsPath, updatedProductsXml);
-            console.log('✅ Stock updated after restoring order.');
-        } catch (error) {
-            console.error('❌ Error updating stock:', error);
+            break outerLoop;
         }
     }
 
-    // Update customer account
+    if (!orderFound) {
+        return res.status(404).json({ message: `Order ${orderId} not found or is not cancelled.` });
+    }
+
+    if (jsonDataToWrite && filePathToWrite) {
+        const updatedXml = create(jsonDataToWrite).end({ prettyPrint: true });
+        fs.writeFileSync(filePathToWrite, updatedXml);
+        console.log(`✅ Order ID ${orderId} restored in file ${path.basename(filePathToWrite)}.`);
+    }
+
+    if (orderProducts.length > 0) {
+        if (fs.existsSync(productsPath)) {
+            try {
+                const xmlData = fs.readFileSync(productsPath, 'utf8');
+                let productsDoc = convert(xmlData, { format: 'object' });
+
+                if (!Array.isArray(productsDoc.products.product)) {
+                    productsDoc.products.product = [productsDoc.products.product];
+                }
+
+                console.log('♻️ Deducting products from stock after restoring order:', orderProducts);
+
+                orderProducts.forEach((product) => {
+                    const productInXml = productsDoc.products.product.find((p) =>
+                        p['@id'] === product.id
+                    );
+                    if (productInXml) {
+                        const currentQuantity = parseInt(productInXml.Quantity, 10) || 0;
+                        if (currentQuantity >= product.quantity) {
+                            const newQuantity = currentQuantity - product.quantity;
+                            productInXml.Quantity = newQuantity.toString();
+                            console.log(`✅ Deducted ${product.quantity} pcs of product (ID: ${product.id}) -> new quantity: ${newQuantity}`);
+                        } else {
+                            console.warn(`⚠️ Attempt to deduct more than available (ID: ${product.id}).`);
+                        }
+                    } else {
+                        console.warn(`⚠️ Product with ID ${product.id} not found in stock!`);
+                    }
+                });
+
+                const updatedProductsXml = create(productsDoc).end({ prettyPrint: true });
+                fs.writeFileSync(productsPath, updatedProductsXml);
+                console.log('✅ Stock updated after restoring order.');
+            } catch (error) {
+                console.error('❌ Error updating stock:', error);
+            }
+        } else {
+            console.error('❌ Stock file does not exist, cannot deduct products.');
+        }
+    }
+
     if (customerName) {
         const customerFilePath = path.join(customersFolder, `${customerName.replace(/\s/g, '_')}.xml`);
         if (fs.existsSync(customerFilePath)) {
@@ -537,7 +878,6 @@ function restoreOrder(req, res) {
                     orders = [orders];
                 }
 
-                // Set attribute `cancelled` to "false"
                 orders.forEach(order => {
                     if (order['@id'] === orderId) {
                         order['@cancelled'] = 'false';
@@ -553,10 +893,8 @@ function restoreOrder(req, res) {
         } else {
             console.warn(`⚠️ Customer file for ${customerName} does not exist!`);
         }
-    }
-
-    if (!orderFound) {
-        return res.status(404).json({ message: `Order ${orderId} not found or is not cancelled.` });
+    } else {
+        console.warn('ℹ️ Zákazník nebyl identifikován při obnově objednávky.');
     }
 
     res.status(200).json({ message: `Order ${orderId} has been restored and products deducted from stock.` });

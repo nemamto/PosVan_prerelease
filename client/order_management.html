@@ -4,64 +4,51 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Přehled objednávek</title>
-    <link rel="stylesheet" href="styles/main_styles.css"> <!-- Základní styly -->
-    <link rel="stylesheet" href="styles/order_management.css"> <!-- Specifické styly pro order_management -->
+    <link rel="stylesheet" href="styles/main-modern.css">
+    <link rel="stylesheet" href="styles/order_management.css">
 </head>
-<body>
-    <header>
-        <h1>Přehled objednávek</h1>
-    </header>
+<body class="page-container">
+    <header id="app-header"></header>
 
-    <!-- Modální okno pro potvrzení -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <p id="delete-modal-message">Opravdu chcete stornovat objednávku?</p>
-            <div class="modal-buttons">
-                <button id="confirmDelete" class="confirm-btn">Potvrdit</button>
-                <button id="cancelDelete" class="cancel-btn">Zrušit</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Hlavní obsah stránky -->
     <main>
-        <section class="order-management-container">
-            <!-- Tabulka objednávek -->
-            <div class="order-list-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID směny</th>
-                            <th>Začátek směny</th>
-                            <th>Konec směny</th>
-                            <th>Počet objednávek</th>
-                        </tr>
-                    </thead>
-                    <tbody id="order-list">
-                        <!-- Směny se vykreslí zde -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Stránkování -->
-            <div class="pagination">
-                <button id="prev-page" class="pagination-btn">Předchozí stránka</button>
-                <span id="page-info"></span>
-                <button id="next-page" class="pagination-btn">Další stránka</button>
+        <section class="order-page">
+            <div class="card order-card">
+                <div class="card-header order-card-header">
+                    <div>
+                        <h1>Historie objednávek</h1>
+                        <p class="text-secondary">Rozklikněte směnu pro zobrazení jednotlivých objednávek a souhrnů.</p>
+                    </div>
+                    <div class="page-meta" aria-live="polite">
+                        <span id="page-info" class="page-info">Stránka 1 z 1</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="order-table-wrapper">
+                        <table class="order-table" aria-describedby="page-info">
+                            <thead>
+                                <tr>
+                                    <th>ID směny</th>
+                                    <th>Začátek</th>
+                                    <th>Konec</th>
+                                    <th>Počet objednávek</th>
+                                </tr>
+                            </thead>
+                            <tbody id="order-list">
+                                <!-- Směny se vykreslí zde -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer order-pagination" aria-label="Stránkování">
+                    <button id="prev-page" type="button" class="btn btn-secondary order-pagination-btn">Předchozí</button>
+                    <button id="next-page" type="button" class="btn btn-secondary order-pagination-btn">Další</button>
+                </div>
             </div>
         </section>
     </main>
 
-    <!-- Zápatí stránky -->
-    <footer id="footer">
-        <button class="footer-button" id="cashier-button">Pokladna</button>
-        <button class="footer-button" id="inventory-button">Sklad</button>
-        <button class="footer-button active" id="order-management-button">Historie</button>
-        <button class="footer-button" id="customer-accounts-button">Účty</button>
-        <button class="footer-button" id="shift-button">Směna</button>
-    </footer>
-
-    <script type="module"  src="scripts/common.js"></script>
-    <script type="module"  type="module" src="scripts/order_management.js"></script> <!-- Skript pro správu stránky order_management -->
+    <script src="scripts/theme-manager.js"></script>
+    <script type="module" src="scripts/common.js"></script>
+    <script type="module" src="scripts/order_management.js"></script>
 </body>
 </html>
