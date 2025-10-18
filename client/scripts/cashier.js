@@ -15,6 +15,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     await checkActiveShift(); // ✅ Kontrola směny při načítání
     await fetchProducts(); // ✅ Načtení produktů
     await fetchCategories(); // ✅ Načtení kategorií
+    
+    // Event delegation pro tlačítka v objednávce - pouze jednou!
+    const productListSummary = document.getElementById('product-list-summary');
+    productListSummary.addEventListener('click', (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        
+        const productName = target.getAttribute('data-name');
+        
+        if (target.classList.contains('increase-qty')) {
+            changeProductQuantity(productName, 1);
+        } else if (target.classList.contains('decrease-qty')) {
+            changeProductQuantity(productName, -1);
+        } else if (target.classList.contains('remove-item-btn')) {
+            removeProductFromOrder(productName);
+        }
+    });
 });
 
 // Přidání produktu do objednávky
@@ -47,25 +64,24 @@ function updateOrderSummary() {
                 <span class="order-item-name">${product.name}</span>
                 <span class="order-item-details">${product.quantity}x × ${product.price} Kč = ${product.totalPrice} Kč</span>
             </div>
-            <button class="remove-item-btn" data-name="${product.name}" title="Odebrat">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
+            <div class="order-item-controls">
+                <div class="quantity-control">
+                    <button class="quantity-btn decrease-qty" data-name="${product.name}" title="Snížit množství">−</button>
+                    <span class="quantity-display">${product.quantity}</span>
+                    <button class="quantity-btn increase-qty" data-name="${product.name}" title="Zvýšit množství">+</button>
+                </div>
+                <button class="remove-item-btn" data-name="${product.name}" title="Odebrat">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
         `;
         productListSummary.appendChild(productElement);
     });
 
     totalAmountElement.textContent = `${totalAmount} Kč`;
-
-    // Přidání event listeneru pro odstranění produktů z objednávky
-    document.querySelectorAll('.remove-item-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const productName = this.getAttribute('data-name');
-            removeProductFromOrder(productName);
-        });
-    });
 }
 
 // Funkce pro odstranění produktu z objednávky
@@ -78,6 +94,30 @@ function removeProductFromOrder(productName) {
         order.splice(productIndex, 1);
     }
 
+    updateOrderSummary();
+}
+
+// Funkce pro změnu množství produktu v objednávce
+function changeProductQuantity(productName, change) {
+    const product = order.find(item => item.name === productName);
+    
+    if (!product) return;
+    
+    // Změna množství
+    product.quantity += change;
+    
+    // Pokud je množství 0 nebo méně, odebrat produkt
+    if (product.quantity <= 0) {
+        removeProductFromOrder(productName);
+        return;
+    }
+    
+    // Aktualizace celkové ceny produktu
+    product.totalPrice = product.quantity * product.price;
+    
+    // Přepočítání celkové částky
+    totalAmount = order.reduce((sum, item) => sum + item.totalPrice, 0);
+    
     updateOrderSummary();
 }
 

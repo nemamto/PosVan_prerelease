@@ -240,10 +240,9 @@
     justify-content: center;
     font-size: 1rem;
     font-weight: 600;
-    transition: all var(--transition-fast);
 }
 
-.quantity-btn:hover {
+.quantity-btn:active {
     background-color: var(--brand-primary);
     color: var(--text-inverted);
     border-color: var(--brand-primary);
@@ -254,6 +253,7 @@
     text-align: center;
     font-weight: 600;
     color: var(--text-primary);
+    font-size: 1rem;
 }
 
 .remove-item-btn {
@@ -268,15 +268,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--transition-fast);
     flex-shrink: 0;
 }
 
-.remove-item-btn:hover {
+.remove-item-btn:active {
     background-color: var(--brand-danger);
     color: white;
     border-color: var(--brand-danger);
-    transform: scale(1.1);
 }
 
 .remove-item-btn svg {
