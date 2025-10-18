@@ -5,14 +5,25 @@ let selectedPaymentMethod = '';
 let selectedCustomer = '';
 let currentShiftID = null; 
 let shiftID;
-// Debounce helper for preventing rapid multiple updates
-function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-    };
-}
+let isUpdating = false; // Flag pro prevenci duplicitních změn množství
+
+// Logging configuration
+const LOG_LEVEL = {
+    DEBUG: 0,
+    INFO: 1,
+    WARN: 2,
+    ERROR: 3,
+    NONE: 4
+};
+
+const CURRENT_LOG_LEVEL = LOG_LEVEL.INFO; // Změň na DEBUG pro detailní logy, nebo WARN pro minimum
+
+const log = {
+    debug: (...args) => CURRENT_LOG_LEVEL <= LOG_LEVEL.DEBUG && console.log('🔍', ...args),
+    info: (...args) => CURRENT_LOG_LEVEL <= LOG_LEVEL.INFO && console.log('ℹ️', ...args),
+    warn: (...args) => CURRENT_LOG_LEVEL <= LOG_LEVEL.WARN && console.warn('⚠️', ...args),
+    error: (...args) => CURRENT_LOG_LEVEL <= LOG_LEVEL.ERROR && console.error('❌', ...args)
+};
 
 import { serverEndpoint } from './config.js';
 import { checkActiveShift, closeModal, getShiftID } from './common.js';
@@ -20,12 +31,14 @@ let loadedCategories = [];
 
 // 🟢 Zavoláme při načtení stránky
 document.addEventListener('DOMContentLoaded', async () => {
-    await checkActiveShift(); // ✅ Kontrola směny při načítání
-    await fetchProducts(); // ✅ Načtení produktů
-    await fetchCategories(); // ✅ Načtení kategorií
+    log.info('Cashier inicializován');
+    await checkActiveShift();
+    await fetchProducts();
+    await fetchCategories();
     
     // Event delegation pro tlačítka v objednávce - pouze jednou!
     const productListSummary = document.getElementById('product-list-summary');
+    log.debug('Event delegation nastaven pro objednávku');
     productListSummary.addEventListener('click', (e) => {
         const target = e.target.closest('button');
         if (!target) return;
@@ -48,9 +61,9 @@ function addProductToOrder(product) {
 
     if (existingProduct) {
         existingProduct.quantity += 1;
-        existingProduct.totalPrice = existingProduct.quantity * product.price;
+        existingProduct.totalPrice = existingProduct.quantity * Number(product.price);
     } else {
-        order.push({ ...product, quantity: 1, totalPrice: product.price }); // Přidáme ID produktu
+        order.push({ ...product, quantity: 1, totalPrice: Number(product.price) }); // Přidáme ID produktu
     }
 
     totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0);
@@ -74,9 +87,8 @@ function updateOrderSummary() {
             </div>
             <div class="order-item-controls">
                 <div class="quantity-control">
-                    <button class="quantity-btn decrease-qty" data-name="${product.name}" title="Snížit množství">−</button>
-                    <span class="quantity-display">${product.quantity}</span>
                     <button class="quantity-btn increase-qty" data-name="${product.name}" title="Zvýšit množství">+</button>
+                    <button class="quantity-btn decrease-qty" data-name="${product.name}" title="Snížit množství">−</button>
                 </div>
                 <button class="remove-item-btn" data-name="${product.name}" title="Odebrat">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -106,30 +118,45 @@ function removeProductFromOrder(productName) {
 }
 
 // Funkce pro změnu množství produktu v objednávce
-const changeProductQuantity = debounce(function(productName, change) {
+function changeProductQuantity(productName, change) {
+    if (isUpdating) {
+        log.debug('Aktualizace již probíhá, ignoruji');
+        return;
+    }
+    
+    isUpdating = true;
+    
     const product = order.find(item => item.name === productName);
 
     if (!product) {
+        log.warn(`Produkt ${productName} nenalezen v objednávce`);
+        isUpdating = false;
         return;
     }
 
-    // Změna množství
+    const oldQuantity = product.quantity;
     product.quantity += change;
+    log.debug(`${productName}: ${oldQuantity} → ${product.quantity}`);
 
-    // Pokud je množství 0 nebo méně, odebrat produkt
     if (product.quantity <= 0) {
+        log.debug(`Odebírám ${productName} (množství <= 0)`);
         removeProductFromOrder(productName);
+        isUpdating = false;
         return;
     }
 
-    // Aktualizace celkové ceny produktu
-    product.totalPrice = product.quantity * product.price;
-
-    // Přepočítání celkové částky
-    totalAmount = order.reduce((sum, item) => sum + item.totalPrice, 0);
+    product.totalPrice = product.quantity * Number(product.price);
+    
+    const oldTotalAmount = totalAmount;
+    totalAmount = order.reduce((sum, item) => sum + Number(item.totalPrice), 0);
+    log.debug(`Celková částka: ${oldTotalAmount} → ${totalAmount} Kč`);
 
     updateOrderSummary();
-}, 100);
+    
+    setTimeout(() => {
+        isUpdating = false;
+    }, 50);
+}
 
 // Odeslání objednávky - tlačítko "Odeslat objednávku" - nepoužívá se
 
@@ -233,11 +260,11 @@ document.querySelectorAll('.payment-button').forEach(button => {
             }
 
             // Odeslání objednávky pouze pro jiné způsoby platby
-            console.log(`📤 Odesílám objednávku se způsobem platby: ${selectedPaymentMethod}`);
+            log.debug(`Odesílám objednávku: ${selectedPaymentMethod}`);
             try {
                 await submitOrder();
             } catch (error) {
-                console.error("❌ Chyba při odesílání objednávky:", error);
+                log.error("Chyba při odesílání objednávky:", error);
             }
             lastClickedButton = null;
             return;
@@ -250,7 +277,7 @@ document.querySelectorAll('.payment-button').forEach(button => {
 
         this.classList.add('active');
         selectedPaymentMethod = method === 'cash' ? 'Hotovost' : method === 'card' ? 'Karta' : 'Účet zákazníka';
-        console.log(`✅ Zvolen způsob platby: ${selectedPaymentMethod}`);
+        log.info(`Platba: ${selectedPaymentMethod}`);
 
         if (method === 'customer') {
             showCustomerSelectionModal();
@@ -264,55 +291,58 @@ function initializeShift() {
     let shiftID = localStorage.getItem("shiftID");
 
     if (!shiftID) {
-        console.warn("⚠️ Žádná aktivní směna. Načítám aktuální směnu...");
+        log.debug("Načítám aktuální směnu");
         fetch(`${serverEndpoint}/currentShift`)
             .then(response => response.json())
             .then(data => {
                 if (data.active) {
                     localStorage.setItem("shiftID", data.shiftID);
                     currentShiftID = data.shiftID;
-                    console.log(`✅ Načtená směna ID: ${data.shiftID}`);
+                    log.info(`Směna načtena: ID ${data.shiftID}`);
                 } else {
-                    console.warn("⚠️ Žádná aktivní směna nalezena.");
+                    log.warn("Žádná aktivní směna");
                     currentShiftID = null;
                 }
             })
-            .catch(error => console.error("❌ Chyba při načítání směny:", error));
+            .catch(error => log.error("Chyba při načítání směny:", error));
     } else {
         currentShiftID = shiftID;
-        console.log(`✅ Aktivní směna ID: ${shiftID}`);
+        log.debug(`Směna z localStorage: ID ${shiftID}`);
     }
 }
 
 export async function submitOrder() {
-    console.log(`📤 Odesílám objednávku:`, order);
+    log.debug('Odesílám objednávku:', order);
 
-    const shiftID = await getShiftID(); // 🟢 Kontrola aktuální směny
+    const shiftID = await getShiftID();
 
     if (!shiftID) {
-        console.error("❌ Chyba: Směna není otevřená!");
+        log.error("Směna není otevřená");
         showModal("❌ Nelze zpracovat objednávku: Směna není otevřená!", true, true);
         return;
     }
 
     if (!order || order.length === 0) {
+        log.warn("Pokus o odeslání prázdné objednávky");
         showModal("❌ Nelze odeslat prázdnou objednávku!", true);
         return;
     }
 
     if (!selectedPaymentMethod) {
+        log.warn("Způsob platby nebyl vybrán");
         showModal("❌ Vyberte způsob platby!", true);
         return;
     }
 
     if (selectedPaymentMethod === "Účet zákazníka" && !selectedCustomer) {
+        log.warn("Zákazník nebyl vybrán pro platbu na účet");
         showModal("❌ Vyberte zákazníka pro platbu na účet!", true);
         return;
     }
 
     const requestBody = {
         order: order.map(item => ({
-            id: item.id, // ← přidej ID!
+            id: item.id,
             name: item.name,
             quantity: item.quantity,
             price: item.price,
@@ -337,10 +367,10 @@ export async function submitOrder() {
         }
 
         const result = await response.json();
-        console.log(`✅ Objednávka úspěšně odeslána:`, result);
+        log.info(`Objednávka odeslána: ${totalAmount} Kč, ${order.length} položek`);
         resetOrder();
     } catch (error) {
-        console.error("❌ Chyba při odesílání objednávky:", error);
+        log.error("Chyba při odesílání objednávky:", error);
         showModal("❌ Chyba při odesílání objednávky!", true, true);
     }
 }
@@ -383,7 +413,7 @@ async function fetchProducts() {
         const products = await response.json();
         renderProducts(products);
     } catch (error) {
-        console.error('Chyba:', error);
+        log.error('Chyba při načítání produktů:', error);
     }
 }
 
@@ -393,17 +423,17 @@ async function fetchCategories() {
         if (!response.ok) throw new Error('Chyba při načítání kategorií');
         loadedCategories = await response.json();
     } catch (e) {
-        console.error(e);
+        log.error('Chyba při načítání kategorií:', e);
         loadedCategories = [];
     }
 }
 
 // Funkce pro vykreslení kategorií
 async function renderProducts(products) {
-    await fetchCategories(); // načti kategorie ze serveru
+    await fetchCategories();
     const categoryContainer = document.querySelector('#category-container') || document.querySelector('.category-container');
     if (!categoryContainer) {
-        console.error('❌ Kategorie nelze vykreslit: kontejner nenalezen v DOM.');
+        log.error('Kontejner kategorií nenalezen v DOM');
         return;
     }
 
@@ -446,7 +476,7 @@ const productContainer = document.getElementById('product-container'); // Defini
 
 function renderProductsByCategory(products) {
     if (!productContainer) {
-        console.error('❌ Produkty nelze vykreslit: kontejner nenalezen v DOM.');
+        log.error('Kontejner produktů nenalezen v DOM');
         return;
     }
 
@@ -485,22 +515,21 @@ if (closeModalBtn) {
 // Funkce pro zobrazení modálního okna s výběrem zákazníka
 async function fetchCustomersIfNeeded() {
     if (!customers || customers.length === 0) {
-        console.log('Načítáme seznam zakazniku...');
-        await fetchCustomers(); // Počkáme na dokončení načítání zakazniku
+        log.debug('Načítám seznam zákazníků');
+        await fetchCustomers();
     }
 }
 
 async function fetchCustomers() {
-    console.log('Načítání seznamu zakazniku...');
     try {
         const response = await fetch(`${serverEndpoint}/customers`);
         if (!response.ok) {
-            throw new Error('Chyba při načítání zakazniku!');
+            throw new Error('Chyba při načítání zákazníků');
         }
-        customers = await response.json(); // Uloží data do globální proměnné
-        console.log('Seznam zakazniku byl načten:', customers);
+        customers = await response.json();
+        log.debug(`Načteno ${customers.length} zákazníků`);
     } catch (error) {
-        console.error('Chyba při načítání:', error);
+        log.error('Chyba při načítání zákazníků:', error);
     }
 }
 

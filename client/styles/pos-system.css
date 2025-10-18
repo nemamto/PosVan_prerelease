@@ -201,17 +201,17 @@
     font-weight: 600;
     font-size: 1rem;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
 }
 
 .order-item-details {
     font-size: 0.875rem;
     color: var(--text-secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.3;
 }
 
 .order-item-price {
@@ -228,14 +228,15 @@
 
 .quantity-control {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: var(--space-xs);
+    gap: 2px;
 }
 
 .quantity-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
+    width: 32px;
+    height: 28px;
+    border-radius: var(--radius-sm);
     border: 1px solid var(--border-medium);
     background-color: var(--bg-secondary);
     color: var(--text-primary);
@@ -243,8 +244,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
+    line-height: 1;
 }
 
 .quantity-btn:active {
@@ -254,11 +256,7 @@
 }
 
 .quantity-display {
-    min-width: 32px;
-    text-align: center;
-    font-weight: 600;
-    color: var(--text-primary);
-    font-size: 1rem;
+    display: none; /* Skryjeme, počet je už v detailech */
 }
 
 .remove-item-btn {
