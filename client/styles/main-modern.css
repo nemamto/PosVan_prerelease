@@ -220,7 +220,7 @@ header {
 
 main {
     flex: 1;
-    padding: var(--space-md) var(--space-lg);
+    padding: var(--space-sm) var(--space-lg);
     max-width: 1400px;
     margin: 0 auto;
     width: 100%;
@@ -477,19 +477,13 @@ p {
     background-color: var(--bg-secondary);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-lg);
-    padding: var(--space-lg);
+    padding: var(--space-md);
     box-shadow: var(--shadow-light);
-    transition: all var(--transition-fast);
-}
-
-.card:hover {
-    box-shadow: var(--shadow-medium);
-    transform: translateY(-2px);
 }
 
 .card-header {
-    margin-bottom: var(--space-md);
-    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-sm);
+    padding-bottom: var(--space-sm);
     border-bottom: 1px solid var(--border-light);
 }
 

@@ -118,13 +118,19 @@ async function showCustomerSelectionModal() {
     }
 
     let customerOptions = `
-        <h3>Vyberte zákazníka</h3>
-        <input type="text" id="customer-search" placeholder="Hledat zákazníka..." style="width:90%;padding:6px;margin-bottom:8px;">
-        <select class="styled-select" id="customer-select" size="8" style="width:95%">
-            ${customers.map(customer => `<option value="${customer.name}">${customer.name}</option>`).join('')}
-        </select>
-        <br><br>
-        <button class="button" id="confirm-customer">Potvrdit</button>
+        <div class="customer-selection-modal">
+            <h3>Vyberte zákazníka</h3>
+            <input 
+                type="text" 
+                id="customer-search" 
+                placeholder="🔍 Hledat zákazníka..." 
+                autocomplete="off"
+            >
+            <select id="customer-select" size="10">
+                ${customers.map(customer => `<option value="${customer.name}">${customer.name}</option>`).join('')}
+            </select>
+            <button class="button" id="confirm-customer">✓ Potvrdit výběr</button>
+        </div>
     `;
 
     showModal(customerOptions, true);

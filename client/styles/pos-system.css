@@ -11,7 +11,7 @@
 .cashier-layout {
     display: grid;
     grid-template-columns: 0.6fr 2.5fr 1fr;
-    gap: var(--space-md);
+    gap: var(--space-sm);
     padding: 0;
 }
 
@@ -476,4 +476,167 @@
         padding: var(--space-lg);
         margin: var(--space-md);
     }
+}
+
+/* ============================= */
+/* Customer Selection Modal */
+/* ============================= */
+
+/* ============================= */
+/* Customer Selection Modal */
+/* ============================= */
+
+.customer-selection-modal {
+    width: 100%;
+    text-align: left;
+}
+
+.customer-selection-modal h3 {
+    margin: 0 0 var(--space-lg) 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Search input styling */
+#customer-search {
+    width: 100%;
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    box-sizing: border-box;
+}
+
+#customer-search:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+#customer-search::placeholder {
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* Customer select styling */
+#customer-select {
+    width: 100%;
+    min-height: 300px;
+    max-height: 50vh;
+    padding: var(--space-sm);
+    border: 2px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    overflow-y: auto;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+#customer-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+/* Select options styling */
+#customer-select option {
+    padding: var(--space-md);
+    margin: var(--space-xs) 0;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}
+
+#customer-select option:checked {
+    background-color: var(--accent-primary);
+    color: white;
+    font-weight: 600;
+}
+
+/* Customer modal specific content sizing */
+.modal-content:has(#customer-select) {
+    max-width: 600px;
+    width: 90%;
+}
+
+/* Confirm button in customer modal */
+#confirm-customer {
+    margin-top: var(--space-lg);
+    width: 100%;
+    padding: var(--space-md) var(--space-xl);
+    font-size: 1.125rem;
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+}
+
+/* Custom scrollbar for select */
+#customer-select::-webkit-scrollbar {
+    width: 12px;
+}
+
+#customer-select::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: var(--radius-md);
+}
+
+#customer-select::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: var(--radius-md);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-content:has(#customer-select) {
+        max-width: 95%;
+    }
+    
+    #customer-select {
+        min-height: 250px;
+        max-height: 40vh;
+    }
+    
+    #customer-search,
+    #confirm-customer {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    #customer-select {
+        min-height: 200px;
+        max-height: 35vh;
+    }
+    
+    .modal-content h3 {
+        font-size: 1.25rem;
+    }
+}
+
+/* Empty state for filtered results */
+#customer-select:empty::after {
+    content: "Žádní zákazníci nenalezeni";
+    display: block;
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Keyboard navigation hint */
+.customer-selection-modal {
+    position: relative;
+}
+
+.customer-selection-modal::after {
+    content: "💡 Tip: Double-click nebo Enter pro rychlý výběr";
+    display: block;
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: var(--space-sm);
+    opacity: 0.7;
 }

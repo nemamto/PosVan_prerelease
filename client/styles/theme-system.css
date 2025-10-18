@@ -124,6 +124,40 @@
   --brand-info: #22b8cf;
 }
 
+/* Dark theme - Customer selection modal */
+[data-theme="dark"] #customer-search {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #customer-search:focus {
+  border-color: var(--brand-primary);
+}
+
+[data-theme="dark"] #customer-select {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] #customer-select:focus {
+  border-color: var(--brand-primary);
+}
+
+[data-theme="dark"] #customer-select option:checked {
+  background-color: var(--brand-primary);
+  color: white;
+}
+
+[data-theme="dark"] #customer-select::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] #customer-select::-webkit-scrollbar-thumb {
+  background: var(--brand-primary);
+}
+
 /* ========== COLORFUL THEME (Crazy Rainbow Colors!) ========== */
 [data-theme="colorful"] {
   /* Duhove pozadi */
@@ -190,11 +224,6 @@
   backdrop-filter: blur(10px);
   border: 2px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 32px rgba(255, 107, 157, 0.4);
-  transition: transform 0.3s ease;
-}
-
-[data-theme="colorful"] .card:hover {
-  transform: translateY(-2px);
 }
 
 [data-theme="colorful"] .card-header {
@@ -322,6 +351,72 @@
   animation: trippyButton 8s linear infinite;
   border: 3px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 8px 30px rgba(254, 202, 87, 0.6);
+}
+
+/* Modal fix pro colorful theme */
+[data-theme="colorful"] .modal-overlay {
+  z-index: 10000;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="colorful"] .modal-content {
+  background: rgba(196, 69, 105, 0.95);
+  backdrop-filter: blur(15px);
+  border: 3px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 60px rgba(255, 107, 157, 0.8);
+}
+
+[data-theme="colorful"] .modal-content p,
+[data-theme="colorful"] .modal-body,
+[data-theme="colorful"] .modal-header h3 {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Customer selection modal in colorful theme */
+[data-theme="colorful"] #customer-search {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="colorful"] #customer-search::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+[data-theme="colorful"] #customer-search:focus {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="colorful"] #customer-select {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="colorful"] #customer-select:focus {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="colorful"] #customer-select option {
+  background: rgba(196, 69, 105, 0.9);
+  color: #ffffff;
+}
+
+[data-theme="colorful"] #customer-select option:checked {
+  background: rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+}
+
+[data-theme="colorful"] #customer-select::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="colorful"] #customer-select::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 /* ========== AUTO THEME (respektuje systémové nastavení) ========== */

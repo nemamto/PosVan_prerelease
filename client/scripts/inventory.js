@@ -257,12 +257,6 @@ async function activateProduct(productId) {
         console.log(`✅ Produkt ID ${productId} byl úspěšně aktivován:`, result);
     } catch (error) {
         console.error("❌ Chyba při aktivaci produktu:", error);
-        await showModal(`❌ Chyba při aktivaci produktu: ${error.message}`, {
-            isError: true,
-            title: 'Aktivace selhala',
-            confirmVariant: 'danger'
-        });
-
     }
 }
 
@@ -455,22 +449,6 @@ async function deactivateProduct(productId, { skipConfirm = false } = {}) {
     if (!productId) {
         console.error('❌ Chyba: ID produktu není definováno.');
         return false;
-    }
-
-    if (!skipConfirm) {
-        const confirmed = await showModalConfirm(
-            'Opravdu chcete produkt deaktivovat?',
-            {
-                title: 'Deaktivace produktu',
-                confirmText: 'Deaktivovat',
-                cancelText: 'Zrušit',
-                variant: 'warning'
-            }
-        );
-
-        if (!confirmed) {
-            return false;
-        }
     }
 
     let success = false;
