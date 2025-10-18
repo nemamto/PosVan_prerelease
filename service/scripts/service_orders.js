@@ -595,7 +595,9 @@ async function saveOrderToShift(orderLog, shiftID) {
     
     let xmlDoc = create(fs.readFileSync(filePath, 'utf8')).root();
     const now = new Date();
-    const formattedDateTime = common.getFormattedDateTime();
+    // ISO 8601 formát: YYYY-MM-DDTHH:mm:ss
+    const pad = n => String(n).padStart(2, '0');
+    const formattedDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     
     const orderNode = xmlDoc.ele('order', { id: orderLog.OrderID });
     orderNode.ele('time').txt(formattedDateTime);

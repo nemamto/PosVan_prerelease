@@ -632,31 +632,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const paymentItems = unpaidOrders
-                .map((order) => ({
-                    orderId: String(order['@id'] ?? order.id ?? ''),
-                    amount: getOrderTotal(order)
-                }))
-                .filter((item) => item.orderId);
-
             const totalAmount = unpaidOrders.reduce((sum, order) => sum + getOrderTotal(order), 0);
 
-            const paymentMethodKey = await showPaymentMethodPicker({
+            const result = await showPaymentMethodPicker({
                 title: 'Způsob platby',
-                message: `Zákazník: ${escapeHtml(customerName)}<br>Celkem k úhradě: <strong>${formatCurrency(totalAmount)}</strong>`
+                message: `Zákazník: ${escapeHtml(customerName)}<br>Celkem k úhradě: <strong>${formatCurrency(totalAmount)}</strong>`,
+                originalAmount: totalAmount
             });
 
-            if (!paymentMethodKey) {
+            if (!result) {
                 return;
             }
 
+            const { paymentMethod: paymentMethodKey, discount } = result;
             const paymentLabel = normalisePaymentLabel(paymentMethodKey);
+            
+            // Aplikujeme slevu 30% pokud je zaškrtnuta
+            const finalAmount = discount ? totalAmount * 0.7 : totalAmount;
+            const discountInfo = discount ? ' (sleva 30%)' : '';
+
+            const paymentItems = unpaidOrders
+                .map((order) => {
+                    const originalAmount = getOrderTotal(order);
+                    const itemAmount = discount ? originalAmount * 0.7 : originalAmount;
+                    return {
+                        orderId: String(order['@id'] ?? order.id ?? ''),
+                        amount: itemAmount
+                    };
+                })
+                .filter((item) => item.orderId);
 
             await logPaymentToShift({
                 customerName,
-                amount: totalAmount,
+                amount: finalAmount,
                 paymentMethod: paymentLabel,
-                description: `Platba zákazníka ${customerName}`,
+                description: `Platba zákazníka ${customerName}${discountInfo}`,
                 orderItems: paymentItems
             });
 
@@ -668,9 +678,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 await markCustomerOrderAsPaid(customerName, orderId);
             }
 
-            await showModal(`${unpaidOrders.length} objednávek bylo úspěšně zaplaceno.`, {
+            await showModal(`${unpaidOrders.length} objednávek bylo úspěšně zaplaceno.${discount ? '<br><em>Aplikována sleva 30%</em>' : ''}`, {
                 title: 'Platba zpracována',
-                confirmVariant: 'success'
+                confirmVariant: 'success',
+                allowHtml: true
             });
 
             await loadCustomers();
@@ -686,30 +697,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function payCustomerOrder(orderId, customerName, amount) {
         try {
-            const paymentMethodKey = await showPaymentMethodPicker({
+            const result = await showPaymentMethodPicker({
                 title: 'Způsob platby',
-                message: `Objednávka ${escapeHtml(orderId)}<br>Částka: <strong>${formatCurrency(amount)}</strong>`
+                message: `Objednávka ${escapeHtml(orderId)}<br>Částka: <strong>${formatCurrency(amount)}</strong>`,
+                originalAmount: amount
             });
 
-            if (!paymentMethodKey) {
+            if (!result) {
                 return;
             }
 
+            const { paymentMethod: paymentMethodKey, discount } = result;
             const paymentLabel = normalisePaymentLabel(paymentMethodKey);
+            
+            // Aplikujeme slevu 30% pokud je zaškrtnuta
+            const finalAmount = discount ? amount * 0.7 : amount;
+            const discountInfo = discount ? ' (sleva 30%)' : '';
 
             await logPaymentToShift({
                 customerName,
-                amount,
+                amount: finalAmount,
                 paymentMethod: paymentLabel,
-                description: `Platba objednávky ${orderId}`,
-                orderItems: [{ orderId, amount }]
+                description: `Platba objednávky ${orderId}${discountInfo}`,
+                orderItems: [{ orderId, amount: finalAmount }]
             });
 
             await markCustomerOrderAsPaid(customerName, orderId);
 
-            await showModal(`Objednávka ${escapeHtml(orderId)} byla úspěšně zaplacena.`, {
+            await showModal(`Objednávka ${escapeHtml(orderId)} byla úspěšně zaplacena.${discount ? '<br><em>Aplikována sleva 30%</em>' : ''}`, {
                 title: 'Platba dokončena',
-                confirmVariant: 'success'
+                confirmVariant: 'success',
+                allowHtml: true
             });
 
             await loadCustomers();
@@ -939,20 +957,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function showPaymentMethodPicker({ title, message }) {
+    async function showPaymentMethodPicker({ title, message, originalAmount }) {
+        // Vyfiltrujeme "Účet zákazníka" - platíme Z účtu, ne NA účet
+        const availableMethods = PAYMENT_METHODS.filter(method => method.key !== 'customer');
+        
         const markup = `
             <div class="payment-method-grid">
-                ${PAYMENT_METHODS.map((method) => `
+                ${availableMethods.map((method) => `
                     <button type="button" class="btn btn-secondary" data-payment="${method.key}">
                         <span>${method.label}</span>
                     </button>
                 `).join('')}
             </div>
+            <div class="discount-checkbox-container">
+                <label class="discount-checkbox-label">
+                    <input type="checkbox" id="discount-30-checkbox" class="discount-checkbox">
+                    <span>Sleva 30%</span>
+                </label>
+            </div>
+            ${originalAmount !== undefined ? `
+                <div id="discount-info" style="text-align: center; margin-top: var(--space-sm); font-size: 0.9rem; color: var(--text-secondary);"></div>
+            ` : ''}
         `;
 
         const modalPromise = showModal(`
             <div class="customer-payment-modal">
-                <p class="text-secondary" style="margin-bottom: var(--space-md);">${message}</p>
+                <p class="text-secondary" id="payment-amount-display" style="margin-bottom: var(--space-md);">${message}</p>
                 ${markup}
             </div>
         `, {
@@ -965,16 +995,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const overlay = document.getElementById('modal-overlay');
         const messageNode = overlay?.querySelector('[data-modal="message"]');
         if (messageNode) {
+            // Dynamické zobrazení slevy
+            if (originalAmount !== undefined) {
+                const discountCheckbox = document.getElementById('discount-30-checkbox');
+                const discountInfo = document.getElementById('discount-info');
+                const amountDisplay = document.getElementById('payment-amount-display');
+                
+                if (discountCheckbox && discountInfo && amountDisplay) {
+                    discountCheckbox.addEventListener('change', () => {
+                        if (discountCheckbox.checked) {
+                            const discountedAmount = originalAmount * 0.7;
+                            discountInfo.innerHTML = `<strong style="color: var(--success-color);">Nová částka: ${formatCurrency(discountedAmount)}</strong>`;
+                        } else {
+                            discountInfo.innerHTML = '';
+                        }
+                    });
+                }
+            }
+            
             messageNode.querySelectorAll('[data-payment]').forEach((button) => {
                 button.addEventListener('click', () => {
                     const method = button.dataset.payment;
-                    closeModal('modal-overlay', method);
+                    const discountCheckbox = document.getElementById('discount-30-checkbox');
+                    const hasDiscount = discountCheckbox ? discountCheckbox.checked : false;
+                    closeModal('modal-overlay', { paymentMethod: method, discount: hasDiscount });
                 });
             });
         }
 
         const result = await modalPromise;
-        return typeof result === 'string' ? result : null;
+        return result && typeof result === 'object' ? result : null;
     }
 
     async function safeJson(response) {
