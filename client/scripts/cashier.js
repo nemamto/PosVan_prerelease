@@ -4,7 +4,15 @@ let totalAmount = 0;
 let selectedPaymentMethod = '';
 let selectedCustomer = '';
 let currentShiftID = null; 
-let shiftID 
+let shiftID;
+// Debounce helper for preventing rapid multiple updates
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+    };
+}
 
 import { serverEndpoint } from './config.js';
 import { checkActiveShift, closeModal, getShiftID } from './common.js';
@@ -98,35 +106,37 @@ function removeProductFromOrder(productName) {
 }
 
 // Funkce pro změnu množství produktu v objednávce
-function changeProductQuantity(productName, change) {
+const changeProductQuantity = debounce(function(productName, change) {
     const product = order.find(item => item.name === productName);
-    
-    if (!product) return;
-    
+
+    if (!product) {
+        return;
+    }
+
     // Změna množství
     product.quantity += change;
-    
+
     // Pokud je množství 0 nebo méně, odebrat produkt
     if (product.quantity <= 0) {
         removeProductFromOrder(productName);
         return;
     }
-    
+
     // Aktualizace celkové ceny produktu
     product.totalPrice = product.quantity * product.price;
-    
+
     // Přepočítání celkové částky
     totalAmount = order.reduce((sum, item) => sum + item.totalPrice, 0);
-    
+
     updateOrderSummary();
-}
+}, 100);
 
 // Odeslání objednávky - tlačítko "Odeslat objednávku" - nepoužívá se
 /* document.getElementById('submit-order').addEventListener('click', function() {
-    submitOrder();
-}) */
-//reset objednavky
-document.getElementById('reset-order').addEventListener('click', function() {
+    // Uvolnění flagu po aktualizaci DOM pomocí requestAnimationFrame
+    requestAnimationFrame(() => {
+        isUpdating = false;
+    });
     resetOrder();
 });
 

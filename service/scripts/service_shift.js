@@ -4,6 +4,17 @@ const { create, convert } = require('xmlbuilder2');
 const common = require('./service_common');
 const { get } = require('http');
 
+// Utility functions for consistent datetime formatting
+function getISODateTime(date = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+function getFileSafeDateTime(date = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
+}
+
 function startShift(req, res) {
     try {
         const { bartender } = req.body;
@@ -14,22 +25,20 @@ function startShift(req, res) {
         const newShiftID = getNextShiftID();
 
         const now = new Date();
-        const datePart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const timePart = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-        const formattedDateTime = `${datePart} ${timePart}`;
+        const formattedDateTime = getISODateTime(now); // ISO 8601 formát
+        const fileSafeDateTime = getFileSafeDateTime(now); // Pro název souboru
 
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
         common.ensureDirectoryExistence(shiftsDir);
 
         // Vytvoření XML dokumentu s novým ID
         const xmlDoc = create({ version: '1.0' })
-            .ele('shift', { id: newShiftID })
-                .ele('startTime').txt(formattedDateTime).up()
+            .ele('shift', { id: newShiftID, startTime: formattedDateTime })
                 .ele('bartender').txt(bartender).up()
                 .ele('orders').up()
             .up();
 
-        const fileName = `${datePart}_${timePart}_${newShiftID}.xml`;
+        const fileName = `${fileSafeDateTime}_${newShiftID}.xml`;
         const filePath = path.join(shiftsDir, fileName);
         fs.writeFileSync(filePath, xmlDoc.end({ prettyPrint: true }));
 
@@ -75,16 +84,16 @@ function endShift(req, res) {
         }
 
         const now = new Date();
-        const localTime = now.toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' });
+        const endTimeISO = getISODateTime(now);
 
-        jsonData.shift.endTime = localTime;
+        jsonData.shift.endTime = endTimeISO;
 
         const updatedXmlData = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(filePath, updatedXmlData);
 
-        console.log(`✅ Směna ID ${shiftID} byla ukončena v ${localTime}.`);
+        console.log(`✅ Směna ID ${shiftID} byla ukončena v ${endTimeISO}.`);
 
-        res.json({ message: `✅ Směna ID ${shiftID} byla ukončena.`, endTime: localTime });
+        res.json({ message: `✅ Směna ID ${shiftID} byla ukončena.`, endTime: endTimeISO });
     } catch (error) {
         console.error('❌ Chyba při ukončení směny:', error);
         res.status(500).json({ message: 'Interní chyba serveru při ukončení směny.' });
@@ -128,13 +137,12 @@ function findShiftFileByID(shiftID) {
         console.warn(`⚠️ Žádná aktivní směna neexistuje. Vytvářím novou.`);
 
         const now = new Date();
-        const datePart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        const timePart = `${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}`;
-        const formattedDateTime = `${datePart} ${timePart}`;
+        const formattedDateTime = getISODateTime(now);
+        const fileSafeDateTime = getFileSafeDateTime(now);
 
         // Nastavení nového ID směny (inkrementace posledního známého ID)
         const newShiftID = lastShiftID ? parseInt(lastShiftID, 10) + 1 : 1;
-        const newFileName = `${datePart}_${timePart}_${newShiftID}.xml`;
+        const newFileName = `${fileSafeDateTime}_${newShiftID}.xml`;
         const filePath = path.join(shiftsDir, newFileName);
 
         // Vytvoření XML pro novou směnu

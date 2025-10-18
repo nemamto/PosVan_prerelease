@@ -22,6 +22,13 @@ function appendLog(level, ...args) {
     const msg = `[${new Date().toISOString()}] [${level}] ${args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ')}\n`;
     fs.appendFileSync(getLogFilePath(), msg);
 }
+function getShiftProperty(shift, prop, fallback = undefined) {
+    // Try attribute form, then element form, then fallback
+    if (shift && shift[`@${prop}`] !== undefined) return shift[`@${prop}`];
+    if (shift && shift[prop] !== undefined) return shift[prop];
+    return fallback;
+}
+
 function currentShift(req, res) {
     const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
     ensureDirectoryExistence(shiftsDir); 
@@ -41,10 +48,10 @@ function currentShift(req, res) {
         return res.json({ active: false, message: "Neplatná struktura směny." });
     }
 
-    const shiftID = jsonData.shift['@id'];
-    const startTime = jsonData.shift['@startTime'];
-    const bartender = jsonData.shift.bartender || "Neznámý";
-    const endTime = jsonData.shift.endTime;
+    const shiftID = getShiftProperty(jsonData.shift, 'id');
+    const startTime = getShiftProperty(jsonData.shift, 'startTime');
+    const bartender = getShiftProperty(jsonData.shift, 'bartender', "Neznámý");
+    const endTime = getShiftProperty(jsonData.shift, 'endTime');
 
     if (endTime) {
         return res.json({ active: false, endTime, message: `Poslední směna (${shiftID}) byla ukončena.` });

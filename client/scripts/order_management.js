@@ -64,6 +64,80 @@ document.addEventListener('DOMContentLoaded', () => {
         return method || '—';
     }
 
+    /**
+     * Attempts to parse a date string in one of the supported formats:
+     * 1. ISO format:           2025-10-18T21:08:56
+     * 2. Dash time format:     2025-10-18 21-06-39
+     * 3. Czech format:         18. 10. 2025 21:06:29
+     * Returns a Date object or null if parsing fails.
+     */
+    function parseDateTime(dateString) {
+        if (typeof dateString !== 'string' || !dateString.trim() || dateString === EMPTY_VALUE) return null;
+
+        // Pokus 1: ISO formát (2025-10-18T21:08:56)
+        let date = new Date(dateString);
+        if (!isNaN(date.getTime())) return date;
+
+        // Pokus 2: Formát s pomlčkami v čase (2025-10-18 21-06-39)
+        const dashFormat = dateString.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2})-(\d{2})-(\d{2})$/);
+        if (dashFormat) {
+            const [, year, month, day, hour, minute, second] = dashFormat;
+            if (
+                isValidDateParts(year, month, day, hour, minute, second)
+            ) {
+                date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                if (!isNaN(date.getTime())) return date;
+            }
+        }
+
+        // Pokus 3: Český formát (18. 10. 2025 21:06:29)
+        const czFormat = dateString.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+        if (czFormat) {
+            let [, day, month, year, hour, minute, second] = czFormat;
+            day = day.padStart(2, '0');
+            month = month.padStart(2, '0');
+            hour = hour.padStart(2, '0');
+            if (
+                isValidDateParts(year, month, day, hour, minute, second)
+            ) {
+                date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                if (!isNaN(date.getTime())) return date;
+            }
+        }
+
+        // Malformed or unsupported format
+        return null;
+    }
+
+    /**
+     * Validates that all date/time parts are numeric and within reasonable ranges.
+     */
+    function isValidDateParts(year, month, day, hour, minute, second) {
+        const y = Number(year), m = Number(month), d = Number(day);
+        const h = Number(hour), min = Number(minute), s = Number(second);
+        return (
+            !isNaN(y) && y > 1900 &&
+            !isNaN(m) && m >= 1 && m <= 12 &&
+            !isNaN(d) && d >= 1 && d <= 31 &&
+            !isNaN(h) && h >= 0 && h <= 23 &&
+            !isNaN(min) && min >= 0 && min <= 59 &&
+            !isNaN(s) && s >= 0 && s <= 59
+        );
+    }
+
+    function formatDateTime(dateString) {
+        const date = parseDateTime(dateString);
+        if (!date) return EMPTY_VALUE;
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        
+        return `${day}. ${month}. ${year} ${hours}:${minutes}`;
+    }
+
     function updatePagination() {
         const safeTotal = Math.max(totalPages, 1);
         pageInfo.textContent = `Stránka ${currentPage} z ${safeTotal}`;
@@ -136,8 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
             headerRow.tabIndex = 0;
             headerRow.innerHTML = `
                 <td>${escapeHtml(shift.id ?? EMPTY_VALUE)}</td>
-                <td>${escapeHtml(shift.startTime ?? EMPTY_VALUE)}</td>
-                <td>${escapeHtml(shift.endTime ?? EMPTY_VALUE)}</td>
+                <td>${formatDateTime(shift.startTime)}</td>
+                <td>${formatDateTime(shift.endTime)}</td>
                 <td>${escapeHtml(shift.orderCount ?? 0)}</td>
             `;
 
@@ -203,8 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalRevenue = 0;
 
         const sortedOrders = [...shift.orderItems].sort((a, b) => {
-            const timeA = new Date(a.time ?? a.Time ?? 0);
-            const timeB = new Date(b.time ?? b.Time ?? 0);
+            const timeA = parseDateTime(a.time ?? a.Time) ?? new Date(0);
+            const timeB = parseDateTime(b.time ?? b.Time) ?? new Date(0);
             return timeB - timeA;
         });
 
@@ -246,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             row.innerHTML = `
                 <td>${orderIdDisplay}</td>
-                <td>${escapeHtml(timeValue)}</td>
+                <td>${formatDateTime(timeValue)}</td>
                 <td>${escapeHtml(paymentMethod)}</td>
                 <td>${formatCurrency(rawPrice)}</td>
                 <td class="products-column">${productsHtml}</td>

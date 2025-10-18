@@ -214,7 +214,7 @@ app.get('/shifts', (req, res) => {
             const orderCount = orderItems.length;
             return {
                 id: shift['@id'] || '---',
-                startTime: shift.startTime || '---',
+                startTime: shift['@startTime'] || shift.startTime || '---',
                 endTime: shift.endTime || 'Probíhá',
                 orderCount,
                 orderItems, // Detailní objednávky
