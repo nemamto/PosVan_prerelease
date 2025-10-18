@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const { create, convert } = require('xmlbuilder2');
+
+// Utility pro formátování data/času do ISO 8601 formátu
+function getFormattedDateTime(date = new Date()) {
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 // Zajištění existence složky
 function ensureDirectoryExistence(dirPath) {
     if (!fs.existsSync(dirPath)) {
@@ -72,6 +79,7 @@ module.exports = {
     ensureDirectoryExistence,
     getLogFilePath,
     appendLog,
-    currentShift
+    currentShift,
+    getFormattedDateTime
     // ...další utility
 };
