@@ -58,7 +58,7 @@ function startShift(req, res) {
 function endShift(req, res) {
     try {
         console.log('🔚 Ukončení směny:', req.body);
-        const { shiftID } = req.body;
+        const { shiftID, bartenderWage } = req.body;
         if (!shiftID) {
             return res.status(400).json({ message: "❌ ID směny je povinné!" });
         }
@@ -87,6 +87,11 @@ function endShift(req, res) {
         const endTimeISO = getISODateTime(now);
 
         jsonData.shift.endTime = endTimeISO;
+        
+        // Pokud byla zadána mzda barmana, uložíme ji
+        if (bartenderWage !== undefined && bartenderWage !== null) {
+            jsonData.shift.bartenderWage = Number(bartenderWage);
+        }
 
         const updatedXmlData = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(filePath, updatedXmlData);
@@ -216,14 +221,24 @@ function getShiftSummary(req, res) {
             orderList = orderList.concat(flatOrders);
         }
 
-        // === 🔢 Výpočty tržeb ===
+        // === 🔢 Výpočty tržeb a statistik ===
         let totalRevenue = 0;
         let cashRevenue = 0;
         let cardRevenue = 0;
         let employeeAccountRevenue = 0;
+        let orderCount = 0;
+        let cancelledCount = 0;
 
         orderList.forEach(order => {
-            if (String(order['@cancelled']).toLowerCase() === 'true') return;
+            const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
+            
+            if (isCancelled) {
+                cancelledCount++;
+                return;
+            }
+            
+            orderCount++;
+            
             const paymentMethod = order.paymentMethod || "Neznámé";
             const totalPrice = Number(order.totalPrice || 0);
 
@@ -240,11 +255,79 @@ function getShiftSummary(req, res) {
             }
         });
 
+        const averageOrderValue = orderCount > 0 ? (totalRevenue / orderCount) : 0;
+
+        // === ⏱️ Načtení základních údajů směny ===
+        const shiftId = jsonData.shift['@id'] || shiftID;
+        // startTime může být atribut (@startTime) nebo element (startTime)
+        const startTime = jsonData.shift['@startTime'] || jsonData.shift.startTime;
+        const endTime = jsonData.shift.endTime;
+        const bartender = jsonData.shift.bartender || 'Neznámý';
+        
+        // === ⏱️ Pomocná funkce pro parsování data ===
+        function parseDateTime(dateStr) {
+            if (!dateStr) return null;
+            
+            // Formát: "2025-10-18 15-00-40" -> "2025-10-18T15:00:40"
+            if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}-\d{2}-\d{2}$/)) {
+                const [datePart, timePart] = dateStr.split(' ');
+                const isoTime = timePart.replace(/-/g, ':');
+                return new Date(`${datePart}T${isoTime}`);
+            }
+            
+            // Formát: "18. 10. 2025 16:22:51" (český)
+            if (typeof dateStr === 'string' && dateStr.match(/^\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/)) {
+                const parts = dateStr.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+                if (parts) {
+                    const [, day, month, year, hour, minute, second] = parts;
+                    return new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute}:${second}`);
+                }
+            }
+            
+            // Pokus o standardní parsování
+            return new Date(dateStr);
+        }
+        
+        // === ⏱️ Výpočet doby trvání směny ===
+        let durationHours = 0;
+        let start = null;
+        let end = null;
+        
+        if (startTime) {
+            start = parseDateTime(startTime);
+        }
+        
+        if (endTime) {
+            end = parseDateTime(endTime);
+        } else if (start) {
+            // Pokud směna ještě není ukončena, použijeme aktuální čas
+            end = new Date();
+        }
+        
+        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const durationMs = end - start;
+            durationHours = durationMs / (1000 * 60 * 60); // Převod na hodiny
+        }
+
+        // === 💰 Výpočet mzdy barmana (200 Kč/h * délka směny) ===
+        const bartenderWage = jsonData.shift.bartenderWage 
+            ? Number(jsonData.shift.bartenderWage) 
+            : Math.round(durationHours * 200);
+
         res.json({
+            shiftID: shiftId,
+            bartender: bartender,
+            startTime: startTime || null,
+            endTime: endTime || null,
+            durationHours: durationHours.toFixed(2),
+            bartenderWage: bartenderWage,
             totalRevenue: totalRevenue.toFixed(2),
             cashRevenue: cashRevenue.toFixed(2),
             cardRevenue: cardRevenue.toFixed(2),
-            employeeAccountRevenue: employeeAccountRevenue.toFixed(2)
+            employeeAccountRevenue: employeeAccountRevenue.toFixed(2),
+            orderCount: orderCount,
+            cancelledCount: cancelledCount,
+            averageOrderValue: averageOrderValue.toFixed(2)
         });
 
     } catch (error) {

@@ -343,6 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <td><strong>Kartou:</strong> ${formatCurrency(totalCard)}</td>
             <td><strong>Zaplaceno:</strong> ${formatCurrency(totalPaid)}</td>
             <td><strong>Obrat:</strong> ${formatCurrency(totalRevenue)}</td>
+            <td>
+                <button type="button" class="btn btn-secondary btn-sm show-shift-summary" data-shift-id="${escapeHtml(shift.id ?? '')}">
+                    📊 Souhrn
+                </button>
+            </td>
         `;
         tbody.appendChild(summaryRow);
 
@@ -379,6 +384,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (confirmed) {
                         await restoreOrder(orderId);
                     }
+                }
+            });
+        });
+
+        // Event listener pro tlačítko "Souhrn směny"
+        wrapper.querySelectorAll('.show-shift-summary').forEach((button) => {
+            button.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const shiftId = button.dataset.shiftId;
+                if (shiftId) {
+                    await showShiftSummaryModal(shiftId);
                 }
             });
         });
@@ -469,6 +485,139 @@ async function refreshInventory() {
 
     } catch (error) {
         console.error('❌ Chyba při aktualizaci skladu:', error);
+    }
+}
+
+// Zobrazení souhrnu směny v modalu
+async function showShiftSummaryModal(shiftID) {
+    try {
+        const response = await fetch(`${serverEndpoint}/shiftSummary?shiftID=${shiftID}`);
+        
+        if (!response.ok) {
+            throw new Error('Chyba při načítání přehledu');
+        }
+
+        const summary = await response.json();
+
+        const formatCurrency = (value) => {
+            const numeric = Number(value) || 0;
+            return new Intl.NumberFormat('cs-CZ', {
+                style: 'currency',
+                currency: 'CZK',
+                maximumFractionDigits: 0
+            }).format(numeric);
+        };
+
+        const formatDateTime = (dateString) => {
+            if (!dateString) return '—';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '—';
+            
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            
+            return `${day}. ${month}. ${year} ${hours}:${minutes}`;
+        };
+
+        const message = `
+            <div class="shift-summary-modal">
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Základní údaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>👤 Barman/ka</td>
+                            <td class="summary-amount">${summary.bartender || '—'}</td>
+                        </tr>
+                        <tr>
+                            <td>🕐 Zahájení</td>
+                            <td class="summary-amount">${formatDateTime(summary.startTime)}</td>
+                        </tr>
+                        <tr>
+                            <td>🕐 Ukončení</td>
+                            <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
+                        </tr>
+                        <tr>
+                            <td>⏱️ Délka směny</td>
+                            <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
+                        </tr>
+                        <tr class="summary-wage-row">
+                            <td><strong>💰 Mzda barmana</strong></td>
+                            <td class="summary-amount"><strong>${formatCurrency(summary.bartenderWage || 0)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Tržby</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="summary-total-row">
+                            <td><strong>Celková tržba</strong></td>
+                            <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>💵 Hotovost</td>
+                            <td class="summary-amount">${formatCurrency(summary.cashRevenue || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td>💳 Karta</td>
+                            <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td>👤 Účty zákazníků</td>
+                            <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Statistiky</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Počet objednávek</td>
+                            <td class="summary-amount">${summary.orderCount || 0}</td>
+                        </tr>
+                        <tr>
+                            <td>Stornované objednávky</td>
+                            <td class="summary-amount">${summary.cancelledCount || 0}</td>
+                        </tr>
+                        <tr>
+                            <td>Průměrná objednávka</td>
+                            <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        await showModalConfirm(message, { 
+            title: `📊 Souhrn směny #${shiftID}`,
+            allowHtml: true, 
+            confirmText: 'Zavřít',
+            size: 'large',
+            showCancel: false
+        });
+
+    } catch (error) {
+        console.error("❌ Chyba při načítání souhrnu:", error);
+        await showModal("❌ Nepodařilo se načíst souhrn směny", { 
+            title: 'Chyba',
+            isError: true 
+        });
     }
 }
 

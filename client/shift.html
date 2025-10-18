@@ -13,14 +13,6 @@
     <main class="content-wrapper">
         <!-- Aktuální směna -->
         <section class="card" id="current-shift-section">
-            <header class="card-header">
-                <h2>Směna</h2>
-                <div class="shift-status-badge" id="shift-status-badge">
-                    <span class="status-dot"></span>
-                    <span class="status-text">Žádná aktivní směna</span>
-                </div>
-            </header>
-            
             <div class="card-body" id="shift-info-container">
                 <!-- Žádná aktivní směna -->
                 <div id="no-shift-state" class="empty-state">
@@ -149,21 +141,7 @@
         </section>
     </main>
 
-    <!-- Modal pro potvrzení -->
-    <div id="modal-overlay" class="modal-overlay" hidden>
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Potvrzení</h3>
-            </div>
-            <div class="modal-body">
-                <p id="modal-message"></p>
-            </div>
-            <div class="modal-footer">
-                <button id="modal-confirm" class="btn btn-primary">Potvrdit</button>
-                <button id="modal-cancel" class="btn btn-secondary">Zrušit</button>
-            </div>
-        </div>
-    </div>
+    <!-- Modaly jsou generovány dynamicky pomocí common.js -->
 
     <script src="scripts/theme-manager.js"></script>
     <script type="module" src="scripts/common.js"></script>

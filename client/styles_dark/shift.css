@@ -41,3 +41,101 @@
     color: white;
   }
 
+/* ====== MODAL DARK MODE ====== */
+.modal-content {
+    background: var(--bg-primary, #1a1a1a);
+    color: var(--text-primary, #e0e0e0);
+}
+
+.modal-header {
+    border-bottom-color: var(--border-light, #404040);
+}
+
+.modal-header h3 {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.modal-body {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.modal-body p {
+    color: var(--text-primary, #e0e0e0);
+}
+
+.modal-footer {
+    border-top-color: var(--border-light, #404040);
+}
+
+/* ====== SHIFT HISTORY DARK MODE ====== */
+.shift-history-item {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.shift-history-item:hover {
+    background: #353535;
+}
+
+.shift-history-item.active-shift {
+    border-color: #28a745;
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.shift-history-id {
+    color: #4a9eff;
+}
+
+.shift-history-dates {
+    color: #a0a0a0;
+}
+
+.shift-history-count {
+    background: #1a1a1a;
+    color: #e0e0e0;
+}
+
+/* ====== SHIFT SUMMARY MODAL DARK MODE ====== */
+.shift-summary-modal-title {
+    color: #e0e0e0;
+}
+
+.shift-summary-table {
+    background: #2d2d2d;
+    border-color: #404040;
+}
+
+.shift-summary-table thead {
+    background: #1a1a1a;
+}
+
+.shift-summary-table th {
+    color: #e0e0e0;
+    border-bottom-color: #404040;
+}
+
+.shift-summary-table td {
+    color: #e0e0e0;
+    border-bottom-color: #404040;
+}
+
+.shift-summary-table tbody tr:hover {
+    background: var(--bg-accent, #353535);
+}
+
+.summary-total-row {
+    background: rgba(40, 167, 69, 0.2);
+}
+
+.summary-total-row:hover {
+    background: rgba(40, 167, 69, 0.3) !important;
+}
+
+.summary-wage-row {
+    background: rgba(255, 193, 7, 0.15);
+}
+
+.summary-wage-row:hover {
+    background: rgba(255, 193, 7, 0.25) !important;
+}
+

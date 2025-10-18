@@ -1,12 +1,12 @@
 import { serverEndpoint } from './config.js';
-import { showModal, closeModal } from './common.js';
+import { showModal, showModalConfirm, closeModal } from './common.js';
 
 let currentShiftID = null;
 let shiftUpdateInterval = null;
 
 // DOM elementy
 const elements = {
-    statusBadge: null,
+    revenueTotalCard: null,
     noShiftState: null,
     activeShiftInfo: null,
     bartenderInput: null,
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initializeElements() {
-    elements.statusBadge = document.getElementById('shift-status-badge');
+    elements.revenueTotalCard = document.querySelector('.revenue-total');
     elements.noShiftState = document.getElementById('no-shift-state');
     elements.activeShiftInfo = document.getElementById('active-shift-info');
     elements.bartenderInput = document.getElementById('bartender-name');
@@ -108,9 +108,10 @@ async function loadShiftStatus(showRefreshFeedback = false) {
 
 // Zobrazení aktivní směny
 async function displayActiveShift(shiftData) {
-    // Status badge
-    elements.statusBadge.classList.add('active');
-    elements.statusBadge.querySelector('.status-text').textContent = 'Aktivní směna';
+    // Aktivovat zelenou barvu na kartě celkové tržby
+    if (elements.revenueTotalCard) {
+        elements.revenueTotalCard.classList.add('active');
+    }
 
     // Skrýt prázdný stav, zobrazit info
     elements.noShiftState.hidden = true;
@@ -135,9 +136,10 @@ async function displayActiveShift(shiftData) {
 
 // Zobrazení stavu bez směny
 function displayNoShift() {
-    // Status badge
-    elements.statusBadge.classList.remove('active');
-    elements.statusBadge.querySelector('.status-text').textContent = 'Žádná aktivní směna';
+    // Deaktivovat zelenou barvu na kartě celkové tržby
+    if (elements.revenueTotalCard) {
+        elements.revenueTotalCard.classList.remove('active');
+    }
 
     // Zobrazit prázdný stav
     elements.noShiftState.hidden = false;
@@ -260,28 +262,41 @@ async function handleStartShift() {
     }
 }
 
-// 🛑 Ukončení směny
+// � Ukončení směny
 async function handleEndShift() {
     if (!currentShiftID) {
         showModal("❌ Není aktivní žádná směna.", "", true);
         return;
     }
 
-    // Zobrazit potvrzovací modal
-    const confirmed = await showConfirmModal(
-        'Ukončit směnu',
-        'Opravdu chcete ukončit aktuální směnu? Zobrazí se souhrn tržeb.'
-    );
-
-    if (!confirmed) return;
-
     elements.endButton.disabled = true;
 
     try {
+        // Nejdřív načteme aktuální souhrn pro výpočet mzdy
+        const summaryResponse = await fetch(`${serverEndpoint}/shiftSummary?shiftID=${currentShiftID}`);
+        if (!summaryResponse.ok) {
+            throw new Error('Chyba při načítání souhrnu');
+        }
+        const summary = await summaryResponse.json();
+        const calculatedWage = Math.round(Number(summary.durationHours) * 200);
+
+        // Zobrazit modal s možností upravit mzdu
+        const bartenderWage = await showEndShiftModal(summary, calculatedWage);
+        
+        if (bartenderWage === null) {
+            // Uživatel zrušil
+            elements.endButton.disabled = false;
+            return;
+        }
+
+        // Ukončit směnu s nastaveno mzdou
         const response = await fetch(`${serverEndpoint}/endShift`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ shiftID: currentShiftID })
+            body: JSON.stringify({ 
+                shiftID: currentShiftID,
+                bartenderWage: bartenderWage
+            })
         });
 
         const data = await response.json();
@@ -290,11 +305,23 @@ async function handleEndShift() {
             throw new Error(data.message || 'Chyba při ukončení směny');
         }
 
-        // Načíst finální statistiky a zobrazit
-        await showShiftSummaryModal(currentShiftID);
+        // Uložíme ID směny před vynulováním
+        const endedShiftID = currentShiftID;
+        console.log('✅ Směna ukončena, ID:', endedShiftID);
         
         currentShiftID = null;
+        
+        // Aktualizujeme UI (vypneme aktivní směnu)
         await loadShiftStatus();
+
+        // Krátké zpoždění před zobrazením souhrnu (aby se stihl aktualizovat UI)
+        console.log('⏳ Čekám 500ms před zobrazením souhrnu...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Zobrazit finální souhrn ukončené směny
+        console.log('📊 Zobrazuji souhrn směny:', endedShiftID);
+        await showShiftSummaryModal(endedShiftID);
+        console.log('✅ Souhrn byl zobrazen');
 
     } catch (error) {
         console.error("❌ Chyba při ukončení směny:", error);
@@ -305,43 +332,179 @@ async function handleEndShift() {
 
 // Zobrazení souhrnu směny v modalu
 async function showShiftSummaryModal(shiftID) {
+    console.log('🔍 showShiftSummaryModal zavoláno s ID:', shiftID);
     try {
+        console.log('📡 Načítám data z backendu...');
         const response = await fetch(`${serverEndpoint}/shiftSummary?shiftID=${shiftID}`);
         
         if (!response.ok) {
+            console.error('❌ Backend vrátil chybu:', response.status);
             throw new Error('Chyba při načítání přehledu');
         }
 
         const summary = await response.json();
+        console.log('✅ Data načtena:', summary);
 
         const message = `
-            <div style="text-align: left;">
-                <h3 style="margin-bottom: 1rem;">📊 Souhrn směny #${shiftID}</h3>
-                <div style="margin-bottom: 1rem;">
-                    <strong>Celková tržba:</strong> ${formatCurrency(summary.totalRevenue || 0)}
-                </div>
-                <div style="margin-bottom: 0.5rem;">
-                    💵 Hotovost: ${formatCurrency(summary.cashRevenue || 0)}
-                </div>
-                <div style="margin-bottom: 0.5rem;">
-                    💳 Karta: ${formatCurrency(summary.cardRevenue || 0)}
-                </div>
-                <div style="margin-bottom: 1rem;">
-                    👤 Účty zákazníků: ${formatCurrency(summary.employeeAccountRevenue || 0)}
-                </div>
-                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-                    <strong>Objednávek:</strong> ${summary.orderCount || 0}<br>
-                    <strong>Stornovaných:</strong> ${summary.cancelledCount || 0}
-                </div>
+            <div class="shift-summary-modal">
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Základní údaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>👤 Barman/ka</td>
+                            <td class="summary-amount">${summary.bartender || '—'}</td>
+                        </tr>
+                        <tr>
+                            <td>🕐 Zahájení</td>
+                            <td class="summary-amount">${formatDateTime(summary.startTime)}</td>
+                        </tr>
+                        <tr>
+                            <td>🕐 Ukončení</td>
+                            <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
+                        </tr>
+                        <tr>
+                            <td>⏱️ Délka směny</td>
+                            <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
+                        </tr>
+                        <tr class="summary-wage-row">
+                            <td><strong>💰 Mzda barmana</strong></td>
+                            <td class="summary-amount"><strong>${formatCurrency(summary.bartenderWage || 0)}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Tržby</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="summary-total-row">
+                            <td><strong>Celková tržba</strong></td>
+                            <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>💵 Hotovost</td>
+                            <td class="summary-amount">${formatCurrency(summary.cashRevenue || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td>💳 Karta</td>
+                            <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
+                        </tr>
+                        <tr>
+                            <td>👤 Účty zákazníků</td>
+                            <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="shift-summary-table">
+                    <thead>
+                        <tr>
+                            <th colspan="2">Statistiky</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Počet objednávek</td>
+                            <td class="summary-amount">${summary.orderCount || 0}</td>
+                        </tr>
+                        <tr>
+                            <td>Stornované objednávky</td>
+                            <td class="summary-amount">${summary.cancelledCount || 0}</td>
+                        </tr>
+                        <tr>
+                            <td>Průměrná objednávka</td>
+                            <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         `;
 
-        showModal(message, "", false);
+        console.log('🎨 Zobrazuji modal s daty...');
+        const result = await showModalConfirm(message, { 
+            title: `📊 Souhrn směny #${shiftID}`,
+            allowHtml: true, 
+            confirmText: 'Zavřít',
+            size: 'large',
+            showCancel: false
+        });
+        console.log('✅ Modal zavřen, výsledek:', result);
 
     } catch (error) {
         console.error("❌ Chyba při načítání souhrnu:", error);
-        showModal("❌ Nepodařilo se načíst souhrn směny", "", true);
+        await showModal("❌ Nepodařilo se načíst souhrn směny", { 
+            title: 'Chyba',
+            isError: true 
+        });
     }
+}
+
+// Modal pro ukončení směny s nastavením mzdy
+async function showEndShiftModal(summary, calculatedWage) {
+    const durationHours = Number(summary.durationHours || 0).toFixed(2);
+    
+    const message = `
+        <div class="end-shift-modal-content">
+            <div style="display: flex; gap: 2rem; justify-content: center; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Délka směny</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">${durationHours} h</div>
+                </div>
+                <div style="font-size: 2rem; color: var(--text-secondary);">×</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Sazba</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-primary);">200 Kč/h</div>
+                </div>
+                <div style="font-size: 2rem; color: var(--text-secondary);">=</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Celkem</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #28a745;">${calculatedWage} Kč</div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="wage-input-new" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Mzda barmana (Kč):</label>
+                <input 
+                    type="number" 
+                    id="wage-input-new" 
+                    class="form-input" 
+                    value="${calculatedWage}" 
+                    min="0"
+                    step="10"
+                    style="width: 100%; font-size: 1.1rem; padding: 0.75rem;"
+                >
+                <div style="margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.85rem; text-align: center;">
+                    Můžete upravit částku před ukončením směny
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Použijeme showModalConfirm pro potvrzovací dialog
+    const confirmed = await showModalConfirm(message, {
+        title: 'Ukončit směnu',
+        allowHtml: true,
+        confirmText: 'Ukončit směnu',
+        cancelText: 'Zrušit',
+        dismissible: true,
+        focusSelector: '#wage-input-new'
+    });
+
+    if (!confirmed) {
+        return null;
+    }
+
+    // Přečteme hodnotu z input pole
+    const wageInput = document.getElementById('wage-input-new');
+    const wage = wageInput ? Number(wageInput.value) || 0 : calculatedWage;
+    
+    return wage;
 }
 
 // Potvrzovací modal

@@ -191,3 +191,77 @@
         width: 100%;
     }
 }
+
+/* ====== SHIFT SUMMARY MODAL ====== */
+.shift-summary-modal {
+    text-align: left;
+}
+
+.shift-summary-modal-title {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary, #333);
+    text-align: center;
+    font-size: 1.5rem;
+}
+
+.shift-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    background: var(--bg-secondary, #f8f9fa);
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.shift-summary-table:last-child {
+    margin-bottom: 0;
+}
+
+.shift-summary-table thead {
+    background: var(--bg-tertiary, #e9ecef);
+}
+
+.shift-summary-table th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-primary, #333);
+    border-bottom: 2px solid var(--border-color, #e0e0e0);
+}
+
+.shift-summary-table td {
+    padding: 0.75rem 1rem;
+    color: var(--text-primary, #333);
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.shift-summary-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.shift-summary-table tbody tr:hover {
+    background: var(--bg-hover, #e9ecef);
+}
+
+.summary-total-row {
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.summary-total-row:hover {
+    background: rgba(40, 167, 69, 0.15) !important;
+}
+
+.summary-wage-row {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.summary-wage-row:hover {
+    background: rgba(255, 193, 7, 0.15) !important;
+}
+
+.summary-amount {
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
