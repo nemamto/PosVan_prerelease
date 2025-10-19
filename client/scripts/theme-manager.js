@@ -206,4 +206,158 @@ window.getCurrentTheme = () => window.themeManager.getCurrentTheme();
 // Event listener pro kompletni nacteni stranky
 document.addEventListener('DOMContentLoaded', () => {
     console.log(`🎨 Theme Manager inicializovan - tema: ${window.themeManager.themeNames[window.themeManager.currentTheme]}`);
+    
+    // Inicializuj trippy efekty
+    initTrippyEffects();
 });
+
+// ========================== //
+//    TRIPPY CLICK EFFECTS    //
+// ========================== //
+
+function initTrippyEffects() {
+    // Vytvoř kontejner pro efekty
+    let effectsContainer = document.getElementById('trippy-effects-container');
+    if (!effectsContainer) {
+        effectsContainer = document.createElement('div');
+        effectsContainer.id = 'trippy-effects-container';
+        effectsContainer.className = 'trippy-effects-container';
+        document.body.appendChild(effectsContainer);
+    }
+
+    // Rainbow barvy - OPTIMALIZOVÁNO: méně barev = lepší výkon
+    const rainbowColors = [
+        '#ff0080', '#ff0000', '#ff8000', '#ffff00',
+        '#00ff00', '#00ffff', '#0000ff', '#ff00ff'
+    ];
+
+    let colorIndex = 0;
+
+    // Click/Touch event pro trippy efekty - OPTIMALIZOVÁNO!
+    const handleTouchEffect = (e) => {
+        // Pouze pro colorful téma
+        if (document.documentElement.getAttribute('data-theme') !== 'colorful') {
+            return;
+        }
+
+        const x = e.clientX || (e.touches && e.touches[0].clientX);
+        const y = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        if (!x || !y) return;
+
+        const color = rainbowColors[colorIndex % rainbowColors.length];
+        colorIndex++;
+
+        // Místo 8 vln jen 4 - stále efektní ale rychlejší
+        for (let i = 0; i < 4; i++) {
+            setTimeout(() => {
+                const waveColor = rainbowColors[(colorIndex + i * 2) % rainbowColors.length];
+                createRipple(x, y, waveColor, effectsContainer);
+            }, i * 60);
+        }
+
+        // 30 částic letící DÁLE - výraznější efekt
+        for (let i = 0; i < 30; i++) {
+            const angle = (i / 30) * Math.PI * 2;
+            const distance = 200 + Math.random() * 250; // VĚTŠÍ VZDÁLENOST
+            const particleColor = rainbowColors[(colorIndex + i) % rainbowColors.length];
+            createParticle(x, y, angle, distance, particleColor, effectsContainer);
+        }
+
+        // Flash efekt - MENŠÍ, jen lehký
+        createFlash(x, y, color, effectsContainer);
+    };
+
+    document.addEventListener('click', handleTouchEffect);
+    document.addEventListener('touchstart', handleTouchEffect);
+
+    // TRAIL ZA KURZOREM ODSTRANĚN - nepotřebný pro dotykové ovládání
+}
+
+function createRipple(x, y, color, container) {
+    const ripple = document.createElement('div');
+    ripple.className = 'trippy-ripple';
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    ripple.style.borderColor = color;
+    ripple.style.borderWidth = `${4 + Math.random() * 6}px`;
+    ripple.style.width = '80px';
+    ripple.style.height = '80px';
+    ripple.style.boxShadow = `0 0 50px 10px ${color}, inset 0 0 50px 10px ${color}`;
+    
+    container.appendChild(ripple);
+
+    // Odstraň po dokončení animace
+    setTimeout(() => {
+        ripple.remove();
+    }, 800);
+}
+
+function createFlash(x, y, color, container) {
+    const flash = document.createElement('div');
+    flash.style.position = 'absolute';
+    flash.style.left = `${x}px`;
+    flash.style.top = `${y}px`;
+    flash.style.width = '120px';
+    flash.style.height = '120px';
+    flash.style.borderRadius = '50%';
+    flash.style.backgroundColor = color;
+    flash.style.transform = 'translate(-50%, -50%) scale(0)';
+    flash.style.opacity = '0.5';
+    flash.style.pointerEvents = 'none';
+    flash.style.filter = 'blur(15px)';
+    flash.style.boxShadow = `0 0 60px 20px ${color}`;
+    
+    container.appendChild(flash);
+
+    // Jemný flash - jen lehký záblesk
+    flash.animate([
+        { transform: 'translate(-50%, -50%) scale(0)', opacity: 0.5 },
+        { transform: 'translate(-50%, -50%) scale(1.8)', opacity: 0 }
+    ], {
+        duration: 400,
+        easing: 'ease-out'
+    });
+
+    setTimeout(() => {
+        flash.remove();
+    }, 400);
+}
+
+function createParticle(x, y, angle, distance, color, container) {
+    const particle = document.createElement('div');
+    particle.className = 'trippy-particle';
+    particle.style.left = `${x}px`;
+    particle.style.top = `${y}px`;
+    particle.style.backgroundColor = color;
+    // Střední velikost částic
+    particle.style.width = `${12 + Math.random() * 16}px`;
+    particle.style.height = particle.style.width;
+    particle.style.boxShadow = `0 0 25px 6px ${color}`;
+    
+    // Výpočet cílové pozice - DÁLE!
+    const targetX = x + Math.cos(angle) * distance;
+    const targetY = y + Math.sin(angle) * distance;
+    
+    container.appendChild(particle);
+
+    // Delší let, ale rychlá animace
+    particle.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(1.5)', 
+            opacity: 1
+        },
+        { 
+            transform: `translate(calc(-50% + ${targetX - x}px), calc(-50% + ${targetY - y}px)) scale(0)`, 
+            opacity: 0
+        }
+    ], {
+        duration: 900, // Delší let kvůli větší vzdálenosti
+        easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' // Bounce easing
+    });
+
+    // Odstraň po animaci
+    setTimeout(() => {
+        particle.remove();
+    }, 900);
+}
