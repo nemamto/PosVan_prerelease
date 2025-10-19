@@ -647,14 +647,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const { paymentMethod: paymentMethodKey, discount } = result;
             const paymentLabel = normalisePaymentLabel(paymentMethodKey);
             
-            // Aplikujeme slevu 30% pokud je zaškrtnuta
-            const finalAmount = discount ? totalAmount * 0.7 : totalAmount;
-            const discountInfo = discount ? ' (sleva 30%)' : '';
+            // Aplikujeme slevu 20% pokud je zaškrtnuta
+            const finalAmount = discount ? totalAmount * 0.8 : totalAmount;
+            const discountInfo = discount ? ' (sleva 20%)' : '';
 
             const paymentItems = unpaidOrders
                 .map((order) => {
                     const originalAmount = getOrderTotal(order);
-                    const itemAmount = discount ? originalAmount * 0.7 : originalAmount;
+                    const itemAmount = discount ? originalAmount * 0.8 : originalAmount;
                     return {
                         orderId: String(order['@id'] ?? order.id ?? ''),
                         amount: itemAmount
@@ -678,7 +678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 await markCustomerOrderAsPaid(customerName, orderId);
             }
 
-            await showModal(`${unpaidOrders.length} objednávek bylo úspěšně zaplaceno.${discount ? '<br><em>Aplikována sleva 30%</em>' : ''}`, {
+            await showModal(`${unpaidOrders.length} objednávek bylo úspěšně zaplaceno.${discount ? '<br><em>Aplikována sleva 20%</em>' : ''}`, {
                 title: 'Platba zpracována',
                 confirmVariant: 'success',
                 allowHtml: true
@@ -710,9 +710,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const { paymentMethod: paymentMethodKey, discount } = result;
             const paymentLabel = normalisePaymentLabel(paymentMethodKey);
             
-            // Aplikujeme slevu 30% pokud je zaškrtnuta
-            const finalAmount = discount ? amount * 0.7 : amount;
-            const discountInfo = discount ? ' (sleva 30%)' : '';
+            // Aplikujeme slevu 20% pokud je zaškrtnuta
+            const finalAmount = discount ? amount * 0.8 : amount;
+            const discountInfo = discount ? ' (sleva 20%)' : '';
 
             await logPaymentToShift({
                 customerName,
@@ -724,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             await markCustomerOrderAsPaid(customerName, orderId);
 
-            await showModal(`Objednávka ${escapeHtml(orderId)} byla úspěšně zaplacena.${discount ? '<br><em>Aplikována sleva 30%</em>' : ''}`, {
+            await showModal(`Objednávka ${escapeHtml(orderId)} byla úspěšně zaplacena.${discount ? '<br><em>Aplikována sleva 20%</em>' : ''}`, {
                 title: 'Platba dokončena',
                 confirmVariant: 'success',
                 allowHtml: true
@@ -972,7 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="discount-checkbox-container">
                 <label class="discount-checkbox-label">
                     <input type="checkbox" id="discount-30-checkbox" class="discount-checkbox">
-                    <span>Sleva 30%</span>
+                    <span>Sleva 20%</span>
                 </label>
             </div>
             ${originalAmount !== undefined ? `
@@ -1004,7 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (discountCheckbox && discountInfo && amountDisplay) {
                     discountCheckbox.addEventListener('change', () => {
                         if (discountCheckbox.checked) {
-                            const discountedAmount = originalAmount * 0.7;
+                            const discountedAmount = originalAmount * 0.8;
                             discountInfo.innerHTML = `<strong style="color: var(--success-color);">Nová částka: ${formatCurrency(discountedAmount)}</strong>`;
                         } else {
                             discountInfo.innerHTML = '';

@@ -421,13 +421,33 @@ function resetOrder() {
     });
 }
 
-// Výběr produktu - simulace kliknutí na produkt
+// Výběr produktu - simulace kliknutí na produkt (fallback pro staré rozhraní)
 document.querySelectorAll('.product-button').forEach(button => {
-    button.addEventListener('click', function() {
-        const productData = this.getAttribute('data-value').split(',');
-        const productName = productData[0];
-        const productPrice = parseInt(productData[1]);
-        addProductToOrder(productName, productPrice);
+    button.addEventListener('click', () => {
+        const rawData = button.getAttribute('data-value');
+        if (!rawData) {
+            log.warn('product-button bez data-value, klik ignorován');
+            return;
+        }
+
+        const [rawName = '', rawPrice = ''] = rawData.split(',');
+        const productName = rawName.trim();
+        const parsedPrice = Number(rawPrice);
+
+        if (!productName) {
+            log.warn('product-button bez názvu, klik ignorován');
+            return;
+        }
+
+        const product = {
+            id: button.dataset.id || productName,
+            name: productName,
+            price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+            description: button.dataset.description || '',
+            color: button.dataset.color || ''
+        };
+
+        addProductToOrder(product);
     });
 });
 async function fetchProducts() {
