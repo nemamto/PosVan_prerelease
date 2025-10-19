@@ -364,6 +364,15 @@
     border: 1px solid var(--border-light);
 }
 
+/* Large modal size for summary views */
+.modal-overlay[data-modal-size="large"] .modal-content {
+    max-width: 900px !important;
+    width: 95% !important;
+    max-height: 90vh;
+    overflow: auto;
+    text-align: left;
+}
+
 .modal-content p {
     font-size: 1.125rem;
     color: var(--text-primary);

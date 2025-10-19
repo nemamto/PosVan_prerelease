@@ -17,10 +17,12 @@ function getFileSafeDateTime(date = new Date()) {
 
 function startShift(req, res) {
     try {
-        const { bartender } = req.body;
+        const { bartender, initialCash } = req.body;
         if (!bartender) {
             return res.status(400).json({ message: "❌ Jméno barmana je povinné!" });
         }
+
+        const cashAmount = Number(initialCash) || 0;
 
         const newShiftID = getNextShiftID();
 
@@ -31,10 +33,15 @@ function startShift(req, res) {
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
         common.ensureDirectoryExistence(shiftsDir);
 
-        // Vytvoření XML dokumentu s novým ID
+        // Vytvoření XML dokumentu s novým ID a pokladnou
         const xmlDoc = create({ version: '1.0' })
             .ele('shift', { id: newShiftID, startTime: formattedDateTime })
                 .ele('bartender').txt(bartender).up()
+                .ele('cashRegister')
+                    .ele('initialAmount').txt(cashAmount).up()
+                    .ele('deposits').up()
+                    .ele('withdrawals').up()
+                .up()
                 .ele('orders').up()
             .up();
 
@@ -42,12 +49,13 @@ function startShift(req, res) {
         const filePath = path.join(shiftsDir, fileName);
         fs.writeFileSync(filePath, xmlDoc.end({ prettyPrint: true }));
 
-        console.log(`✅ Vytvořena nová směna: ${fileName} (ID: ${newShiftID}, Barman: ${bartender})`);
+        console.log(`✅ Vytvořena nová směna: ${fileName} (ID: ${newShiftID}, Barman: ${bartender}, Pokladna: ${cashAmount} Kč)`);
         res.json({
             message: `✅ Směna ${newShiftID} byla zahájena.`,
             shiftID: newShiftID,
             bartender,
-            startTime: formattedDateTime
+            startTime: formattedDateTime,
+            initialCash: cashAmount
         });
     } catch (error) {
         console.error('❌ Chyba při zahájení směny:', error);
@@ -314,6 +322,38 @@ function getShiftSummary(req, res) {
             ? Number(jsonData.shift.bartenderWage) 
             : Math.round(durationHours * 200);
 
+        // === 💵 Výpočet stavu pokladny ===
+        let initialCash = 0;
+        let totalDeposits = 0;
+        let totalWithdrawals = 0;
+
+        if (jsonData.shift.cashRegister) {
+            initialCash = Number(jsonData.shift.cashRegister.initialAmount) || 0;
+
+            // Sečteme všechny vklady
+            if (jsonData.shift.cashRegister.deposits?.deposit) {
+                const deposits = Array.isArray(jsonData.shift.cashRegister.deposits.deposit)
+                    ? jsonData.shift.cashRegister.deposits.deposit
+                    : [jsonData.shift.cashRegister.deposits.deposit];
+                
+                totalDeposits = deposits.reduce((sum, dep) => sum + (Number(dep.amount) || 0), 0);
+            }
+
+            // Sečteme všechny výběry
+            if (jsonData.shift.cashRegister.withdrawals?.withdrawal) {
+                const withdrawals = Array.isArray(jsonData.shift.cashRegister.withdrawals.withdrawal)
+                    ? jsonData.shift.cashRegister.withdrawals.withdrawal
+                    : [jsonData.shift.cashRegister.withdrawals.withdrawal];
+                
+                totalWithdrawals = withdrawals.reduce((sum, wd) => sum + (Number(wd.amount) || 0), 0);
+            }
+        }
+
+        // Aktuální stav = počáteční + příjem hotovosti + vklady - výběry
+        const currentCashState = initialCash + cashRevenue + totalDeposits - totalWithdrawals;
+        // Finální stav po výplatě barmana
+        const finalCashState = currentCashState - bartenderWage;
+
         res.json({
             shiftID: shiftId,
             bartender: bartender,
@@ -327,11 +367,153 @@ function getShiftSummary(req, res) {
             employeeAccountRevenue: employeeAccountRevenue.toFixed(2),
             orderCount: orderCount,
             cancelledCount: cancelledCount,
-            averageOrderValue: averageOrderValue.toFixed(2)
+            averageOrderValue: averageOrderValue.toFixed(2),
+            // Pokladna
+            initialCash: initialCash.toFixed(2),
+            totalDeposits: totalDeposits.toFixed(2),
+            totalWithdrawals: totalWithdrawals.toFixed(2),
+            currentCashState: currentCashState.toFixed(2),
+            finalCashState: finalCashState.toFixed(2)
         });
 
     } catch (error) {
         console.error("❌ Chyba při načítání směny:", error);
+        res.status(500).json({ message: "❌ Interní chyba serveru." });
+    }
+}
+
+// Vklad do pokladny
+function addDeposit(req, res) {
+    try {
+        const { shiftID, amount, note } = req.body;
+
+        if (!shiftID || amount === undefined) {
+            return res.status(400).json({ message: "❌ ID směny a částka jsou povinné!" });
+        }
+
+        const depositAmount = Number(amount);
+        if (depositAmount <= 0) {
+            return res.status(400).json({ message: "❌ Částka vkladu musí být kladná!" });
+        }
+
+        const shiftFile = findShiftFileByID(shiftID);
+        if (!shiftFile) {
+            return res.status(404).json({ message: `❌ Směna ${shiftID} nebyla nalezena.` });
+        }
+
+        const xmlContent = fs.readFileSync(shiftFile, 'utf-8');
+        const jsonData = convert(xmlContent, { format: 'object' });
+
+        // Ujistíme se, že cashRegister existuje
+        if (!jsonData.shift.cashRegister) {
+            jsonData.shift.cashRegister = {
+                initialAmount: 0,
+                deposits: {},
+                withdrawals: {}
+            };
+        }
+
+        // Ujistíme se, že deposits existuje
+        if (!jsonData.shift.cashRegister.deposits) {
+            jsonData.shift.cashRegister.deposits = {};
+        }
+
+        // Přidáme nový vklad
+        const depositData = {
+            time: getISODateTime(),
+            amount: depositAmount,
+            note: note || ''
+        };
+
+        if (!jsonData.shift.cashRegister.deposits.deposit) {
+            jsonData.shift.cashRegister.deposits.deposit = [];
+        } else if (!Array.isArray(jsonData.shift.cashRegister.deposits.deposit)) {
+            jsonData.shift.cashRegister.deposits.deposit = [jsonData.shift.cashRegister.deposits.deposit];
+        }
+
+        jsonData.shift.cashRegister.deposits.deposit.push(depositData);
+
+        // Uložíme zpět do XML
+        const xmlDoc = create(jsonData);
+        fs.writeFileSync(shiftFile, xmlDoc.end({ prettyPrint: true }));
+
+        console.log(`✅ Přidán vklad ${depositAmount} Kč do směny ${shiftID}`);
+        res.json({ 
+            message: "✅ Vklad byl zaznamenán.",
+            amount: depositAmount,
+            note: note || ''
+        });
+
+    } catch (error) {
+        console.error("❌ Chyba při přidávání vkladu:", error);
+        res.status(500).json({ message: "❌ Interní chyba serveru." });
+    }
+}
+
+// Výběr z pokladny
+function addWithdrawal(req, res) {
+    try {
+        const { shiftID, amount, note } = req.body;
+
+        if (!shiftID || amount === undefined) {
+            return res.status(400).json({ message: "❌ ID směny a částka jsou povinné!" });
+        }
+
+        const withdrawalAmount = Number(amount);
+        if (withdrawalAmount <= 0) {
+            return res.status(400).json({ message: "❌ Částka výběru musí být kladná!" });
+        }
+
+        const shiftFile = findShiftFileByID(shiftID);
+        if (!shiftFile) {
+            return res.status(404).json({ message: `❌ Směna ${shiftID} nebyla nalezena.` });
+        }
+
+        const xmlContent = fs.readFileSync(shiftFile, 'utf-8');
+        const jsonData = convert(xmlContent, { format: 'object' });
+
+        // Ujistíme se, že cashRegister existuje
+        if (!jsonData.shift.cashRegister) {
+            jsonData.shift.cashRegister = {
+                initialAmount: 0,
+                deposits: {},
+                withdrawals: {}
+            };
+        }
+
+        // Ujistíme se, že withdrawals existuje
+        if (!jsonData.shift.cashRegister.withdrawals) {
+            jsonData.shift.cashRegister.withdrawals = {};
+        }
+
+        // Přidáme nový výběr
+        const withdrawalData = {
+            time: getISODateTime(),
+            amount: withdrawalAmount,
+            note: note || ''
+        };
+
+        if (!jsonData.shift.cashRegister.withdrawals.withdrawal) {
+            jsonData.shift.cashRegister.withdrawals.withdrawal = [];
+        } else if (!Array.isArray(jsonData.shift.cashRegister.withdrawals.withdrawal)) {
+            jsonData.shift.cashRegister.withdrawals.withdrawal = [jsonData.shift.cashRegister.withdrawals.withdrawal];
+        }
+
+        jsonData.shift.cashRegister.withdrawals.withdrawal.push(withdrawalData);
+
+        // Uložíme zpět do XML
+        const xmlDoc = create(jsonData);
+        fs.writeFileSync(shiftFile, xmlDoc.end({ prettyPrint: true }));
+
+        console.log(`✅ Přidán výběr ${withdrawalAmount} Kč ze směny ${shiftID}`);
+        res.json({ 
+            message: "✅ Výběr byl zaznamenán.",
+            amount: withdrawalAmount,
+            note: note || ''
+        });
+
+    } catch (error) {
+        console.error("❌ Chyba při přidávání výběru:", error);
         res.status(500).json({ message: "❌ Interní chyba serveru." });
     }
 }
@@ -341,5 +523,7 @@ module.exports = {
     getNextShiftID,
     getShiftSummary,
     startShift,
-    endShift
+    endShift,
+    addDeposit,
+    addWithdrawal
 };

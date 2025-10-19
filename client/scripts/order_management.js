@@ -249,8 +249,33 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildDetailContent(shift) {
         const wrapper = document.createElement('div');
 
-        if (!Array.isArray(shift.orderItems) || shift.orderItems.length === 0) {
+        const hasOrders = Array.isArray(shift.orderItems) && shift.orderItems.length > 0;
+
+        if (!hasOrders) {
             wrapper.innerHTML = '<div class="order-empty-state">Tato směna neobsahuje žádné objednávky.</div>';
+            
+            // Přidáme odkaz na souhrn i pro prázdné směny
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.marginTop = '1rem';
+            summaryDiv.innerHTML = `
+                <strong>
+                    <span class="shift-summary-link" data-shift-id="${escapeHtml(shift.id ?? '')}" style="cursor: pointer; color: var(--primary, #007bff); text-decoration: underline;">
+                        📊 Zobrazit souhrn směny
+                    </span>
+                </strong>
+            `;
+            
+            // Přidáme event listener
+            const link = summaryDiv.querySelector('.shift-summary-link');
+            link.addEventListener('click', async (event) => {
+                event.stopPropagation();
+                const shiftId = link.dataset.shiftId;
+                if (shiftId) {
+                    await showShiftSummaryModal(shiftId);
+                }
+            });
+            
+            wrapper.appendChild(summaryDiv);
             return wrapper;
         }
 
@@ -338,16 +363,18 @@ document.addEventListener('DOMContentLoaded', () => {
         summaryRow.className = 'shift-summary';
         const totalPaid = totalCash + totalCard;
         summaryRow.innerHTML = `
-            <td colspan="2"><strong>Souhrn směny</strong></td>
+            <td colspan="2">
+                <strong>
+                    <span class="shift-summary-link" data-shift-id="${escapeHtml(shift.id ?? '')}" style="cursor: pointer; color: var(--primary, #007bff); text-decoration: underline;">
+                        📊 Souhrn směny
+                    </span>
+                </strong>
+            </td>
             <td><strong>Hotově:</strong> ${formatCurrency(totalCash)}</td>
             <td><strong>Kartou:</strong> ${formatCurrency(totalCard)}</td>
             <td><strong>Zaplaceno:</strong> ${formatCurrency(totalPaid)}</td>
             <td><strong>Obrat:</strong> ${formatCurrency(totalRevenue)}</td>
-            <td>
-                <button type="button" class="btn btn-secondary btn-sm show-shift-summary" data-shift-id="${escapeHtml(shift.id ?? '')}">
-                    📊 Souhrn
-                </button>
-            </td>
+            <td></td>
         `;
         tbody.appendChild(summaryRow);
 
@@ -388,11 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Event listener pro tlačítko "Souhrn směny"
-        wrapper.querySelectorAll('.show-shift-summary').forEach((button) => {
-            button.addEventListener('click', async (event) => {
+        // Event listener pro odkaz "Souhrn směny"
+        wrapper.querySelectorAll('.shift-summary-link').forEach((link) => {
+            link.addEventListener('click', async (event) => {
                 event.stopPropagation();
-                const shiftId = button.dataset.shiftId;
+                const shiftId = link.dataset.shiftId;
                 if (shiftId) {
                     await showShiftSummaryModal(shiftId);
                 }
@@ -524,7 +551,10 @@ async function showShiftSummaryModal(shiftID) {
 
         const message = `
             <div class="shift-summary-modal">
-                <table class="shift-summary-table">
+                <div class="summary-grid">
+                    <!-- Levý sloupec -->
+                    <div class="summary-column">
+                        <table class="shift-summary-table">
                     <thead>
                         <tr>
                             <th colspan="2">Základní údaje</th>
@@ -544,16 +574,12 @@ async function showShiftSummaryModal(shiftID) {
                             <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
                         </tr>
                         <tr>
-                            <td>⏱️ Délka směny</td>
+                            <td>⏱️ Délka</td>
                             <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
-                        </tr>
-                        <tr class="summary-wage-row">
-                            <td><strong>💰 Mzda barmana</strong></td>
-                            <td class="summary-amount"><strong>${formatCurrency(summary.bartenderWage || 0)}</strong></td>
                         </tr>
                     </tbody>
                 </table>
-                
+                        
                 <table class="shift-summary-table">
                     <thead>
                         <tr>
@@ -562,7 +588,7 @@ async function showShiftSummaryModal(shiftID) {
                     </thead>
                     <tbody>
                         <tr class="summary-total-row">
-                            <td><strong>Celková tržba</strong></td>
+                            <td><strong>Celkem</strong></td>
                             <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
                         </tr>
                         <tr>
@@ -574,7 +600,7 @@ async function showShiftSummaryModal(shiftID) {
                             <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
                         </tr>
                         <tr>
-                            <td>👤 Účty zákazníků</td>
+                            <td>👤 Účty</td>
                             <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
                         </tr>
                     </tbody>
@@ -588,19 +614,62 @@ async function showShiftSummaryModal(shiftID) {
                     </thead>
                     <tbody>
                         <tr>
-                            <td>Počet objednávek</td>
+                            <td>� Objednávek</td>
                             <td class="summary-amount">${summary.orderCount || 0}</td>
                         </tr>
                         <tr>
-                            <td>Stornované objednávky</td>
+                            <td>❌ Stornovaných</td>
                             <td class="summary-amount">${summary.cancelledCount || 0}</td>
                         </tr>
                         <tr>
-                            <td>Průměrná objednávka</td>
+                            <td>� Průměr</td>
                             <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
                         </tr>
                     </tbody>
                 </table>
+                    </div>
+
+                    <!-- Pravý sloupec -->
+                    <div class="summary-column">
+                        <table class="shift-summary-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">💰 Pokladna</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Počáteční stav</td>
+                                    <td class="summary-amount">${formatCurrency(summary.initialCash || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>+ Příjem hotovosti</td>
+                                    <td class="summary-amount positive">${formatCurrency(summary.cashRevenue || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>+ Vklady</td>
+                                    <td class="summary-amount positive">${formatCurrency(summary.totalDeposits || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>− Výběry</td>
+                                    <td class="summary-amount negative">${formatCurrency(summary.totalWithdrawals || 0)}</td>
+                                </tr>
+                                <tr class="summary-subtotal-row">
+                                    <td><strong>Stav před výplatou</strong></td>
+                                    <td class="summary-amount"><strong>${formatCurrency(summary.currentCashState || 0)}</strong></td>
+                                </tr>
+                                <tr class="summary-wage-row">
+                                    <td>− Mzda barmana</td>
+                                    <td class="summary-amount">${formatCurrency(summary.bartenderWage || 0)}</td>
+                                </tr>
+                                <tr class="summary-total-row">
+                                    <td><strong>✅ Finální stav</strong></td>
+                                    <td class="summary-amount"><strong>${formatCurrency(summary.finalCashState || 0)}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         `;
 

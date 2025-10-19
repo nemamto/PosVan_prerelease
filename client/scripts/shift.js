@@ -10,9 +10,12 @@ const elements = {
     noShiftState: null,
     activeShiftInfo: null,
     bartenderInput: null,
+    initialCashInput: null,
     startButton: null,
     endButton: null,
     refreshButton: null,
+    depositButton: null,
+    withdrawalButton: null,
     currentBartender: null,
     currentShiftId: null,
     shiftStartTime: null,
@@ -25,7 +28,13 @@ const elements = {
     cancelledCount: null,
     avgOrderValue: null,
     controlTitle: null,
-    bartenderInputGroup: null
+    bartenderInputGroup: null,
+    cashRegisterInputGroup: null,
+    initialCashDisplay: null,
+    cashIncomeDisplay: null,
+    depositsDisplay: null,
+    withdrawalsDisplay: null,
+    currentCashDisplay: null
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -39,9 +48,12 @@ function initializeElements() {
     elements.noShiftState = document.getElementById('no-shift-state');
     elements.activeShiftInfo = document.getElementById('active-shift-info');
     elements.bartenderInput = document.getElementById('bartender-name');
+    elements.initialCashInput = document.getElementById('initial-cash');
     elements.startButton = document.getElementById('start-shift-button');
     elements.endButton = document.getElementById('end-shift-button');
     elements.refreshButton = document.getElementById('refresh-button');
+    elements.depositButton = document.getElementById('deposit-button');
+    elements.withdrawalButton = document.getElementById('withdrawal-button');
     elements.currentBartender = document.getElementById('current-bartender');
     elements.currentShiftId = document.getElementById('current-shift-id');
     elements.shiftStartTime = document.getElementById('shift-start-time');
@@ -55,12 +67,20 @@ function initializeElements() {
     elements.avgOrderValue = document.getElementById('avg-order-value');
     elements.controlTitle = document.getElementById('control-title');
     elements.bartenderInputGroup = document.getElementById('bartender-input-group');
+    elements.cashRegisterInputGroup = document.getElementById('cash-register-input-group');
+    elements.initialCashDisplay = document.getElementById('initial-cash-display');
+    elements.cashIncomeDisplay = document.getElementById('cash-income-display');
+    elements.depositsDisplay = document.getElementById('deposits-display');
+    elements.withdrawalsDisplay = document.getElementById('withdrawals-display');
+    elements.currentCashDisplay = document.getElementById('current-cash-display');
 }
 
 function setupEventListeners() {
     elements.startButton.addEventListener('click', handleStartShift);
     elements.endButton.addEventListener('click', handleEndShift);
     elements.refreshButton.addEventListener('click', () => loadShiftStatus(true));
+    elements.depositButton.addEventListener('click', handleDeposit);
+    elements.withdrawalButton.addEventListener('click', handleWithdrawal);
 }
 
 // 🟢 Načtení stavu směny
@@ -128,10 +148,14 @@ async function displayActiveShift(shiftData) {
     // Tlačítka
     elements.bartenderInput.value = shiftData.bartender;
     elements.bartenderInput.disabled = true;
+    elements.initialCashInput.disabled = true;
     elements.startButton.disabled = true;
     elements.endButton.disabled = false;
+    elements.depositButton.disabled = false;
+    elements.withdrawalButton.disabled = false;
     elements.controlTitle.textContent = 'Ukončit směnu';
     elements.bartenderInputGroup.style.display = 'none';
+    elements.cashRegisterInputGroup.style.display = 'none';
 }
 
 // Zobrazení stavu bez směny
@@ -148,10 +172,14 @@ function displayNoShift() {
     // Tlačítka
     elements.bartenderInput.value = '';
     elements.bartenderInput.disabled = false;
+    elements.initialCashInput.disabled = false;
     elements.startButton.disabled = false;
     elements.endButton.disabled = true;
+    elements.depositButton.disabled = true;
+    elements.withdrawalButton.disabled = true;
     elements.controlTitle.textContent = 'Zahájit směnu';
     elements.bartenderInputGroup.style.display = 'block';
+    elements.cashRegisterInputGroup.style.display = 'block';
 }
 
 // Načtení statistik směny
@@ -179,6 +207,23 @@ async function loadShiftStatistics(shiftID) {
         elements.orderCount.textContent = totalOrders;
         elements.cancelledCount.textContent = cancelledOrders;
         elements.avgOrderValue.textContent = formatCurrency(avgValue);
+
+        // Pokladna
+        if (elements.initialCashDisplay) {
+            elements.initialCashDisplay.textContent = formatCurrency(summary.initialCash || 0);
+        }
+        if (elements.cashIncomeDisplay) {
+            elements.cashIncomeDisplay.textContent = formatCurrency(summary.cashRevenue || 0);
+        }
+        if (elements.depositsDisplay) {
+            elements.depositsDisplay.textContent = formatCurrency(summary.totalDeposits || 0);
+        }
+        if (elements.withdrawalsDisplay) {
+            elements.withdrawalsDisplay.textContent = formatCurrency(summary.totalWithdrawals || 0);
+        }
+        if (elements.currentCashDisplay) {
+            elements.currentCashDisplay.textContent = formatCurrency(summary.currentCashState || 0);
+        }
 
     } catch (error) {
         console.error("❌ Chyba při načítání statistik:", error);
@@ -230,9 +275,15 @@ function updateDuration(startTime) {
 // 🟢 Zahájení směny
 async function handleStartShift() {
     const bartenderName = elements.bartenderInput.value.trim();
+    const initialCash = Number(elements.initialCashInput.value) || 0;
 
     if (!bartenderName) {
-        showModal("❌ Musíte zadat jméno barmana!", "", true);
+        await showModal("❌ Musíte zadat jméno barmana!", { isError: true });
+        return;
+    }
+
+    if (initialCash < 0) {
+        await showModal("❌ Počáteční stav pokladny nemůže být záporný!", { isError: true });
         return;
     }
 
@@ -242,7 +293,10 @@ async function handleStartShift() {
         const response = await fetch(`${serverEndpoint}/startShift`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ bartender: bartenderName })
+            body: JSON.stringify({ 
+                bartender: bartenderName,
+                initialCash: initialCash
+            })
         });
 
         if (!response.ok) {
@@ -252,12 +306,14 @@ async function handleStartShift() {
         const shiftData = await response.json();
         console.log(`✅ Směna zahájena:`, shiftData);
 
-        showModal(`✅ Směna zahájena pro: ${shiftData.bartender}`, "", false);
+        await showModal(`✅ Směna zahájena pro: ${shiftData.bartender}\n💰 Počáteční stav pokladny: ${initialCash} Kč`, { 
+            title: 'Směna zahájena' 
+        });
         await loadShiftStatus();
 
     } catch (error) {
         console.error("❌ Chyba při zahájení směny:", error);
-        showModal("❌ Chyba při zahájení směny!", "", true);
+        await showModal("❌ Chyba při zahájení směny!", { isError: true });
         elements.startButton.disabled = false;
     }
 }
@@ -347,83 +403,125 @@ async function showShiftSummaryModal(shiftID) {
 
         const message = `
             <div class="shift-summary-modal">
-                <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Základní údaje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>👤 Barman/ka</td>
-                            <td class="summary-amount">${summary.bartender || '—'}</td>
-                        </tr>
-                        <tr>
-                            <td>🕐 Zahájení</td>
-                            <td class="summary-amount">${formatDateTime(summary.startTime)}</td>
-                        </tr>
-                        <tr>
-                            <td>🕐 Ukončení</td>
-                            <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
-                        </tr>
-                        <tr>
-                            <td>⏱️ Délka směny</td>
-                            <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
-                        </tr>
-                        <tr class="summary-wage-row">
-                            <td><strong>💰 Mzda barmana</strong></td>
-                            <td class="summary-amount"><strong>${formatCurrency(summary.bartenderWage || 0)}</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Tržby</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="summary-total-row">
-                            <td><strong>Celková tržba</strong></td>
-                            <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
-                        </tr>
-                        <tr>
-                            <td>💵 Hotovost</td>
-                            <td class="summary-amount">${formatCurrency(summary.cashRevenue || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td>💳 Karta</td>
-                            <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td>👤 Účty zákazníků</td>
-                            <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="summary-grid">
+                    <!-- Levý sloupec -->
+                    <div class="summary-column">
+                        <table class="shift-summary-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Základní údaje</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>👤 Barman/ka</td>
+                                    <td class="summary-amount">${summary.bartender || '—'}</td>
+                                </tr>
+                                <tr>
+                                    <td>🕐 Zahájení</td>
+                                    <td class="summary-amount">${formatDateTime(summary.startTime)}</td>
+                                </tr>
+                                <tr>
+                                    <td>🕐 Ukončení</td>
+                                    <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
+                                </tr>
+                                <tr>
+                                    <td>⏱️ Délka</td>
+                                    <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <table class="shift-summary-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Tržby</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="summary-total-row">
+                                    <td><strong>Celkem</strong></td>
+                                    <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>💵 Hotovost</td>
+                                    <td class="summary-amount">${formatCurrency(summary.cashRevenue || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>💳 Karta</td>
+                                    <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>👤 Účty</td>
+                                    <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Statistiky</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Počet objednávek</td>
-                            <td class="summary-amount">${summary.orderCount || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>Stornované objednávky</td>
-                            <td class="summary-amount">${summary.cancelledCount || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>Průměrná objednávka</td>
-                            <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                        <table class="shift-summary-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">Statistiky</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>📋 Objednávek</td>
+                                    <td class="summary-amount">${summary.orderCount || 0}</td>
+                                </tr>
+                                <tr>
+                                    <td>❌ Stornovaných</td>
+                                    <td class="summary-amount">${summary.cancelledCount || 0}</td>
+                                </tr>
+                                <tr>
+                                    <td>📊 Průměr</td>
+                                    <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pravý sloupec -->
+                    <div class="summary-column">
+                        <table class="shift-summary-table">
+                            <thead>
+                                <tr>
+                                    <th colspan="2">💰 Pokladna</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Počáteční stav</td>
+                                    <td class="summary-amount">${formatCurrency(summary.initialCash || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>+ Příjem hotovosti</td>
+                                    <td class="summary-amount positive">${formatCurrency(summary.cashRevenue || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>+ Vklady</td>
+                                    <td class="summary-amount positive">${formatCurrency(summary.totalDeposits || 0)}</td>
+                                </tr>
+                                <tr>
+                                    <td>− Výběry</td>
+                                    <td class="summary-amount negative">${formatCurrency(summary.totalWithdrawals || 0)}</td>
+                                </tr>
+                                <tr class="summary-subtotal-row">
+                                    <td><strong>Stav před výplatou</strong></td>
+                                    <td class="summary-amount"><strong>${formatCurrency(summary.currentCashState || 0)}</strong></td>
+                                </tr>
+                                <tr class="summary-wage-row">
+                                    <td>− Mzda barmana</td>
+                                    <td class="summary-amount">${formatCurrency(summary.bartenderWage || 0)}</td>
+                                </tr>
+                                <tr class="summary-total-row">
+                                    <td><strong>✅ Finální stav</strong></td>
+                                    <td class="summary-amount"><strong>${formatCurrency(summary.finalCashState || 0)}</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -559,4 +657,164 @@ function formatDateTime(dateString) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     
     return `${day}. ${month}. ${year} ${hours}:${minutes}`;
+}
+
+// 💵 Vklad do pokladny
+async function handleDeposit() {
+    if (!currentShiftID) {
+        await showModal("❌ Není aktivní žádná směna.", { isError: true });
+        return;
+    }
+
+    const message = `
+        <div style="padding: 1rem;">
+            <div class="form-group">
+                <label for="deposit-amount" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Částka vkladu (Kč):</label>
+                <input 
+                    type="number" 
+                    id="deposit-amount" 
+                    class="form-input" 
+                    placeholder="Zadejte částku..."
+                    min="0"
+                    step="10"
+                    style="width: 100%; font-size: 1.1rem; padding: 0.75rem; margin-bottom: 1rem;"
+                >
+            </div>
+            <div class="form-group">
+                <label for="deposit-note" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Poznámka (volitelné):</label>
+                <input 
+                    type="text" 
+                    id="deposit-note" 
+                    class="form-input" 
+                    placeholder="Např. rozměnění bankovky..."
+                    style="width: 100%; font-size: 1rem; padding: 0.75rem;"
+                >
+            </div>
+        </div>
+    `;
+
+    const confirmed = await showModalConfirm(message, {
+        title: '💵 Vklad do pokladny',
+        allowHtml: true,
+        confirmText: 'Přidat vklad',
+        cancelText: 'Zrušit',
+        focusSelector: '#deposit-amount'
+    });
+
+    if (!confirmed) return;
+
+    const amountInput = document.getElementById('deposit-amount');
+    const noteInput = document.getElementById('deposit-note');
+    const amount = Number(amountInput?.value) || 0;
+    const note = noteInput?.value?.trim() || '';
+
+    if (amount <= 0) {
+        await showModal("❌ Částka vkladu musí být větší než 0!", { isError: true });
+        return;
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/deposit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                shiftID: currentShiftID,
+                amount: amount,
+                note: note
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Chyba při přidávání vkladu');
+        }
+
+        await showModal(`✅ Vklad ${amount} Kč byl zaznamenán.`, { 
+            title: 'Vklad přidán'
+        });
+        await loadShiftStatus(true);
+
+    } catch (error) {
+        console.error("❌ Chyba při přidávání vkladu:", error);
+        await showModal("❌ Chyba při přidávání vkladu!", { isError: true });
+    }
+}
+
+// 💸 Výběr z pokladny
+async function handleWithdrawal() {
+    if (!currentShiftID) {
+        await showModal("❌ Není aktivní žádná směna.", { isError: true });
+        return;
+    }
+
+    const message = `
+        <div style="padding: 1rem;">
+            <div class="form-group">
+                <label for="withdrawal-amount" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Částka výběru (Kč):</label>
+                <input 
+                    type="number" 
+                    id="withdrawal-amount" 
+                    class="form-input" 
+                    placeholder="Zadejte částku..."
+                    min="0"
+                    step="10"
+                    style="width: 100%; font-size: 1.1rem; padding: 0.75rem; margin-bottom: 1rem;"
+                >
+            </div>
+            <div class="form-group">
+                <label for="withdrawal-note" style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Účel výběru (volitelné):</label>
+                <input 
+                    type="text" 
+                    id="withdrawal-note" 
+                    class="form-input" 
+                    placeholder="Např. nákup zboží, provozní výdaje..."
+                    style="width: 100%; font-size: 1rem; padding: 0.75rem;"
+                >
+            </div>
+        </div>
+    `;
+
+    const confirmed = await showModalConfirm(message, {
+        title: '💸 Výběr z pokladny',
+        allowHtml: true,
+        confirmText: 'Provést výběr',
+        cancelText: 'Zrušit',
+        focusSelector: '#withdrawal-amount'
+    });
+
+    if (!confirmed) return;
+
+    const amountInput = document.getElementById('withdrawal-amount');
+    const noteInput = document.getElementById('withdrawal-note');
+    const amount = Number(amountInput?.value) || 0;
+    const note = noteInput?.value?.trim() || '';
+
+    if (amount <= 0) {
+        await showModal("❌ Částka výběru musí být větší než 0!", { isError: true });
+        return;
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/withdrawal`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                shiftID: currentShiftID,
+                amount: amount,
+                note: note
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Chyba při přidávání výběru');
+        }
+
+        await showModal(`✅ Výběr ${amount} Kč byl zaznamenán.`, { 
+            title: 'Výběr proveden'
+        });
+        await loadShiftStatus(true);
+
+    } catch (error) {
+        console.error("❌ Chyba při přidávání výběru:", error);
+        await showModal("❌ Chyba při přidávání výběru!", { isError: true });
+    }
 }
