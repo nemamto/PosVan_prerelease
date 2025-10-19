@@ -274,44 +274,43 @@ async function showCustomerSelectionModal() {
 }
 
 document.querySelectorAll('.payment-button').forEach(button => {
-    let lastClickedButton = null;
-
     button.addEventListener('click', async function () {
         const method = this.getAttribute('data-method');
 
-        // Pokud je tlačítko kliknuto podruhé
-        if (lastClickedButton === this) {
-            if (method === 'customer') {
-                // Otevře modal pro výběr zákazníka, NEODESÍLÁ objednávku!
-                showCustomerSelectionModal();
-                return;
-            }
+        // Pokud je metoda 'customer', vždy otevřeme modal pro výběr zákazníka
+        if (method === 'customer') {
+            // Nastavení způsobu platby
+            document.querySelectorAll('.payment-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            selectedPaymentMethod = 'Účet zákazníka';
+            log.info(`Platba: ${selectedPaymentMethod}`);
+            
+            // Otevři modal pro výběr zákazníka
+            showCustomerSelectionModal();
+            return;
+        }
 
-            // Odeslání objednávky pouze pro jiné způsoby platby
+        // Pro ostatní metody (cash, card) - standardní double-click logika
+        // První klik = označení, druhý klik = odeslání
+        if (this.classList.contains('active')) {
+            // Druhý klik - odeslání
             log.debug(`Odesílám objednávku: ${selectedPaymentMethod}`);
             try {
                 await submitOrder();
             } catch (error) {
                 log.error("Chyba při odesílání objednávky:", error);
             }
-            lastClickedButton = null;
-            return;
+        } else {
+            // První klik - označení
+            document.querySelectorAll('.payment-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            this.classList.add('active');
+            selectedPaymentMethod = method === 'cash' ? 'Hotovost' : 'Karta';
+            log.info(`Platba: ${selectedPaymentMethod}`);
         }
-
-        // Nastavení způsobu platby při prvním kliknutí
-        document.querySelectorAll('.payment-button').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        this.classList.add('active');
-        selectedPaymentMethod = method === 'cash' ? 'Hotovost' : method === 'card' ? 'Karta' : 'Účet zákazníka';
-        log.info(`Platba: ${selectedPaymentMethod}`);
-
-        if (method === 'customer') {
-            showCustomerSelectionModal();
-        }
-
-        lastClickedButton = this;
     });
 });
 
