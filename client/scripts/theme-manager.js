@@ -5,7 +5,8 @@
 
 class ThemeManager {
     constructor() {
-        this.themes = ['light', 'dark', 'colorful'];
+        this.themes = ['light', 'dark']; // Odstraneno 'colorful' z běžného menu
+        this.allThemes = ['light', 'dark', 'colorful']; // Všechna dostupná témata
         this.themeIcons = {
             'light': '☀️',
             'dark': '🌙',
@@ -20,11 +21,15 @@ class ThemeManager {
         this.toggleElement = null;
         this.toggleOptions = {};
         this.isFallbackToggle = false;
+        this.colorfulUnlocked = this.getColorfulUnlocked();
         
         this.init();
     }
 
     init() {
+        // Colorful se NIKDY nepřidává do menu (this.themes)
+        // Zůstává pouze v allThemes pro přímou aktivaci
+        
         // Nastav pocatecni tema
         this.applyTheme(this.currentTheme);
         
@@ -50,6 +55,30 @@ class ThemeManager {
             localStorage.setItem('pos-theme', theme);
         } catch (e) {
             console.warn('Nelze ulozit tema do localStorage');
+        }
+    }
+
+    getColorfulUnlocked() {
+        try {
+            return localStorage.getItem('pos-colorful-unlocked') === 'true';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    unlockColorful() {
+        try {
+            localStorage.setItem('pos-colorful-unlocked', 'true');
+            this.colorfulUnlocked = true;
+            
+            // NEPŘIDÁVEJ colorful do this.themes - zůstane skryté v menu
+            
+            // Trigger event
+            document.dispatchEvent(new CustomEvent('colorfulUnlocked'));
+            
+            return true;
+        } catch (e) {
+            return false;
         }
     }
 
@@ -148,8 +177,11 @@ class ThemeManager {
 
     // Verejne API
     setTheme(theme) {
-        if (this.themes.includes(theme)) {
+        // Kontroluj proti všem dostupným tématům, ne jen těm v menu
+        if (this.allThemes.includes(theme)) {
             this.applyTheme(theme);
+        } else {
+            console.warn(`Téma "${theme}" neexistuje. Dostupná témata:`, this.allThemes);
         }
     }
 

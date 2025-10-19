@@ -163,9 +163,37 @@ function changeProductQuantity(productName, change) {
 /* document.getElementById('submit-order').addEventListener('click', function() {
     submitOrder();
 }) */
+
+// 🎨 Easter egg pro odemknutí barevného tématu
+let resetOrderClickCount = 0;
+let resetOrderClickTimer = null;
+
 //reset objednavky
 document.getElementById('reset-order').addEventListener('click', function() {
     resetOrder();
+    
+    // Počítadlo pro easter egg
+    resetOrderClickCount++;
+    
+    // Reset počítadla po 3 sekundách bez kliknutí
+    if (resetOrderClickTimer) {
+        clearTimeout(resetOrderClickTimer);
+    }
+    resetOrderClickTimer = setTimeout(() => {
+        resetOrderClickCount = 0;
+    }, 3000);
+    
+    // Po 5 kliknutích tiše aktivuj barevné téma
+    if (resetOrderClickCount === 5) {
+        resetOrderClickCount = 0;
+        
+        if (window.themeManager) {
+            if (!window.themeManager.colorfulUnlocked) {
+                window.themeManager.unlockColorful();
+            }
+            window.themeManager.setTheme('colorful');
+        }
+    }
 });
 
 // Funkce pro zobrazení modálního okna (univerzální)
