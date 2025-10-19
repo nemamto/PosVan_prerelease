@@ -580,3 +580,97 @@
     font-size: 0.85rem;
     color: var(--text-secondary, #666);
 }
+
+/* ====== BARTENDER AUTOCOMPLETE ====== */
+/* Input s autocomplete */
+#bartender-name {
+    position: relative;
+}
+
+#bartender-name:focus {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+/* Dropdown kontejner */
+.bartender-autocomplete-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--bg-primary, white);
+    border: 2px solid var(--primary, #007bff);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: none;
+    margin-top: -1px;
+}
+
+.bartender-autocomplete-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+    font-size: 1rem;
+    color: var(--text-primary, #333);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.bartender-autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.bartender-autocomplete-item:hover,
+.bartender-autocomplete-item:active {
+    background: var(--bg-secondary, #f8f9fa);
+}
+
+.bartender-autocomplete-item strong {
+    color: var(--primary, #007bff);
+    font-weight: 600;
+}
+
+/* Touch-friendly pro mobilní zařízení */
+@media (hover: none) and (pointer: coarse) {
+    .bartender-autocomplete-item {
+        padding: 16px 20px;
+        font-size: 1.1rem;
+        min-height: 48px; /* iOS doporučuje min 44px pro touch targety */
+        display: flex;
+        align-items: center;
+    }
+    
+    .bartender-autocomplete-dropdown {
+        max-height: 50vh; /* Na mobilech omez výšku na polovinu obrazovky */
+    }
+    
+    /* Větší input pro lepší dotykovost */
+    #bartender-name {
+        font-size: 1.1rem;
+        padding: 14px;
+        min-height: 48px;
+    }
+}
+
+/* Scrollbar styling */
+.bartender-autocomplete-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.bartender-autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-secondary, #f1f1f1);
+}
+
+.bartender-autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-color, #ccc);
+    border-radius: 4px;
+}
+
+.bartender-autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary, #999);
+}

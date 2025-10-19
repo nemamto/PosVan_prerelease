@@ -3,6 +3,7 @@ import { showModal, showModalConfirm, closeModal } from './common.js';
 
 let currentShiftID = null;
 let shiftUpdateInterval = null;
+let bartendersList = []; // Seznam barmanů pro autocomplete
 
 // DOM elementy
 const elements = {
@@ -40,6 +41,8 @@ const elements = {
 document.addEventListener('DOMContentLoaded', async () => {
     initializeElements();
     setupEventListeners();
+    await loadBartenders(); // Načti seznam barmanů
+    setupBartenderAutocomplete(); // Nastav autocomplete
     await loadShiftStatus();
 });
 
@@ -81,6 +84,108 @@ function setupEventListeners() {
     elements.refreshButton.addEventListener('click', () => loadShiftStatus(true));
     elements.depositButton.addEventListener('click', handleDeposit);
     elements.withdrawalButton.addEventListener('click', handleWithdrawal);
+}
+
+// 📋 Načtení seznamu barmanů ze serveru
+async function loadBartenders() {
+    try {
+        const response = await fetch(`${serverEndpoint}/bartenders`);
+        if (response.ok) {
+            const data = await response.json();
+            bartendersList = data.bartenders || [];
+            console.log(`📋 Načteno ${bartendersList.length} barmanů`);
+        }
+    } catch (error) {
+        console.error('❌ Chyba při načítání barmanů:', error);
+        bartendersList = [];
+    }
+}
+
+// 🔍 Nastavení autocomplete pro input barmana
+function setupBartenderAutocomplete() {
+    const input = elements.bartenderInput;
+    if (!input) return;
+
+    // Vytvoř dropdown kontejner
+    let dropdown = document.getElementById('bartender-autocomplete');
+    if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = 'bartender-autocomplete';
+        dropdown.className = 'bartender-autocomplete-dropdown';
+        input.parentNode.style.position = 'relative';
+        input.parentNode.appendChild(dropdown);
+    }
+
+    // Funkce pro zobrazení návrhů
+    const showSuggestions = () => {
+        const inputValue = input.value.toLowerCase().trim();
+        dropdown.innerHTML = '';
+
+        let suggestions = [];
+        
+        if (inputValue.length === 0) {
+            // Zobraz všechny barmany když je input prázdný
+            suggestions = bartendersList;
+        } else {
+            // Filtruj podle zadaného textu
+            suggestions = bartendersList.filter(bartender => 
+                bartender.toLowerCase().includes(inputValue)
+            );
+        }
+
+        if (suggestions.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+        }
+
+        // Vytvoř položky dropdownu
+        suggestions.forEach(bartender => {
+            const item = document.createElement('div');
+            item.className = 'bartender-autocomplete-item';
+            item.textContent = bartender;
+            
+            // Zvýrazni shodu
+            if (inputValue.length > 0) {
+                const regex = new RegExp(`(${inputValue})`, 'gi');
+                item.innerHTML = bartender.replace(regex, '<strong>$1</strong>');
+            }
+            
+            // Jednotný handler - použijeme mousedown místo click
+            // mousedown se spustí před blur eventem inputu
+            const selectBartender = (e) => {
+                e.preventDefault(); // Zabraň blur eventu
+                input.value = bartender;
+                dropdown.style.display = 'none';
+                input.blur(); // Explicitně zavři klávesnici pokud je otevřená
+            };
+            
+            // mousedown funguje na desktop i touch zařízeních
+            item.addEventListener('mousedown', selectBartender);
+            
+            dropdown.appendChild(item);
+        });
+
+        dropdown.style.display = 'block';
+    };
+
+    // Funkce pro skrytí dropdownu
+    const hideSuggestions = () => {
+        setTimeout(() => {
+            dropdown.style.display = 'none';
+        }, 200);
+    };
+
+    // Event listenery
+    input.addEventListener('focus', showSuggestions);
+    input.addEventListener('input', showSuggestions);
+    input.addEventListener('blur', hideSuggestions);
+
+    // Zavři dropdown při kliknutí mimo
+    document.addEventListener('click', (e) => {
+        if (e.target !== input && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
 }
 
 // 🟢 Načtení stavu směny

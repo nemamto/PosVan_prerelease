@@ -518,6 +518,50 @@ function addWithdrawal(req, res) {
     }
 }
 
+function getBartenders(req, res) {
+    try {
+        const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
+        
+        if (!fs.existsSync(shiftsDir)) {
+            return res.json({ bartenders: [] });
+        }
+
+        const files = fs.readdirSync(shiftsDir);
+        const bartendersSet = new Set();
+
+        // Projdi všechny soubory směn
+        files.forEach(file => {
+            if (!file.endsWith('.xml')) return;
+
+            try {
+                const filePath = path.join(shiftsDir, file);
+                const xmlData = fs.readFileSync(filePath, 'utf8');
+                const jsonData = convert(xmlData, { format: 'object' });
+
+                // Získej jméno barmana
+                const bartender = jsonData.shift?.bartender;
+                if (bartender && typeof bartender === 'string' && bartender.trim()) {
+                    bartendersSet.add(bartender.trim());
+                }
+            } catch (err) {
+                // Ignoruj chybné soubory
+                console.warn(`⚠️ Nelze načíst barmana ze souboru ${file}`);
+            }
+        });
+
+        // Převeď Set na pole a seřaď abecedně
+        const bartenders = Array.from(bartendersSet).sort((a, b) => 
+            a.localeCompare(b, 'cs', { sensitivity: 'base' })
+        );
+
+        res.json({ bartenders });
+
+    } catch (error) {
+        console.error("❌ Chyba při načítání barmanů:", error);
+        res.status(500).json({ message: "❌ Interní chyba serveru." });
+    }
+}
+
 module.exports = {
     findShiftFileByID,
     getNextShiftID,
@@ -525,5 +569,6 @@ module.exports = {
     startShift,
     endShift,
     addDeposit,
-    addWithdrawal
+    addWithdrawal,
+    getBartenders
 };

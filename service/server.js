@@ -243,6 +243,7 @@ app.post('/startShift', shifts.startShift);
 app.post('/endShift', shifts.endShift);
 app.post('/deposit', shifts.addDeposit);
 app.post('/withdrawal', shifts.addWithdrawal);
+app.get('/bartenders', shifts.getBartenders);
 
 app.post('/addProduct', (req, res) => {
     console.log("📥 Přijatý požadavek na přidání produktu:", req.body); // Debug log
