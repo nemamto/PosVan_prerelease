@@ -1,33 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Venuše - Bar - Přihlášení</title>
-    <link rel="stylesheet" href="styles/main_styles.css">
+    <title>POS Panel</title>
+    <link rel="stylesheet" href="styles/main-modern.css">
 </head>
-<body>
-    <header style="height: 10%; background-color: black; color: white; display: flex; align-items: center; justify-content: center;">
-        <h1 style="margin: 0;">POS systém baru</h1>
-    </header>
+<body class="page-container">
+    <header id="app-header"></header>
 
-    <section id="login-section">
-        <h2>Přihlášení</h2>
-        <form id="login-form">
-            <label for="username">Uživatelské jméno:</label>
-            <input type="text" id="username" name="username" required>
-            
-            <label for="password">Heslo:</label>
-            <input type="password" id="password" name="password" required>
-            <label for="start-shift">
-                <input type="checkbox" id="start-shift" name="start-shift" checked>
-                Zahájit novou směnu
-            </label>
-            
-            <button type="submit">Přihlásit se</button>
-        </form>
-    </section>
+    <main class="landing">
+        <section class="landing__hero card">
+            <div class="card-header">
+                <h1 class="card-title">Vítej v systému Venus POS</h1>
+            </div>
+            <div class="card-body">
+                <p>Vyber si modul, který právě potřebuješ. Přístup k jednotlivým částem můžeme později omezit podle rolí barmanů.</p>
+                <p class="landing__hint">Pokud ses právě vrátil z Google autorizace, zkopíruj ověřovací kód z nově otevřeného okna a vlož ho v sekci <strong>GDrive zálohy</strong>.</p>
+            </div>
+        </section>
 
-    <script type="module" src="scripts/login.js"></script>
+        <section class="landing__grid">
+            <a class="landing-card" href="cashier.html">
+                <h2>Pokladna</h2>
+                <p>Rychlý prodej a uzavírání objednávek.</p>
+            </a>
+
+            <a class="landing-card" href="shift.html">
+                <h2>Směna</h2>
+                <p>Správa aktuální směny, přehled tržeb a uzávěrka.</p>
+            </a>
+
+            <a class="landing-card" href="inventory.html">
+                <h2>Sklad</h2>
+                <p>Produkty, stavy zásob a správa položek.</p>
+            </a>
+
+            <a class="landing-card" href="gdrive.html">
+                <h2>GDrive zálohy</h2>
+                <p>Kontrola nahraných záloh a dokončení autorizace.</p>
+            </a>
+
+            <a class="landing-card" href="customer_accounts.html">
+                <h2>Zákaznické účty</h2>
+                <p>Správa účtů a platby na kartu zákazníka.</p>
+            </a>
+
+            <a class="landing-card" href="order_management.html">
+                <h2>Historie objednávek</h2>
+                <p>Prohlížení, vracení a audit minulých objednávek.</p>
+            </a>
+        </section>
+    </main>
+
+    <script src="scripts/theme-manager.js"></script>
+    <script type="module" src="scripts/common.js"></script>
 </body>
 </html>

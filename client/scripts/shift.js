@@ -461,6 +461,7 @@ async function handleEndShift() {
         });
 
         const data = await response.json();
+        const backupInfo = data.backup || null;
 
         if (!response.ok) {
             throw new Error(data.message || 'Chyba při ukončení směny');
@@ -484,10 +485,42 @@ async function handleEndShift() {
         await showShiftSummaryModal(endedShiftID);
         console.log('✅ Souhrn byl zobrazen');
 
+        handleBackupNotification(backupInfo);
+
     } catch (error) {
         console.error("❌ Chyba při ukončení směny:", error);
         showModal("❌ Chyba při ukončení směny!", "", true);
         elements.endButton.disabled = false;
+    }
+}
+
+function handleBackupNotification(info) {
+    if (!info) {
+        return;
+    }
+
+    if (info.uploaded) {
+        return;
+    }
+
+    if (info.uploadErrorCode === 'OAUTH_TOKEN_MISSING') {
+        showModal(
+            'Zaloha nebyla odeslana na Google Drive, protoze chybi autorizace. Otevri stranku "GDrive zalohy" a dokonci prihlaseni.',
+            { confirmText: 'Rozumim', isError: false }
+        );
+        return;
+    }
+
+    if (info.uploadErrorCode === 'OAUTH_CLIENT_CONFIG_MISSING') {
+        showModal(
+            'Zaloha nebyla odeslana na Google Drive, protoze chybi soubor service/local-configs/oauth-client.json.',
+            { confirmText: 'Rozumim', isError: true }
+        );
+        return;
+    }
+
+    if (info.uploadError) {
+        showModal(`Zaloha na GDrive selhala: ${info.uploadError}`, { confirmText: 'Rozumim', isError: true });
     }
 }
 

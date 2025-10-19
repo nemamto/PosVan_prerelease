@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GDrive Zalohy | POS System</title>
+    <link rel="stylesheet" href="styles/main-modern.css" />
+</head>
+<body class="page-container">
+    <header id="app-header"></header>
+    <main class="page-content">
+        <section class="card">
+            <div class="card-header">
+                <h2 class="card-title">Zalohy na GDrive</h2>
+            </div>
+            <div class="card-body" id="gdrive-content">
+                <div id="gdrive-base-link" class="backup-base-link" hidden></div>
+                <div id="gdrive-status" class="status-message" hidden></div>
+                <div id="gdrive-actions" class="card__section" hidden></div>
+                <div id="gdrive-list" class="backup-list"></div>
+            </div>
+        </section>
+    </main>
+    <script src="scripts/theme-manager.js"></script>
+    <script type="module" src="scripts/common.js"></script>
+    <script type="module" src="scripts/gdrive.js"></script>
+</body>
+</html>

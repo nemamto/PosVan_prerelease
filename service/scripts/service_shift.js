@@ -2,9 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { create, convert } = require('xmlbuilder2');
 const common = require('./service_common');
-const { get } = require('http');
-
-// Utility functions for consistent datetime formatting
+const { createShiftBackup } = require('./shift_backup');
 function getISODateTime(date = new Date()) {
     const pad = n => String(n).padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
@@ -18,44 +16,44 @@ function getFileSafeDateTime(date = new Date()) {
 function startShift(req, res) {
     try {
         const { bartender, initialCash } = req.body;
+
         if (!bartender) {
-            return res.status(400).json({ message: "❌ Jméno barmana je povinné!" });
+            return res.status(400).json({ message: '❌ Jméno barmana je povinné!' });
         }
 
         const cashAmount = Number(initialCash) || 0;
-
         const newShiftID = getNextShiftID();
-
         const now = new Date();
-        const formattedDateTime = getISODateTime(now); // ISO 8601 formát
-        const fileSafeDateTime = getFileSafeDateTime(now); // Pro název souboru
+        const formattedDateTime = getISODateTime(now);
+        const fileSafeDateTime = getFileSafeDateTime(now);
 
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
         common.ensureDirectoryExistence(shiftsDir);
 
-        // Vytvoření XML dokumentu s novým ID a pokladnou
-        const xmlDoc = create({ version: '1.0' })
+        const shiftFileName = `${fileSafeDateTime}_${newShiftID}.xml`;
+        const shiftFilePath = path.join(shiftsDir, shiftFileName);
+
+        const shiftDoc = create({ version: '1.0' })
             .ele('shift', { id: newShiftID, startTime: formattedDateTime })
                 .ele('bartender').txt(bartender).up()
                 .ele('cashRegister')
-                    .ele('initialAmount').txt(cashAmount).up()
+                    .ele('initialAmount').txt(cashAmount.toFixed(2)).up()
                     .ele('deposits').up()
                     .ele('withdrawals').up()
                 .up()
                 .ele('orders').up()
-            .up();
+            .up()
+            .end({ prettyPrint: true });
 
-        const fileName = `${fileSafeDateTime}_${newShiftID}.xml`;
-        const filePath = path.join(shiftsDir, fileName);
-        fs.writeFileSync(filePath, xmlDoc.end({ prettyPrint: true }));
+        fs.writeFileSync(shiftFilePath, shiftDoc);
 
-        console.log(`✅ Vytvořena nová směna: ${fileName} (ID: ${newShiftID}, Barman: ${bartender}, Pokladna: ${cashAmount} Kč)`);
+        console.log(`✅ Směna ID ${newShiftID} byla zahájena.`);
+
         res.json({
-            message: `✅ Směna ${newShiftID} byla zahájena.`,
+            message: `✅ Směna ID ${newShiftID} byla zahájena.`,
             shiftID: newShiftID,
-            bartender,
             startTime: formattedDateTime,
-            initialCash: cashAmount
+            fileName: shiftFileName,
         });
     } catch (error) {
         console.error('❌ Chyba při zahájení směny:', error);
@@ -63,12 +61,13 @@ function startShift(req, res) {
     }
 }
 
-function endShift(req, res) {
+async function endShift(req, res) {
     try {
         console.log('🔚 Ukončení směny:', req.body);
+
         const { shiftID, bartenderWage } = req.body;
         if (!shiftID) {
-            return res.status(400).json({ message: "❌ ID směny je povinné!" });
+            return res.status(400).json({ message: '❌ ID směny je povinné!' });
         }
 
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
@@ -76,7 +75,7 @@ function endShift(req, res) {
 
         const shiftFile = fs.readdirSync(shiftsDir).find(file => file.includes(`_${shiftID}.xml`));
         if (!shiftFile) {
-            return res.status(404).json({ message: "❌ Směna nebyla nalezena!" });
+            return res.status(404).json({ message: '❌ Směna nebyla nalezena!' });
         }
 
         const filePath = path.join(shiftsDir, shiftFile);
@@ -84,19 +83,18 @@ function endShift(req, res) {
         const jsonData = convert(xmlData, { format: 'object' });
 
         if (!jsonData.shift) {
-            return res.status(400).json({ message: "❌ Neplatný formát směny!" });
+            return res.status(400).json({ message: '❌ Neplatný formát směny!' });
         }
 
         if (jsonData.shift.endTime) {
-            return res.status(400).json({ message: "❌ Směna již byla ukončena!" });
+            return res.status(400).json({ message: '❌ Směna již byla ukončena!' });
         }
 
         const now = new Date();
         const endTimeISO = getISODateTime(now);
 
         jsonData.shift.endTime = endTimeISO;
-        
-        // Pokud byla zadána mzda barmana, uložíme ji
+
         if (bartenderWage !== undefined && bartenderWage !== null) {
             jsonData.shift.bartenderWage = Number(bartenderWage);
         }
@@ -104,9 +102,54 @@ function endShift(req, res) {
         const updatedXmlData = create(jsonData).end({ prettyPrint: true });
         fs.writeFileSync(filePath, updatedXmlData);
 
+        let backupResult = null;
+
+        if (process.env.SHIFT_BACKUP_DISABLED === '1') {
+            console.log('Shift backup preskocen (SHIFT_BACKUP_DISABLED=1).');
+        } else {
+            try {
+                backupResult = await createShiftBackup();
+
+                if (backupResult.uploaded) {
+                    console.log(`Shift backup pripraven a nahran na GDrive (${backupResult.archiveName}).`);
+                } else if (backupResult.uploadError) {
+                    console.warn(`Shift backup ulozen lokalne, ale nahrani na GDrive selhalo: ${backupResult.uploadError}`);
+
+                    if (backupResult.uploadErrorCode === 'OAUTH_TOKEN_MISSING') {
+                        console.warn('Spustte autorizaci na strance GDrive zaloh a pote akci zopakujte.');
+                    }
+
+                    if (backupResult.uploadErrorCode === 'OAUTH_CLIENT_CONFIG_MISSING') {
+                        console.warn('Chybi soubor service/local-configs/oauth-client.json s udaji OAuth klienta.');
+                    }
+                } else {
+                    console.log(`Shift backup pripraven lokalne (${backupResult.archiveName}).`);
+                }
+            } catch (backupError) {
+                const message = backupError && backupError.message ? backupError.message : String(backupError);
+                console.error('Shift backup selhal:', message);
+                backupResult = {
+                    uploaded: false,
+                    uploadError: message,
+                    uploadErrorCode: backupError && backupError.code ? backupError.code : undefined,
+                };
+            }
+        }
+
         console.log(`✅ Směna ID ${shiftID} byla ukončena v ${endTimeISO}.`);
 
-        res.json({ message: `✅ Směna ID ${shiftID} byla ukončena.`, endTime: endTimeISO });
+        res.json({
+            message: `✅ Směna ID ${shiftID} byla ukončena.`,
+            endTime: endTimeISO,
+            backup: backupResult ? {
+                uploaded: Boolean(backupResult.uploaded),
+                uploadError: backupResult.uploadError ?? null,
+                uploadErrorCode: backupResult.uploadErrorCode ?? null,
+                archiveName: backupResult.archiveName ?? null,
+                destination: backupResult.destination ?? null,
+                baseFolderUrl: backupResult.baseFolderUrl ?? null,
+            } : null,
+        });
     } catch (error) {
         console.error('❌ Chyba při ukončení směny:', error);
         res.status(500).json({ message: 'Interní chyba serveru při ukončení směny.' });

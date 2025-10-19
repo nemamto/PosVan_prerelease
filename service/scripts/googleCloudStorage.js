@@ -1,9 +1,11 @@
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 
+const keyFilePath = path.join(__dirname, '..', 'service_account.json');
+
 // Inicializace Cloud Storage
 const storage = new Storage({
-    keyFilename: './service_account.json', // cesta k vašemu JSON souboru s klíčem
+    keyFilename: keyFilePath, // absolutní cesta k JSON klíči
     projectId: 'posven', // váš Google Cloud Project ID
 });
 
@@ -37,8 +39,19 @@ async function deleteFile(fileName) {
     console.log(`Soubor ${fileName} byl smazán.`);
 }
 
+async function listFiles(prefix) {
+    const [files] = await bucket.getFiles({ prefix });
+    return files.map(file => ({
+        name: file.name,
+        size: Number(file.metadata?.size || 0),
+        updated: file.metadata?.updated || null
+    }));
+}
+
 module.exports = {
     uploadFile,
     downloadFile,
     deleteFile,
+    listFiles,
+    bucketName,
 };

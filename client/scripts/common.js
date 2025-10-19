@@ -243,6 +243,7 @@ function renderAppHeader() {
                         <div class="header-menu-section">
                             <p class="header-menu-title">Nastavení</p>
                             <div class="header-menu-item" data-theme-toggle-slot></div>
+                            <div class="header-menu-item" data-gdrive-link-slot></div>
                         </div>
                     </div>
                 </div>
@@ -288,6 +289,7 @@ function renderAppHeader() {
     });
 
     const themeSlot = dropdown?.querySelector('[data-theme-toggle-slot]');
+    const gdriveSlot = dropdown?.querySelector('[data-gdrive-link-slot]');
     if (themeSlot) {
         if (window.themeManager?.attachToggle) {
             window.themeManager.attachToggle(themeSlot, { onToggle: closeMenu });
@@ -305,6 +307,22 @@ function renderAppHeader() {
             });
             themeSlot.appendChild(fallback);
         }
+    }
+
+    if (gdriveSlot) {
+        gdriveSlot.innerHTML = '';
+        const gdriveButton = document.createElement('button');
+        gdriveButton.type = 'button';
+        gdriveButton.className = 'header-menu-link';
+        gdriveButton.textContent = 'GDrive zalohy';
+        gdriveButton.addEventListener('click', () => {
+            closeMenu();
+            if (window.location.pathname.endsWith('/gdrive.html')) {
+                return;
+            }
+            window.location.href = 'gdrive.html';
+        });
+        gdriveSlot.appendChild(gdriveButton);
     }
 }
 

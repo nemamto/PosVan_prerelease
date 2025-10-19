@@ -5,12 +5,17 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "backup:shifts": "node scripts/shift_backup.js",
+    "backup:restore": "node scripts/shift_backup.js --restore",
+    "drive:auth": "node scripts/drive_auth_setup.js"
   },
   "dependencies": {
-    "@google-cloud/storage": "^7.16.0",
+    "archiver": "^6.0.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
+    "extract-zip": "^2.0.1",
+    "googleapis": "^137.1.0",
     "xmlbuilder2": "^3.0.2"
   },
   "devDependencies": {
