@@ -28,7 +28,7 @@ html {
 
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.0625rem; /* ~17px pro lepší čitelnost v provozu */
+    font-size: 1rem;
     line-height: 1.6;
     color: var(--text-primary);
     background-color: var(--bg-primary);
@@ -277,7 +277,7 @@ main {
 }
 
 .has-payment-footer main {
-    padding: clamp(var(--space-md), 2vw, var(--space-xl)) clamp(1.25rem, 3vw, 3rem) var(--space-sm);
+    padding: clamp(0px, 0.8vw, var(--space-sm)) clamp(0.75rem, 2vw, 2rem) var(--space-xs);
     display: flex;
     flex-direction: column;
     min-height: calc(100vh - var(--header-height) - var(--footer-height));
