@@ -29,6 +29,61 @@ import { serverEndpoint } from './config.js';
 import { checkActiveShift, closeModal, getShiftID } from './common.js';
 let loadedCategories = [];
 
+function parseColorString(color) {
+    if (!color) {
+        return null;
+    }
+
+    const value = color.trim();
+
+    if (value.startsWith('#')) {
+        const hex = value.length === 4
+            ? value.replace(/#([\da-f])([\da-f])([\da-f])/i, (_, r, g, b) => `#${r}${r}${g}${g}${b}${b}`)
+            : value;
+        const matches = hex.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+        if (!matches) {
+            return null;
+        }
+        return {
+            r: parseInt(matches[1], 16),
+            g: parseInt(matches[2], 16),
+            b: parseInt(matches[3], 16)
+        };
+    }
+
+    if (value.startsWith('rgb')) {
+        const components = value.match(/\d+(?:\.\d+)?/g);
+        if (!components || components.length < 3) {
+            return null;
+        }
+        return {
+            r: Number(components[0]),
+            g: Number(components[1]),
+            b: Number(components[2])
+        };
+    }
+
+    return null;
+}
+
+function getReadableTextColor(backgroundColor) {
+    const rgb = parseColorString(backgroundColor);
+    if (!rgb) {
+        return '#111827';
+    }
+
+    const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255;
+    return luminance > 0.6 ? '#111827' : '#f8fafc';
+}
+
+function applyReadableText(element, backgroundColor, cssVariableName) {
+    const textColor = getReadableTextColor(backgroundColor);
+    element.style.color = textColor;
+    if (cssVariableName) {
+        element.style.setProperty(cssVariableName, textColor);
+    }
+}
+
 // 🟢 Zavoláme při načtení stránky
 document.addEventListener('DOMContentLoaded', async () => {
     log.info('Cashier inicializován');
@@ -501,6 +556,11 @@ async function renderProducts(products) {
         categoryDiv.textContent = cat.name;
         if (cat.color) {
             categoryDiv.style.backgroundColor = cat.color;
+            applyReadableText(categoryDiv, cat.color, '--category-text-color');
+        } else {
+            categoryDiv.style.removeProperty('--category-text-color');
+            categoryDiv.style.removeProperty('color');
+            categoryDiv.style.removeProperty('background-color');
         }
         categoryDiv.addEventListener('click', () => {
             document.querySelectorAll('#category-container .category-item').forEach(el => el.classList.remove('active'));
@@ -534,6 +594,11 @@ function renderProductsByCategory(products) {
         productDiv.className = 'product-item';
         if (product.color) {
             productDiv.style.backgroundColor = product.color;
+            applyReadableText(productDiv, product.color, '--product-text-color');
+        } else {
+            productDiv.style.removeProperty('--product-text-color');
+            productDiv.style.removeProperty('color');
+            productDiv.style.removeProperty('background-color');
         }
 
         productDiv.innerHTML = `

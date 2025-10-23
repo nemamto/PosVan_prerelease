@@ -277,7 +277,21 @@ main {
 }
 
 .has-payment-footer main {
-    padding-bottom: calc(var(--footer-height) + var(--space-xl));
+    padding: clamp(var(--space-md), 2vw, var(--space-xl)) clamp(1.25rem, 3vw, 3rem) var(--space-sm);
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - var(--header-height) - var(--footer-height));
+    overflow: hidden;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+}
+
+@media (max-width: 992px) {
+    .has-payment-footer main {
+        min-height: auto;
+        overflow: auto;
+    }
 }
 
 footer {
