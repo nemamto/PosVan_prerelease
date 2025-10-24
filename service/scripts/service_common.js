@@ -47,30 +47,49 @@ function currentShift(req, res) {
         return res.json({ active: false, message: "Žádná směna nenalezena." });
     }
 
-    const latestShiftFile = path.join(shiftsDir, files[0]);
-    const xmlData = fs.readFileSync(latestShiftFile, 'utf8');
-    const jsonData = convert(xmlData, { format: 'object' });
+    let latestClosedShift = null;
 
-    if (!jsonData.shift) {
-        return res.json({ active: false, message: "Neplatná struktura směny." });
+    for (const file of files) {
+        const filePath = path.join(shiftsDir, file);
+        const xmlData = fs.readFileSync(filePath, 'utf8');
+        const jsonData = convert(xmlData, { format: 'object' });
+
+        if (!jsonData.shift) {
+            continue;
+        }
+
+        const shiftID = getShiftProperty(jsonData.shift, 'id');
+        const startTime = getShiftProperty(jsonData.shift, 'startTime');
+        const bartender = getShiftProperty(jsonData.shift, 'bartender', "Neznámý");
+        const endTime = getShiftProperty(jsonData.shift, 'endTime');
+
+        if (!endTime) {
+            return res.json({
+                active: true,
+                shiftID,
+                startTime,
+                bartender,
+                endTime: null
+            });
+        }
+
+        if (!latestClosedShift) {
+            latestClosedShift = {
+                active: false,
+                shiftID,
+                startTime,
+                bartender,
+                endTime,
+                message: `Poslední směna (${shiftID}) byla ukončena.`
+            };
+        }
     }
 
-    const shiftID = getShiftProperty(jsonData.shift, 'id');
-    const startTime = getShiftProperty(jsonData.shift, 'startTime');
-    const bartender = getShiftProperty(jsonData.shift, 'bartender', "Neznámý");
-    const endTime = getShiftProperty(jsonData.shift, 'endTime');
-
-    if (endTime) {
-        return res.json({ active: false, endTime, message: `Poslední směna (${shiftID}) byla ukončena.` });
+    if (latestClosedShift) {
+        return res.json(latestClosedShift);
     }
 
-    return res.json({
-        active: true,
-        shiftID,
-        startTime,
-        bartender,
-        endTime
-    });
+    return res.json({ active: false, message: "Směny nebyly načteny." });
 
 }
 

@@ -425,6 +425,134 @@ function getShiftSummary(req, res) {
     }
 }
 
+function normaliseOrderList(shiftNode) {
+    if (!shiftNode) {
+        return [];
+    }
+
+    let orderItems = [];
+
+    if (shiftNode.order) {
+        orderItems = shiftNode.order;
+    } else if (shiftNode.orders && shiftNode.orders.order) {
+        orderItems = shiftNode.orders.order;
+    }
+
+    if (!Array.isArray(orderItems)) {
+        orderItems = orderItems ? [orderItems] : [];
+    }
+
+    return orderItems;
+}
+
+function extractShiftId(shiftNode, fallback) {
+    if (!shiftNode) {
+        return fallback ?? null;
+    }
+
+    if (shiftNode['@id'] !== undefined) {
+        return shiftNode['@id'];
+    }
+
+    if (shiftNode.id !== undefined) {
+        return shiftNode.id;
+    }
+
+    return fallback ?? null;
+}
+
+function normaliseShiftEndTime(endTime) {
+    if (endTime === undefined || endTime === null) {
+        return null;
+    }
+
+    if (typeof endTime === 'object' && endTime['#text'] !== undefined) {
+        return String(endTime['#text']);
+    }
+
+    return String(endTime);
+}
+
+function getShiftDetail(req, res) {
+    try {
+        const { shiftID, active } = req.query;
+        const wantActive = active === '1' || active === 'true';
+        const requestedId = shiftID ? String(shiftID) : null;
+
+        if (!wantActive && !requestedId) {
+            return res.status(400).json({ message: 'Musí být zadáno shiftID nebo aktivní směna.' });
+        }
+
+        const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
+        common.ensureDirectoryExistence(shiftsDir);
+
+        const files = fs.readdirSync(shiftsDir)
+            .filter(file => file.match(/_\d+\.xml$/))
+            .sort((a, b) => b.localeCompare(a));
+
+        if (files.length === 0) {
+            return res.status(404).json({ message: 'Nebyla nalezena žádná směna.' });
+        }
+
+        let fallbackClosedShift = null;
+
+        for (const file of files) {
+            const filePath = path.join(shiftsDir, file);
+            const xmlData = fs.readFileSync(filePath, 'utf8');
+            const jsonData = convert(xmlData, { format: 'object' });
+
+            if (!jsonData.shift) {
+                continue;
+            }
+
+            const shiftNode = jsonData.shift;
+            const extractedId = extractShiftId(shiftNode, requestedId);
+            const startTime = shiftNode['@startTime'] || shiftNode.startTime || null;
+            const bartender = shiftNode.bartender || 'Neznámý';
+            const endTimeRaw = shiftNode.endTime || shiftNode['@endTime'];
+            const normalisedEndTime = normaliseShiftEndTime(endTimeRaw);
+            const isActive = !normalisedEndTime || normalisedEndTime.trim() === '';
+            const orderItems = normaliseOrderList(shiftNode);
+
+            const resultPayload = {
+                id: extractedId,
+                startTime,
+                endTime: isActive ? null : normalisedEndTime,
+                bartender,
+                orderCount: orderItems.length,
+                orderItems,
+                isActive,
+                fileName: file
+            };
+
+            if (wantActive) {
+                if (isActive) {
+                    return res.json(resultPayload);
+                }
+
+                if (!fallbackClosedShift) {
+                    fallbackClosedShift = resultPayload;
+                }
+
+                continue;
+            }
+
+            if (requestedId && extractedId !== null && String(extractedId) === requestedId) {
+                return res.json(resultPayload);
+            }
+        }
+
+        if (wantActive && fallbackClosedShift) {
+            return res.json(fallbackClosedShift);
+        }
+
+        return res.status(404).json({ message: 'Směna nebyla nalezena.' });
+    } catch (error) {
+        console.error('❌ Chyba při čtení detailu směny:', error);
+        res.status(500).json({ message: 'Interní chyba serveru při načítání detailu směny.' });
+    }
+}
+
 // Vklad do pokladny
 function addDeposit(req, res) {
     try {
@@ -609,6 +737,7 @@ module.exports = {
     findShiftFileByID,
     getNextShiftID,
     getShiftSummary,
+    getShiftDetail,
     startShift,
     endShift,
     addDeposit,

@@ -1,13 +1,3 @@
-.inventory-search-card .card-body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
-.inventory-search-card .form-input {
-    max-width: 420px;
-}
-
 .inventory-list-card {
     margin-top: var(--space-lg);
 }
@@ -15,14 +5,40 @@
 .inventory-list-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    flex-wrap: wrap;
     gap: var(--space-md);
+    padding-block: var(--space-md);
+}
+
+.inventory-search-input {
+    flex: 1 1 260px;
+    min-width: 220px;
+}
+
+.inventory-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.inventory-header-actions .btn {
+    white-space: nowrap;
 }
 
 .inventory-categories-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: var(--space-md);
+}
+
+.add-item-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
     gap: var(--space-md);
 }
 
@@ -348,11 +364,14 @@
 }
 
 .add-item-form-card {
-    display: none;
     margin-top: var(--space-lg);
 }
 
-.add-item-form-card.is-visible {
+.add-item-form-card .card-body {
+    display: none;
+}
+
+.add-item-form-card.is-visible .card-body {
     display: block;
 }
 
@@ -377,7 +396,15 @@
 }
 
 .toggle-btn {
-    min-width: 200px;
+    min-width: 180px;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.toggle-btn.is-active,
+.toggle-btn[aria-expanded="true"] {
+    background-color: var(--primary, #007bff);
+    border-color: var(--primary, #007bff);
+    color: var(--text-inverted, #fff);
 }
 
 .inventory-categories-card {
@@ -520,6 +547,12 @@
     .inventory-list-header {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .inventory-header-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
     }
 
     .inventory-categories-header {

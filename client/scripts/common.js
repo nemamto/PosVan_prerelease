@@ -5,7 +5,6 @@ const BUTTON_VARIANTS = ['primary', 'secondary', 'success', 'warning', 'danger']
 const NAV_LINKS = [
     { key: 'cashier', label: 'Pokladna', href: 'cashier.html' },
     { key: 'inventory', label: 'Sklad', href: 'inventory.html' },
-    { key: 'orders', label: 'Historie', href: 'order_management.html' },
     { key: 'accounts', label: 'Účty', href: 'customer_accounts.html' },
     { key: 'shift', label: 'Směna', href: 'shift.html' }
 ];
@@ -80,6 +79,13 @@ function ensureConfirmOverlay() {
 }
 
 function openOverlay(overlay) {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+        overlay.__previousFocus = activeElement;
+    } else {
+        overlay.__previousFocus = null;
+    }
+
     overlay.style.display = 'flex';
     overlay.setAttribute('aria-hidden', 'false');
     requestAnimationFrame(() => {
@@ -88,6 +94,11 @@ function openOverlay(overlay) {
 }
 
 function hideOverlay(overlay) {
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && overlay.contains(activeElement)) {
+        activeElement.blur();
+    }
+
     overlay.classList.remove('is-visible');
     overlay.setAttribute('aria-hidden', 'true');
     setTimeout(() => {
@@ -95,6 +106,15 @@ function hideOverlay(overlay) {
         overlay.classList.remove('modal--error');
         delete overlay.dataset.variant;
         overlay.dataset.modalSize = overlay.dataset.modalSize || 'md';
+
+        if (overlay.__previousFocus instanceof HTMLElement) {
+            try {
+                overlay.__previousFocus.focus({ preventScroll: true });
+            } catch (error) {
+                // noop – best effort focus restore
+            }
+        }
+        delete overlay.__previousFocus;
     }, MODAL_ANIMATION_MS);
 }
 
@@ -240,6 +260,14 @@ function renderAppHeader() {
                         ☰ Menu
                     </button>
                     <div class="header-menu-dropdown" role="menu" hidden>
+                        <div class="header-menu-section" data-menu-section="navigation">
+                            <p class="header-menu-title">Navigace</p>
+                            <div class="header-menu-item">
+                                <button type="button" class="header-menu-link" data-menu-link="orders">
+                                    <span class="header-menu-text">Historie objednávek</span>
+                                </button>
+                            </div>
+                        </div>
                         <div class="header-menu-section">
                             <p class="header-menu-title">Nastavení</p>
                             <div class="header-menu-item" data-theme-toggle-slot></div>
@@ -287,6 +315,21 @@ function renderAppHeader() {
             }
         });
     });
+
+    const historyMenuLink = dropdown?.querySelector('[data-menu-link="orders"]');
+    if (historyMenuLink) {
+        if (currentRoute === 'order_management.html') {
+            historyMenuLink.setAttribute('aria-current', 'page');
+        }
+
+        historyMenuLink.addEventListener('click', () => {
+            closeMenu();
+            if (getCurrentRouteName() === 'order_management.html') {
+                return;
+            }
+            window.location.href = 'order_management.html';
+        });
+    }
 
     const themeSlot = dropdown?.querySelector('[data-theme-toggle-slot]');
     const gdriveSlot = dropdown?.querySelector('[data-gdrive-link-slot]');

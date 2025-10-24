@@ -138,6 +138,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${day}. ${month}. ${year} ${hours}:${minutes}`;
     }
 
+    function normaliseString(value = '') {
+        return String(value ?? '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
+    }
+
+    function isShiftClosed(shift) {
+        if (!shift) {
+            return false;
+        }
+
+        if (typeof shift.isActive === 'boolean') {
+            return !shift.isActive;
+        }
+
+        const rawEnd = shift.endTime ?? shift.EndTime ?? shift['@endTime'] ?? '';
+        const trimmed = String(rawEnd ?? '').trim();
+        if (!trimmed) {
+            return false;
+        }
+
+        const normalised = normaliseString(trimmed);
+        if (!normalised || normalised === 'probiha') {
+            return false;
+        }
+
+        return true;
+    }
+
     function updatePagination() {
         const safeTotal = Math.max(totalPages, 1);
         pageInfo.textContent = `Stránka ${currentPage} z ${safeTotal}`;
@@ -202,27 +232,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         shifts.forEach((shift) => {
+            const shiftIsClosed = isShiftClosed(shift);
+            const shiftIsActive = !shiftIsClosed;
             const headerRow = document.createElement('tr');
             headerRow.className = 'shift-header';
             headerRow.dataset.shiftId = shift.id ?? '';
             headerRow.setAttribute('role', 'button');
             headerRow.setAttribute('aria-expanded', 'false');
             headerRow.tabIndex = 0;
+            if (shiftIsClosed) {
+                headerRow.classList.add('shift-closed');
+                headerRow.dataset.shiftClosed = 'true';
+            } else {
+                headerRow.classList.add('shift-active');
+                headerRow.dataset.shiftActive = 'true';
+            }
+
+            const endTimeDisplay = shiftIsActive ? 'Probíhá' : formatDateTime(shift.endTime);
+
             headerRow.innerHTML = `
                 <td>${escapeHtml(shift.id ?? EMPTY_VALUE)}</td>
                 <td>${formatDateTime(shift.startTime)}</td>
-                <td>${formatDateTime(shift.endTime)}</td>
+                <td>${escapeHtml(endTimeDisplay)}</td>
                 <td>${escapeHtml(shift.orderCount ?? 0)}</td>
             `;
 
             const detailRow = document.createElement('tr');
             detailRow.className = 'shift-detail';
             detailRow.dataset.shiftId = shift.id ?? '';
+            if (shiftIsClosed) {
+                detailRow.classList.add('shift-closed');
+                detailRow.dataset.shiftClosed = 'true';
+            } else {
+                detailRow.classList.add('shift-active');
+                detailRow.dataset.shiftActive = 'true';
+            }
             detailRow.hidden = true;
 
             const detailCell = document.createElement('td');
             detailCell.colSpan = 4;
-            detailCell.appendChild(buildDetailContent(shift));
+            detailCell.appendChild(buildDetailContent(shift, shiftIsClosed));
             detailRow.appendChild(detailCell);
 
             function toggleDetail() {
@@ -246,10 +295,11 @@ document.addEventListener('DOMContentLoaded', () => {
         orderList.replaceChildren(fragment);
     }
 
-    function buildDetailContent(shift) {
+    function buildDetailContent(shift, shiftIsClosed = false) {
         const wrapper = document.createElement('div');
 
         const hasOrders = Array.isArray(shift.orderItems) && shift.orderItems.length > 0;
+        const allowOrderActions = !shiftIsClosed;
 
         if (!hasOrders) {
             wrapper.innerHTML = '<div class="order-empty-state">Tato směna neobsahuje žádné objednávky.</div>';
@@ -337,11 +387,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const productsHtml = escapeHtml(productsValue).replace(/\n/g, '<br>');
             const orderIdDisplay = hasValidId ? escapeHtml(orderIdRaw) : EMPTY_VALUE;
-            const actionHtml = hasValidId
-                ? (isCancelled
-                    ? `<button type="button" class="btn btn-success btn-sm order-action" data-action="restore" data-id="${escapeHtml(orderIdRaw)}">Obnovit</button>`
-                    : `<button type="button" class="btn btn-warning btn-sm order-action" data-action="cancel" data-id="${escapeHtml(orderIdRaw)}">Stornovat</button>`)
-                : '<span class="text-secondary">Nedostupné</span>';
+
+            let actionHtml;
+            if (!hasValidId) {
+                actionHtml = '<span class="text-secondary">Nedostupné</span>';
+            } else if (!allowOrderActions) {
+                actionHtml = '';
+            } else if (isCancelled) {
+                actionHtml = `<button type="button" class="btn btn-success btn-sm order-action" data-action="restore" data-id="${escapeHtml(orderIdRaw)}">Obnovit</button>`;
+            } else {
+                actionHtml = `<button type="button" class="btn btn-warning btn-sm order-action" data-action="cancel" data-id="${escapeHtml(orderIdRaw)}">Stornovat</button>`;
+            }
 
             row.innerHTML = `
                 <td>${orderIdDisplay}</td>
@@ -440,11 +496,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Server vrátil stav ${response.status}`);
             }
 
-            await showModal(`Objednávka ${orderId} byla obnovena.`, {
-                title: 'Objednávka obnovena',
-                confirmVariant: 'success'
-            });
-
             await refreshInventory();
             await fetchShifts();
         } catch (error) {
@@ -467,11 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error(`Server vrátil stav ${response.status}`);
             }
-
-            await showModal(`Objednávka ${orderId} byla stornována.`, {
-                title: 'Objednávka stornována',
-                confirmVariant: 'warning'
-            });
 
             await refreshInventory();
             await fetchShifts();

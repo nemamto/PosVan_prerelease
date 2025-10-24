@@ -5,12 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Správa směny</title>
     <link rel="stylesheet" href="styles/main-modern.css">
+    <link rel="stylesheet" href="styles/order_management.css">
     <link rel="stylesheet" href="styles/shift.css">
 </head>
 <body class="page-container">
     <header id="app-header"></header>
 
     <main class="content-wrapper">
+        <section class="card" id="active-shift-orders-section" hidden>
+            <header class="card-header">
+                <h2>Objednávky aktuální směny <span id="active-shift-orders-label" class="text-secondary">—</span></h2>
+            </header>
+            <div class="card-body">
+                <div class="order-table-wrapper">
+                    <table class="order-detail-table" id="active-shift-orders-table">
+                        <thead>
+                            <tr>
+                                <th>ID objednávky</th>
+                                <th>Čas</th>
+                                <th>Způsob platby</th>
+                                <th>Cena</th>
+                                <th>Produkty</th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody id="active-shift-orders-body"></tbody>
+                    </table>
+                </div>
+                <div class="order-empty-state" id="active-shift-orders-empty" hidden>
+                    Žádné objednávky zatím nejsou.
+                </div>
+            </div>
+        </section>
+
         <!-- Aktuální směna -->
         <section class="card" id="current-shift-section">
             <div class="card-body" id="shift-info-container">

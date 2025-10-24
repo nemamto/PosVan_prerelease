@@ -5,8 +5,21 @@ let currentShiftID = null;
 let shiftUpdateInterval = null;
 let bartendersList = []; // Seznam barmanů pro autocomplete
 
+const CASH_METHODS = ['hotovost', 'cash'];
+const CARD_METHODS = ['karta', 'card'];
+const currencyFormatter = new Intl.NumberFormat('cs-CZ', {
+    style: 'currency',
+    currency: 'CZK',
+    maximumFractionDigits: 0
+});
+
 // DOM elementy
 const elements = {
+    activeOrdersSection: null,
+    activeOrdersLabel: null,
+    activeOrdersTable: null,
+    activeOrdersBody: null,
+    activeOrdersEmpty: null,
     revenueTotalCard: null,
     noShiftState: null,
     activeShiftInfo: null,
@@ -47,6 +60,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initializeElements() {
+    elements.activeOrdersSection = document.getElementById('active-shift-orders-section');
+    elements.activeOrdersLabel = document.getElementById('active-shift-orders-label');
+    elements.activeOrdersTable = document.getElementById('active-shift-orders-table');
+    elements.activeOrdersBody = document.getElementById('active-shift-orders-body');
+    elements.activeOrdersEmpty = document.getElementById('active-shift-orders-empty');
     elements.revenueTotalCard = document.querySelector('.revenue-total');
     elements.noShiftState = document.getElementById('no-shift-state');
     elements.activeShiftInfo = document.getElementById('active-shift-info');
@@ -188,6 +206,89 @@ function setupBartenderAutocomplete() {
     });
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function isValidDateParts(year, month, day, hour, minute, second) {
+    const y = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    const h = Number(hour);
+    const min = Number(minute);
+    const s = Number(second);
+
+    return (
+        !Number.isNaN(y) && y > 1900 &&
+        !Number.isNaN(m) && m >= 1 && m <= 12 &&
+        !Number.isNaN(d) && d >= 1 && d <= 31 &&
+        !Number.isNaN(h) && h >= 0 && h <= 23 &&
+        !Number.isNaN(min) && min >= 0 && min <= 59 &&
+        !Number.isNaN(s) && s >= 0 && s <= 59
+    );
+}
+
+function parseOrderDateTime(dateString) {
+    if (typeof dateString !== 'string' || !dateString.trim()) {
+        return null;
+    }
+
+    const trimmed = dateString.trim();
+
+    let date = new Date(trimmed);
+    if (!Number.isNaN(date.getTime())) {
+        return date;
+    }
+
+    const dashFormat = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2})-(\d{2})-(\d{2})$/);
+    if (dashFormat) {
+        const [, year, month, day, hour, minute, second] = dashFormat;
+        if (isValidDateParts(year, month, day, hour, minute, second)) {
+            date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+            if (!Number.isNaN(date.getTime())) {
+                return date;
+            }
+        }
+    }
+
+    const czFormat = trimmed.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})$/);
+    if (czFormat) {
+        let [, day, month, year, hour, minute, second] = czFormat;
+        day = day.padStart(2, '0');
+        month = month.padStart(2, '0');
+        hour = hour.padStart(2, '0');
+        if (isValidDateParts(year, month, day, hour, minute, second)) {
+            date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+            if (!Number.isNaN(date.getTime())) {
+                return date;
+            }
+        }
+    }
+
+    return null;
+}
+
+function normalisePayment(method = '') {
+    const trimmed = method.trim().toLowerCase();
+    if (CASH_METHODS.includes(trimmed)) {
+        return 'Hotově';
+    }
+    if (CARD_METHODS.includes(trimmed)) {
+        return 'Kartou';
+    }
+    return method || '—';
+}
+
+function formatCurrencyDetailed(value) {
+    const numeric = Number(value) || 0;
+    return currencyFormatter.format(numeric);
+}
+
 // 🟢 Načtení stavu směny
 async function loadShiftStatus(showRefreshFeedback = false) {
     try {
@@ -249,6 +350,7 @@ async function displayActiveShift(shiftData) {
 
     // Načíst statistiky
     await loadShiftStatistics(shiftData.shiftID);
+    await loadActiveShiftOrders(shiftData.shiftID);
 
     // Tlačítka
     elements.bartenderInput.value = shiftData.bartender;
@@ -285,6 +387,8 @@ function displayNoShift() {
     elements.controlTitle.textContent = 'Zahájit směnu';
     elements.bartenderInputGroup.style.display = 'block';
     elements.cashRegisterInputGroup.style.display = 'block';
+
+    hideActiveShiftOrders();
 }
 
 // Načtení statistik směny
@@ -340,6 +444,286 @@ async function loadShiftStatistics(shiftID) {
         elements.orderCount.textContent = '0';
         elements.cancelledCount.textContent = '0';
         elements.avgOrderValue.textContent = '0 Kč';
+    }
+}
+
+async function loadActiveShiftOrders(shiftID) {
+    if (!elements.activeOrdersSection || !elements.activeOrdersBody) {
+        return;
+    }
+
+    if (!shiftID) {
+        hideActiveShiftOrders();
+        return;
+    }
+
+    if (elements.activeOrdersLabel) {
+        elements.activeOrdersLabel.textContent = `#${shiftID}`;
+    }
+
+    if (elements.activeOrdersEmpty) {
+        elements.activeOrdersEmpty.textContent = 'Načítám objednávky...';
+        elements.activeOrdersEmpty.hidden = false;
+    }
+
+    elements.activeOrdersSection.hidden = false;
+
+    try {
+        const response = await fetch(`${serverEndpoint}/shiftDetail?shiftID=${encodeURIComponent(shiftID)}`);
+        if (!response.ok) {
+            throw new Error(`Server vrátil stav ${response.status}`);
+        }
+
+        const detail = await response.json();
+        renderActiveShiftOrders(detail);
+    } catch (error) {
+        console.error('❌ Chyba při načítání objednávek aktivní směny:', error);
+        if (elements.activeOrdersEmpty) {
+            elements.activeOrdersEmpty.textContent = 'Nepodařilo se načíst objednávky této směny.';
+            elements.activeOrdersEmpty.hidden = false;
+        }
+    }
+}
+
+function hideActiveShiftOrders() {
+    if (elements.activeOrdersSection) {
+        elements.activeOrdersSection.hidden = true;
+    }
+    if (elements.activeOrdersBody) {
+        elements.activeOrdersBody.innerHTML = '';
+    }
+    if (elements.activeOrdersEmpty) {
+        elements.activeOrdersEmpty.hidden = true;
+    }
+    if (elements.activeOrdersLabel) {
+        elements.activeOrdersLabel.textContent = '—';
+    }
+}
+
+function renderActiveShiftOrders(detail) {
+    if (!elements.activeOrdersSection || !elements.activeOrdersBody) {
+        return;
+    }
+
+    const tbody = elements.activeOrdersBody;
+    const emptyState = elements.activeOrdersEmpty;
+
+    tbody.innerHTML = '';
+
+    if (!detail || !Array.isArray(detail.orderItems)) {
+        if (emptyState) {
+            emptyState.textContent = 'Tato směna zatím neobsahuje žádné objednávky.';
+            emptyState.hidden = false;
+        }
+        elements.activeOrdersSection.hidden = false;
+        return;
+    }
+
+    elements.activeOrdersSection.hidden = false;
+
+    if (detail.id && elements.activeOrdersLabel) {
+        elements.activeOrdersLabel.textContent = `#${detail.id}`;
+    }
+
+    const orders = detail.orderItems;
+
+    if (!orders.length) {
+        if (emptyState) {
+            emptyState.textContent = 'Tato směna zatím neobsahuje žádné objednávky.';
+            emptyState.hidden = false;
+        }
+        return;
+    }
+
+    if (emptyState) {
+        emptyState.hidden = true;
+    }
+
+    const sortedOrders = [...orders].sort((a, b) => {
+        const timeA = parseOrderDateTime(a.time ?? a.Time) ?? new Date(0);
+        const timeB = parseOrderDateTime(b.time ?? b.Time) ?? new Date(0);
+        return timeB - timeA;
+    });
+
+    let totalCash = 0;
+    let totalCard = 0;
+    let totalRevenue = 0;
+
+    sortedOrders.forEach((order) => {
+        const orderIdRaw = order['@id'] ?? order.id;
+        const hasValidId = orderIdRaw !== undefined && orderIdRaw !== null && orderIdRaw !== '';
+        const paymentMethodRaw = order.paymentMethod ?? '';
+        const paymentMethod = normalisePayment(paymentMethodRaw);
+        const timeValue = order.time ?? order.Time ?? '';
+        const rawPrice = Number(order.totalPrice ?? order.TotalPrice ?? order.Price ?? 0);
+        const productsValue = order.products ?? '';
+        const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
+
+        if (!isCancelled) {
+            totalRevenue += rawPrice;
+            const methodKey = paymentMethodRaw.trim().toLowerCase();
+            if (CASH_METHODS.includes(methodKey)) {
+                totalCash += rawPrice;
+            } else if (CARD_METHODS.includes(methodKey)) {
+                totalCard += rawPrice;
+            }
+        }
+
+        const row = document.createElement('tr');
+        if (hasValidId) {
+            row.dataset.orderId = String(orderIdRaw);
+        }
+        if (isCancelled) {
+            row.classList.add('is-cancelled');
+        }
+
+        const productsHtml = escapeHtml(productsValue).replace(/\n/g, '<br>');
+        const orderIdDisplay = hasValidId ? escapeHtml(orderIdRaw) : '—';
+
+        let actionHtml;
+        if (!hasValidId) {
+            actionHtml = '<span class="text-secondary">Nedostupné</span>';
+        } else if (isCancelled) {
+            actionHtml = `<button type="button" class="btn btn-success btn-sm order-action" data-action="restore" data-id="${escapeHtml(orderIdRaw)}">Obnovit</button>`;
+        } else {
+            actionHtml = `<button type="button" class="btn btn-warning btn-sm order-action" data-action="cancel" data-id="${escapeHtml(orderIdRaw)}">Stornovat</button>`;
+        }
+
+        row.innerHTML = `
+            <td>${orderIdDisplay}</td>
+            <td>${formatDateTime(timeValue)}</td>
+            <td>${escapeHtml(paymentMethod)}</td>
+            <td>${formatCurrencyDetailed(rawPrice)}</td>
+            <td class="products-column">${productsHtml}</td>
+            <td><div class="order-detail-actions">${actionHtml}</div></td>
+        `;
+
+        tbody.appendChild(row);
+    });
+
+    const summaryRow = document.createElement('tr');
+    summaryRow.className = 'shift-summary';
+    const totalPaid = totalCash + totalCard;
+    summaryRow.innerHTML = `
+        <td colspan="2">
+            <strong>
+                <span class="shift-summary-link" data-shift-id="${escapeHtml(detail.id ?? '')}" style="cursor: pointer; color: var(--primary, #007bff); text-decoration: underline;">
+                    📊 Souhrn směny
+                </span>
+            </strong>
+        </td>
+        <td><strong>Hotově:</strong> ${formatCurrencyDetailed(totalCash)}</td>
+        <td><strong>Kartou:</strong> ${formatCurrencyDetailed(totalCard)}</td>
+        <td><strong>Zaplaceno:</strong> ${formatCurrencyDetailed(totalPaid)}</td>
+        <td><strong>Obrat:</strong> ${formatCurrencyDetailed(totalRevenue)}</td>
+    `;
+    tbody.appendChild(summaryRow);
+
+    tbody.querySelectorAll('.order-action').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const action = button.dataset.action;
+            const orderId = button.dataset.id;
+            if (!orderId) {
+                return;
+            }
+
+            if (action === 'cancel') {
+                await handleCancelOrder(orderId);
+            } else if (action === 'restore') {
+                await handleRestoreOrder(orderId);
+            }
+        });
+    });
+
+    tbody.querySelectorAll('.shift-summary-link').forEach((link) => {
+        link.addEventListener('click', async (event) => {
+            event.stopPropagation();
+            const shiftId = link.dataset.shiftId;
+            if (shiftId) {
+                await showShiftSummaryModal(shiftId);
+            }
+        });
+    });
+}
+
+async function handleCancelOrder(orderId) {
+    if (!orderId) {
+        return;
+    }
+
+    const confirmed = await showModalConfirm(`Opravdu chcete stornovat objednávku ${orderId}?`, {
+        title: 'Stornování objednávky',
+        confirmText: 'Stornovat',
+        cancelText: 'Zrušit',
+        variant: 'warning'
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/orders/${orderId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server vrátil stav ${response.status}`);
+        }
+
+        if (currentShiftID) {
+            await loadShiftStatistics(currentShiftID);
+            await loadActiveShiftOrders(currentShiftID);
+        }
+    } catch (error) {
+        console.error('❌ Chyba při stornování objednávky:', error);
+        await showModal('Objednávku se nepodařilo stornovat. Zkuste to prosím znovu.', {
+            isError: true,
+            title: 'Stornování selhalo',
+            confirmVariant: 'danger'
+        });
+    }
+}
+
+async function handleRestoreOrder(orderId) {
+    if (!orderId) {
+        return;
+    }
+
+    const confirmed = await showModalConfirm(`Opravdu chcete obnovit objednávku ${orderId}?`, {
+        title: 'Obnovení objednávky',
+        confirmText: 'Obnovit',
+        cancelText: 'Zrušit',
+        variant: 'success'
+    });
+
+    if (!confirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/orders/${orderId}/restore`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server vrátil stav ${response.status}`);
+        }
+
+        if (currentShiftID) {
+            await loadShiftStatistics(currentShiftID);
+            await loadActiveShiftOrders(currentShiftID);
+        }
+    } catch (error) {
+        console.error('❌ Chyba při obnovení objednávky:', error);
+        await showModal('Objednávku se nepodařilo obnovit. Zkuste to prosím znovu.', {
+            isError: true,
+            title: 'Obnovení selhalo',
+            confirmVariant: 'danger'
+        });
     }
 }
 
@@ -439,6 +823,32 @@ async function handleEndShift() {
             throw new Error('Chyba při načítání souhrnu');
         }
         const summary = await summaryResponse.json();
+        const summaryShiftId = summary.shiftID || currentShiftID;
+        const alreadyEnded = summary.endTime !== null && summary.endTime !== undefined && String(summary.endTime).trim() !== '';
+
+        if (alreadyEnded) {
+            const formattedEndTime = formatDateTime(summary.endTime);
+            await showModal(
+                formattedEndTime !== '—'
+                    ? `Směna ${summaryShiftId || ''} už byla ukončena (${formattedEndTime}). Zobrazím uložený souhrn.`
+                    : `Směna ${summaryShiftId || ''} už byla ukončena. Zobrazím uložený souhrn.`,
+                {
+                    title: 'Směna již ukončena',
+                    confirmText: 'Zobrazit souhrn',
+                    confirmVariant: 'secondary'
+                }
+            );
+
+            await loadShiftStatus();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            if (summaryShiftId) {
+                await showShiftSummaryModal(summaryShiftId);
+            }
+
+            return;
+        }
+
         const calculatedWage = Math.round(Number(summary.durationHours) * 200);
 
         // Zobrazit modal s možností upravit mzdu
@@ -489,7 +899,8 @@ async function handleEndShift() {
 
     } catch (error) {
         console.error("❌ Chyba při ukončení směny:", error);
-        showModal("❌ Chyba při ukončení směny!", "", true);
+        const errorMessage = (error && error.message) ? error.message : 'Nepodařilo se ukončit směnu.';
+        await showModal(errorMessage, { isError: true, title: 'Ukončení směny selhalo' });
         elements.endButton.disabled = false;
     }
 }
@@ -779,15 +1190,15 @@ function showConfirmModal(title, message) {
 
 // Pomocné funkce
 function formatCurrency(amount) {
-    return `${Math.round(amount)} Kč`;
+    return formatCurrencyDetailed(amount);
 }
 
 function formatDateTime(dateString) {
-    if (!dateString) return '—';
-    
-    const date = new Date(dateString);
-    if (!(date instanceof Date) || isNaN(date.getTime())) return '—';
-    
+    const date = parseOrderDateTime(dateString);
+    if (!date) {
+        return '—';
+    }
+
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();

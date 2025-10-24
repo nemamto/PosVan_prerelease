@@ -11,19 +11,13 @@
     <header id="app-header"></header>
 
     <main>
-        <section class="card inventory-search-card">
-            <div class="card-header">
-                <h2 class="card-title">Vyhledávání</h2>
-            </div>
-            <div class="card-body">
-                <input type="text" id="search" class="form-input" placeholder="Vyhledat položku...">
-            </div>
-        </section>
-
         <section class="card inventory-list-card">
             <div class="card-header inventory-list-header">
-                <h2 class="card-title">Skladové položky</h2>
-                <button id="toggleAddItemForm" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="addItemForm">Přidat novou položku</button>
+                <input type="text" id="search" class="form-input inventory-search-input" placeholder="Vyhledat položku..." aria-label="Vyhledat položku">
+                <div class="inventory-header-actions">
+                    <button id="toggleAddItemForm" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="addItemFormBody" aria-label="Přidat produkt">Přidat produkt</button>
+                    <button id="toggleCategoryManagement" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="categoryManagementContainer" aria-label="Správa kategorií">Správa kategorií</button>
+                </div>
             </div>
             <div class="card-body">
                 <div id="inventory-list" class="inventory-list"></div>
@@ -33,7 +27,6 @@
         <section class="card inventory-categories-card">
             <div class="card-header inventory-categories-header">
                 <h2 class="card-title">Správa kategorií</h2>
-                <button id="toggleCategoryManagement" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="categoryManagementContainer">Zobrazit správu kategorií</button>
             </div>
             <div class="card-body inventory-categories-body is-hidden" id="categoryManagementContainer" aria-hidden="true">
                 <form id="categoryManagementForm" class="category-form" novalidate>
@@ -58,11 +51,11 @@
             </div>
         </section>
 
-    <section class="card add-item-form-card" id="addItemForm">
-            <div class="card-header">
+        <section class="card add-item-form-card" id="addItemForm">
+            <div class="card-header add-item-form-header">
                 <h2 class="card-title">Přidat novou položku</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body" id="addItemFormBody" aria-hidden="true">
                 <form id="addProductForm" class="form-grid">
                     <div class="form-group">
                         <label class="form-label" for="productName">Název produktu</label>

@@ -5,6 +5,12 @@ const statusEl = document.getElementById('gdrive-status');
 const listEl = document.getElementById('gdrive-list');
 const actionsEl = document.getElementById('gdrive-actions');
 const headerEl = document.querySelector('.card-header');
+const toolsEl = document.getElementById('gdrive-tools');
+const contentEl = document.getElementById('gdrive-content');
+
+let productsCheckButton;
+let productsFixButton;
+let productsResultsContainer;
 
 function setStatus(message, variant = 'info') {
     if (!statusEl) {
@@ -88,6 +94,186 @@ function renderInventory(data) {
 
     if (!rendered) {
         listEl.textContent = 'Zadne zaznamy k zobrazeni.';
+    }
+}
+
+function renderProductsTools() {
+    if (!toolsEl || toolsEl.dataset.initialized === 'true') {
+        return;
+    }
+
+    productsCheckButton = document.createElement('button');
+    productsCheckButton.type = 'button';
+    productsCheckButton.className = 'btn btn-secondary btn-sm';
+    productsCheckButton.textContent = 'Zkontrolovat ID produktů';
+    productsCheckButton.addEventListener('click', handleProductsCheck);
+
+    productsFixButton = document.createElement('button');
+    productsFixButton.type = 'button';
+    productsFixButton.className = 'btn btn-secondary btn-sm';
+    productsFixButton.textContent = 'Přečíslovat duplicity';
+    productsFixButton.disabled = true;
+    productsFixButton.addEventListener('click', handleProductsFix);
+
+    productsResultsContainer = document.createElement('div');
+    productsResultsContainer.className = 'gdrive-products-results';
+    productsResultsContainer.hidden = true;
+
+    toolsEl.append(productsCheckButton, productsFixButton);
+    if (contentEl) {
+        contentEl.insertBefore(productsResultsContainer, contentEl.firstChild);
+    }
+    toolsEl.dataset.initialized = 'true';
+}
+
+function formatDuplicateSummary(summary) {
+    if (!summary) {
+        return 'Žádná data';
+    }
+
+    const { totalProducts, uniqueIds, duplicateCount, invalidCount = 0, maxId } = summary;
+    const safeDuplicates = Number(duplicateCount) || 0;
+    const safeInvalid = Number(invalidCount) || 0;
+
+    return `Produktů: ${totalProducts} | Unikátních ID: ${uniqueIds} | Duplicit: ${safeDuplicates} | Neplatných: ${safeInvalid} | Nejvyšší ID: ${maxId}`;
+}
+
+function renderProductsResults(payload, { highlightFix = false } = {}) {
+    if (!productsResultsContainer) {
+        return;
+    }
+
+    productsResultsContainer.hidden = false;
+    productsResultsContainer.innerHTML = '';
+    productsResultsContainer.classList.remove('has-duplicates', 'is-fixed');
+
+    const currentSummary = payload.summary || payload;
+    const previousSummary = payload.previousSummary;
+    const currentDuplicates = Array.isArray(currentSummary?.duplicates) ? currentSummary.duplicates : [];
+    const previousDuplicates = Array.isArray(previousSummary?.duplicates) ? previousSummary.duplicates : [];
+    const hasDuplicates = currentDuplicates.length > 0;
+    const hadDuplicates = previousDuplicates.length > 0 || (Array.isArray(payload.reassigned) && payload.reassigned.length > 0);
+    const detailSource = hasDuplicates ? currentDuplicates : previousDuplicates;
+
+    const summary = document.createElement('p');
+    summary.className = 'gdrive-products-summary';
+    summary.textContent = formatDuplicateSummary(currentSummary || previousSummary || payload);
+    productsResultsContainer.appendChild(summary);
+
+    if (hasDuplicates) {
+        productsResultsContainer.classList.add('has-duplicates');
+    } else {
+        productsResultsContainer.classList.add('is-fixed');
+    }
+
+    if (productsFixButton) {
+        productsFixButton.disabled = !hasDuplicates;
+        productsFixButton.classList.toggle('btn-warning', hasDuplicates);
+        productsFixButton.classList.toggle('btn-secondary', !hasDuplicates);
+    }
+
+    if (detailSource.length > 0) {
+        const details = document.createElement('details');
+        details.className = 'gdrive-products-details';
+        if (highlightFix) {
+            details.open = true;
+        }
+
+        const summaryEl = document.createElement('summary');
+        summaryEl.textContent = hasDuplicates ? 'Detail duplicit' : 'Duplicitní ID před opravou';
+        details.appendChild(summaryEl);
+
+        const list = document.createElement('ul');
+        list.className = 'gdrive-products-dupes';
+
+        detailSource.forEach((item) => {
+            const li = document.createElement('li');
+            if (item.reason === 'invalid') {
+                li.textContent = `Neplatné ID: ${item.products.map(p => p.id).join(', ')}`;
+            } else {
+                const names = item.duplicates.map(d => d.name || '');
+                const uniqueNames = Array.from(new Set(names.filter(Boolean)));
+                li.textContent = `ID ${item.id}: duplicitní produkty (${uniqueNames.join(', ') || 'bez názvu'})`;
+            }
+            list.appendChild(li);
+        });
+
+        details.appendChild(list);
+        productsResultsContainer.appendChild(details);
+    }
+
+    if (!hasDuplicates) {
+        const ok = document.createElement('p');
+        ok.className = 'gdrive-products-ok';
+        ok.textContent = hadDuplicates
+            ? 'Duplicitní ID byla úspěšně opravena.'
+            : 'Žádné duplicity ID produktů nebyly nalezeny.';
+        productsResultsContainer.appendChild(ok);
+    }
+
+    if (Array.isArray(payload.reassigned) && payload.reassigned.length > 0) {
+        const info = document.createElement('p');
+        info.className = 'gdrive-products-summary';
+        info.textContent = `Přečíslováno ${payload.reassigned.length} položek.`;
+        productsResultsContainer.appendChild(info);
+    }
+
+    if (highlightFix) {
+        productsResultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+async function handleProductsCheck() {
+    if (!productsCheckButton) {
+        return;
+    }
+
+    productsCheckButton.disabled = true;
+    setStatus('Kontroluji ID produktů...', 'info');
+
+    try {
+        const response = await fetch(`${serverEndpoint}/products/ids/check`);
+        if (!response.ok) {
+            throw new Error(`Server vrátil chybu ${response.status}`);
+        }
+        const payload = await response.json();
+        renderProductsResults(payload);
+        setStatus('Kontrola dokončena.', 'success');
+    } catch (error) {
+        setStatus(`Kontrola ID produktů selhala: ${error.message}`, 'error');
+    } finally {
+        productsCheckButton.disabled = false;
+    }
+}
+
+async function handleProductsFix() {
+    if (!productsFixButton) {
+        return;
+    }
+
+    const proceed = window.confirm('Přečíslovat duplicity produktů? Změny se uloží do products.xml.');
+    if (!proceed) {
+        return;
+    }
+
+    productsFixButton.disabled = true;
+    setStatus('Přečíslovávám ID produktů...', 'info');
+
+    try {
+        const response = await fetch(`${serverEndpoint}/products/ids/reassign`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) {
+            throw new Error(`Server vrátil chybu ${response.status}`);
+        }
+        const payload = await response.json();
+        renderProductsResults(payload, { highlightFix: true });
+        setStatus('Přečíslování dokončeno.', 'success');
+    } catch (error) {
+        setStatus(`Přečíslování selhalo: ${error.message}`, 'error');
+    } finally {
+        productsFixButton.disabled = false;
     }
 }
 
@@ -543,6 +729,8 @@ function init() {
         });
         headerEl.appendChild(refreshButton);
     }
+
+    renderProductsTools();
 
     loadInventory();
 }

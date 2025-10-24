@@ -25,6 +25,11 @@ const categoriesService = require('./scripts/service_categories');
 const app = express();
 const PORT = process.env.PORT || '666';  // Fallback na 3000 při lokálním běhu
 
+const {
+    validateProductIds,
+    reassignProductIds
+} = require('./scripts/service_products_ids');
+
 function escapeHtml(str) {
     return String(str)
         .replace(/&/g, '&amp;')
@@ -188,6 +193,7 @@ app.put('/orders/:id/restore', (orders.restoreOrder));
 
 
 app.get('/shiftSummary', shifts.getShiftSummary);
+app.get('/shiftDetail', shifts.getShiftDetail);
 
 
 // Smazání zákazníka
@@ -297,11 +303,20 @@ app.get('/shifts', (req, res) => {
                 orderItems = orderItems ? [orderItems] : [];
             }
             
+            let rawEndTime = shift.endTime ?? shift['@endTime'] ?? '';
+            if (rawEndTime && typeof rawEndTime === 'object' && rawEndTime['#text'] !== undefined) {
+                rawEndTime = rawEndTime['#text'];
+            }
+            const endTimeString = rawEndTime === null || rawEndTime === undefined ? '' : String(rawEndTime);
+            const trimmedEndTime = endTimeString.trim();
+            const isActive = trimmedEndTime.length === 0;
+
             const orderCount = orderItems.length;
             return {
                 id: shift['@id'] || '---',
                 startTime: shift['@startTime'] || shift.startTime || '---',
-                endTime: shift.endTime || 'Probíhá',
+                endTime: isActive ? 'Probíhá' : trimmedEndTime,
+                isActive,
                 orderCount,
                 orderItems, // Detailní objednávky
                 fileName: file
@@ -392,6 +407,32 @@ app.get('/gdrive/backups', async (req, res) => {
             message: 'Nelze nacist GDrive zalohy.',
             error: error && error.message ? error.message : String(error),
             localBackups,
+        });
+    }
+});
+
+app.get('/products/ids/check', (req, res) => {
+    try {
+        const report = validateProductIds();
+        res.json(report);
+    } catch (error) {
+        console.error('❌ Kontrola ID produktů selhala:', error);
+        res.status(500).json({
+            message: 'Kontrola ID produktů selhala.',
+            error: error && error.message ? error.message : String(error)
+        });
+    }
+});
+
+app.post('/products/ids/reassign', (req, res) => {
+    try {
+        const report = reassignProductIds();
+        res.json(report);
+    } catch (error) {
+        console.error('❌ Obnova ID produktů selhala:', error);
+        res.status(500).json({
+            message: 'Obnova ID produktů selhala.',
+            error: error && error.message ? error.message : String(error)
         });
     }
 });

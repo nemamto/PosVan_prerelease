@@ -69,6 +69,36 @@ function isCustomerAccountSettlement(order) {
     return false;
 }
 
+function isShiftClosed(shiftData) {
+    if (!shiftData) {
+        return false;
+    }
+
+    const extractValue = (value) => {
+        if (value === undefined || value === null) {
+            return '';
+        }
+
+        if (typeof value === 'string' || typeof value === 'number') {
+            return String(value);
+        }
+
+        if (Array.isArray(value)) {
+            return value.map(extractValue).join(' ');
+        }
+
+        if (typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, '#text')) {
+            return String(value['#text'] ?? '');
+        }
+
+        return '';
+    };
+
+    const possibleValues = [shiftData.endTime, shiftData['@endTime']];
+
+    return possibleValues.some((value) => extractValue(value).trim().length > 0);
+}
+
 function savecustomerOrderAsXML(orderLog, selectedCustomer, orderID, totalAmount) {
     try {
         console.log("📦 Ukládám objednávku do zákaznického souboru:", orderLog, selectedCustomer, orderID, totalAmount);
@@ -163,6 +193,11 @@ function cancelOrder(req, res) {
         for (const order of orders) {
             if (String(order['@id']) !== String(orderId)) {
                 continue;
+            }
+
+            if (isShiftClosed(jsonData.shift)) {
+                console.warn(`⚠️ Pokus o storno objednávky ${orderId} ve uzavřené směně (${file}).`);
+                return res.status(400).json({ message: '❌ Objednávky z uzavřené směny nelze stornovat.' });
             }
 
             // Debug: Vypíšeme celou objednávku

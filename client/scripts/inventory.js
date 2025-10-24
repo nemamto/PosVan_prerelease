@@ -40,10 +40,12 @@ function setCategoryManagementVisible(visible, { scroll = false } = {}) {
     }
 
     if (categoryManagementToggleButton) {
-        categoryManagementToggleButton.textContent = categoryManagementVisible
-            ? 'Skrýt správu kategorií'
-            : 'Zobrazit správu kategorií';
         categoryManagementToggleButton.setAttribute('aria-expanded', categoryManagementVisible ? 'true' : 'false');
+        categoryManagementToggleButton.classList.toggle('is-active', categoryManagementVisible);
+        categoryManagementToggleButton.setAttribute(
+            'aria-label',
+            categoryManagementVisible ? 'Skrýt správu kategorií' : 'Správa kategorií'
+        );
     }
 
     if (categoryManagementVisible && scroll && categoryManagementContainerEl) {
@@ -366,7 +368,7 @@ function renderInventory(products, { forceExpand = false } = {}) {
                             <button class="btn btn-secondary btn-sm edit-btn" type="button">Upravit</button>
                             ${isDeactivated
                                 ? `<button class="btn btn-success btn-sm activateProduct-btn" type="button" data-id="${product.id}">Aktivovat</button>`
-                                : `<button class="btn btn-warning btn-sm deactivateProduct-btn" type="button" data-id="${product.id}">Deaktivovat</button>`
+                                : ''
                             }
                         </div>
                     </td>
@@ -475,6 +477,7 @@ async function updateProductColor(productId, color) {
 document.addEventListener('DOMContentLoaded', () => {
     const toggleButton = document.getElementById('toggleAddItemForm');
     const addItemForm = document.getElementById('addItemForm');
+    const addItemFormBody = document.getElementById('addItemFormBody');
 
     if (!toggleButton || !addItemForm) {
         return;
@@ -483,12 +486,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const setVisibility = (visible) => {
         if (visible) {
             addItemForm.classList.add('is-visible');
-            toggleButton.textContent = 'Skrýt formulář';
+            toggleButton.classList.add('is-active');
             toggleButton.setAttribute('aria-expanded', 'true');
+            toggleButton.setAttribute('aria-label', 'Skrýt formulář pro přidání produktu');
+            if (addItemFormBody) {
+                addItemFormBody.setAttribute('aria-hidden', 'false');
+            }
         } else {
             addItemForm.classList.remove('is-visible');
-            toggleButton.textContent = 'Přidat novou položku';
+            toggleButton.classList.remove('is-active');
             toggleButton.setAttribute('aria-expanded', 'false');
+            toggleButton.setAttribute('aria-label', 'Přidat produkt');
+            if (addItemFormBody) {
+                addItemFormBody.setAttribute('aria-hidden', 'true');
+            }
         }
     };
 
@@ -1106,6 +1117,7 @@ async function enableEditing(row) {
     const numericPrice = Number(priceText.replace(/[^0-9,.-]/g, '').replace(',', '.'));
     const currentPrice = Number.isFinite(numericPrice) ? numericPrice : 0;
     const currentColor = row.dataset.color || '#ffffff';
+    const isActive = row.dataset.active !== 'false';
 
     if (loadedCategories.length === 0) await fetchCategories();
 
@@ -1122,13 +1134,17 @@ async function enableEditing(row) {
     priceCell.innerHTML = `<input type="number" min="0" step="0.01" value="${currentPrice}">`;
 
     // Color picker a tlačítka do jedné buňky
+    const stateActionHtml = isActive
+        ? '<button class="btn btn-warning btn-sm deactivate-btn" type="button">Deaktivovat</button>'
+        : '<button class="btn btn-success btn-sm activate-inline-btn" type="button">Aktivovat</button>';
+
     actionCell.innerHTML = `
         <div class="inventory-inline-actions">
             <input type="color" class="inventory-color-picker" value="${currentColor}">
             <div class="inventory-actions">
                 <button class="btn btn-success btn-sm save-btn" type="button">Uložit</button>
                 <button class="btn btn-secondary btn-sm cancel-btn" type="button">Zrušit</button>
-                <button class="btn btn-warning btn-sm deactivate-btn" type="button">Deaktivovat</button>
+                ${stateActionHtml}
                 <button class="btn btn-danger btn-sm delete-btn" type="button">Odstranit</button>
             </div>
         </div>
@@ -1136,9 +1152,18 @@ async function enableEditing(row) {
 
     actionCell.querySelector('.save-btn').addEventListener('click', () => handleSaveInline(id, row));
     actionCell.querySelector('.cancel-btn').addEventListener('click', () => loadProducts());
-    actionCell.querySelector('.deactivate-btn').addEventListener('click', async () => {
-        await deactivateProduct(id);
-    });
+    const deactivateButton = actionCell.querySelector('.deactivate-btn');
+    if (deactivateButton) {
+        deactivateButton.addEventListener('click', async () => {
+            await deactivateProduct(id);
+        });
+    }
+    const activateButton = actionCell.querySelector('.activate-inline-btn');
+    if (activateButton) {
+        activateButton.addEventListener('click', async () => {
+            await activateProduct(id);
+        });
+    }
     actionCell.querySelector('.delete-btn').addEventListener('click', async () => {
         await deleteProduct(id);
     });

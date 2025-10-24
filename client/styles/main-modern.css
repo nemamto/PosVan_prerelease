@@ -556,6 +556,71 @@ p {
     font-weight: 600;
     color: var(--text-primary);
     margin: 0;
+
+.gdrive-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm, 8px);
+    margin-left: auto;
+}
+
+.gdrive-tools .btn {
+    white-space: nowrap;
+}
+
+.gdrive-products-results {
+    margin-top: var(--space-md, 16px);
+    padding: var(--space-md, 16px);
+    background-color: var(--bg-secondary, #f5f7fb);
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--border-light, #e1e5ef);
+    transition: border-color 0.2s ease;
+}
+
+.gdrive-products-results.has-duplicates {
+    border-color: var(--brand-warning, #f0a202);
+}
+
+.gdrive-products-results.is-fixed {
+    border-color: var(--brand-success, #2e8540);
+}
+
+.gdrive-products-summary {
+    margin: 0 0 var(--space-sm, 8px) 0;
+    font-weight: 600;
+}
+
+.gdrive-products-ok {
+    margin: 0;
+    color: var(--brand-success, #2e8540);
+    font-weight: 500;
+}
+
+.gdrive-products-details {
+    margin-top: var(--space-sm, 8px);
+}
+
+.gdrive-products-dupes {
+    margin: var(--space-sm, 8px) 0 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+@media (max-width: 768px) {
+    .gdrive-tools {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+    }
+
+    .gdrive-tools .btn {
+        flex: 1 1 50%;
+    }
+
+    .gdrive-products-results {
+        margin-top: var(--space-sm, 8px);
+    }
+}
 }
 
 .card-body {
