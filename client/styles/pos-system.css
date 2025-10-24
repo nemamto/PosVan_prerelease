@@ -112,7 +112,7 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
+    gap: clamp(var(--space-xs), 0.8vw, var(--space-sm));
     padding-right: var(--space-xs);
 }
 
@@ -261,14 +261,14 @@
 
 .order-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    padding: var(--space-md);
+    padding: clamp(var(--space-xs), 0.9vw, var(--space-sm));
     background-color: var(--bg-tertiary);
     border: 1px solid var(--border-light);
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
-    gap: var(--space-md);
+    gap: clamp(var(--space-xs), 0.9vw, var(--space-sm));
 }
 
 .order-item:hover {
@@ -279,7 +279,7 @@
 .order-item-info {
     display: flex;
     flex-direction: column;
-    gap: var(--space-xs);
+    gap: clamp(2px, 0.4vw, var(--space-xs));
     flex: 1 1 auto;
     min-width: 0;
     max-width: var(--order-item-info-max-width, 70%);
@@ -287,19 +287,19 @@
 
 .order-item-name {
     font-weight: 600;
-    font-size: 1rem;
+    font-size: clamp(0.9rem, 1.2vw, 1rem);
     color: var(--text-primary);
     word-wrap: break-word;
     overflow-wrap: break-word;
-    line-height: 1.3;
+    line-height: 1.25;
 }
 
 .order-item-details {
-    font-size: 0.875rem;
+    font-size: clamp(0.75rem, 1vw, 0.85rem);
     color: var(--text-secondary);
     word-wrap: break-word;
     overflow-wrap: break-word;
-    line-height: 1.3;
+    line-height: 1.25;
 }
 
 .order-item-price {
@@ -308,33 +308,36 @@
 }
 
 .order-item-controls {
+    display: flex;
+    align-items: center;
+    gap: clamp(var(--space-xxs, 4px), 0.6vw, var(--space-xs));
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: clamp(0.9rem, 1.1vw, 1rem);
     color: var(--text-primary);
     flex-shrink: 0;
 }
 
 .quantity-control {
-    display: flex;
-    flex-direction: column;
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(var(--space-xxs, 4px), 0.5vw, var(--space-xs));
     font-size: 0.95rem;
     color: var(--text-secondary);
 }
 
 .quantity-btn {
-    width: 32px;
-    height: 28px;
+    width: 30px;
+    height: 26px;
     border-radius: var(--radius-sm);
-    font-size: 1.05rem;
-    color: var(--text-primary);
     color: var(--text-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1;
+    padding: 0;
 }
 
 .quantity-btn:active {
@@ -348,8 +351,8 @@
 }
 
 .remove-item-btn {
-    width: 32px;
-    height: 32px;
+    width: 30px;
+    height: 30px;
     padding: 0;
     background-color: transparent;
     color: var(--brand-danger);

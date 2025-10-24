@@ -21,6 +21,7 @@ const {
     OAuthClientConfigMissingError,
 } = require('./scripts/googleDriveClient');
 const common = require('./scripts/service_common');
+const categoriesService = require('./scripts/service_categories');
 const app = express();
 const PORT = process.env.PORT || '666';  // Fallback na 3000 při lokálním běhu
 
@@ -544,15 +545,36 @@ const shiftsFile = path.join(__dirname, 'data', 'shifts.json');
 app.get('/currentShift', common.currentShift);
 
 
-// Endpoint pro načítání kategorií
+// Správa kategorií
 app.get('/categories', (req, res) => {
-    const categoriesPath = path.join(__dirname, 'data', 'categories.json');
     try {
-        const data = fs.readFileSync(categoriesPath, 'utf8');
-        const categories = JSON.parse(data);
+        const categories = categoriesService.readCategories();
         res.json(categories);
     } catch (error) {
-        res.status(500).json({ message: "Chyba při načítání kategorií." });
+        res.status(500).json({ message: error.message || 'Chyba při načítání kategorií.' });
+    }
+});
+
+app.post('/categories', (req, res) => {
+    try {
+        const category = categoriesService.addCategory(req.body || {});
+        res.status(201).json({ message: 'Kategorie byla přidána.', category });
+    } catch (error) {
+        const message = error.message || 'Chyba při přidávání kategorie.';
+        const status = message.includes('existuje') ? 409 : 400;
+        res.status(status).json({ message });
+    }
+});
+
+app.put('/categories/:originalName', (req, res) => {
+    const { originalName } = req.params;
+    try {
+        const category = categoriesService.updateCategory(originalName, req.body || {});
+        res.json({ message: 'Kategorie byla aktualizována.', category });
+    } catch (error) {
+        const message = error.message || 'Chyba při aktualizaci kategorie.';
+        const status = message.includes('nebyla nalezena') ? 404 : 400;
+        res.status(status).json({ message });
     }
 });
 

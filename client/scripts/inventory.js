@@ -1,6 +1,175 @@
 import { serverEndpoint } from './config.js';
 import { showModal, showModalConfirm } from './common.js';
 let allProducts = []; // Globální pole všech produktů
+let cachedCategories = [];
+
+const CATEGORY_COLLAPSE_STATE_KEY = 'inventoryCollapsedCategories';
+const DEFAULT_CATEGORY_COLOR = '#4dabf7';
+
+function sanitiseHexColor(color) {
+    if (typeof color !== 'string') {
+        return null;
+    }
+
+    const trimmed = color.trim();
+    return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : null;
+}
+
+function escapeSelector(value) {
+    if (typeof value !== 'string') {
+        return '';
+    }
+
+    if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+        return CSS.escape(value);
+    }
+
+    return value.replace(/([\0-\x1F\x7F"#%&'()*+,./:;<=>?@\[\]`{|}~])/g, '\\$1');
+}
+
+let categoryManagementContainerEl = null;
+let categoryManagementToggleButton = null;
+let categoryManagementVisible = false;
+
+function setCategoryManagementVisible(visible, { scroll = false } = {}) {
+    categoryManagementVisible = Boolean(visible);
+
+    if (categoryManagementContainerEl) {
+        categoryManagementContainerEl.classList.toggle('is-hidden', !categoryManagementVisible);
+        categoryManagementContainerEl.setAttribute('aria-hidden', categoryManagementVisible ? 'false' : 'true');
+    }
+
+    if (categoryManagementToggleButton) {
+        categoryManagementToggleButton.textContent = categoryManagementVisible
+            ? 'Skrýt správu kategorií'
+            : 'Zobrazit správu kategorií';
+        categoryManagementToggleButton.setAttribute('aria-expanded', categoryManagementVisible ? 'true' : 'false');
+    }
+
+    if (categoryManagementVisible && scroll && categoryManagementContainerEl) {
+        categoryManagementContainerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+function focusCategoryManagementRow(categoryName) {
+    if (!categoryName) {
+        return;
+    }
+
+    setCategoryManagementVisible(true, { scroll: true });
+
+    window.requestAnimationFrame(() => {
+        const selectorValue = escapeSelector(categoryName);
+        if (!selectorValue) {
+            return;
+        }
+
+        const row = document.querySelector(`.category-management-row[data-original-name="${selectorValue}"]`);
+        if (!row) {
+            return;
+        }
+
+        document.querySelectorAll('.category-management-row.is-highlighted').forEach((element) => {
+            if (element !== row) {
+                element.classList.remove('is-highlighted');
+            }
+        });
+
+        row.classList.add('is-highlighted');
+
+        const nameInput = row.querySelector('.category-name-input');
+        if (nameInput) {
+            nameInput.focus({ preventScroll: true });
+            if (typeof nameInput.select === 'function') {
+                nameInput.select();
+            }
+        }
+
+        window.setTimeout(() => {
+            row.classList.remove('is-highlighted');
+        }, 2500);
+    });
+}
+
+function readCollapseState() {
+    try {
+        if (typeof localStorage === 'undefined') {
+            return {};
+        }
+        const stored = localStorage.getItem(CATEGORY_COLLAPSE_STATE_KEY);
+        if (!stored) {
+            return {};
+        }
+        const parsed = JSON.parse(stored);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (error) {
+        console.warn('⚠️ Nelze načíst stav sbalených kategorií.', error);
+        return {};
+    }
+}
+
+let collapsedCategoryState = readCollapseState();
+
+function persistCollapseState() {
+    try {
+        if (typeof localStorage === 'undefined') {
+            return;
+        }
+        localStorage.setItem(CATEGORY_COLLAPSE_STATE_KEY, JSON.stringify(collapsedCategoryState));
+    } catch (error) {
+        console.warn('⚠️ Nelze uložit stav sbalených kategorií.', error);
+    }
+}
+
+function setCategoryCollapsedState(name, isCollapsed) {
+    collapsedCategoryState = {
+        ...collapsedCategoryState,
+        [name]: Boolean(isCollapsed)
+    };
+    persistCollapseState();
+}
+
+function isCategoryCollapsed(name) {
+    const value = collapsedCategoryState[name];
+    return value === undefined ? true : Boolean(value);
+}
+
+function pruneCollapseState(validNames) {
+    const validSet = new Set(validNames);
+    let changed = false;
+    Object.keys(collapsedCategoryState).forEach((key) => {
+        if (!validSet.has(key)) {
+            delete collapsedCategoryState[key];
+            changed = true;
+        }
+    });
+    if (changed) {
+        persistCollapseState();
+    }
+}
+
+function getCategoryOrderValue(name) {
+    const found = cachedCategories.find((category) => category.name === name);
+    const numericOrder = Number(found && found.order);
+    return Number.isFinite(numericOrder) ? numericOrder : Number.MAX_SAFE_INTEGER;
+}
+
+function createCategoryPanelId(name) {
+    const slug = name
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    return `inventory-category-${slug || 'unknown'}`;
+}
+
+function normaliseCategoryColor(color) {
+    if (typeof color !== 'string') {
+        return DEFAULT_CATEGORY_COLOR;
+    }
+    const trimmed = color.trim();
+    return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed : DEFAULT_CATEGORY_COLOR;
+}
 
 async function loadProducts() {
     try {
@@ -45,7 +214,7 @@ function formatCurrency(value) {
     })} Kč`;
 }
 
-function renderInventory(products) {
+function renderInventory(products, { forceExpand = false } = {}) {
     const inventoryContainer = document.getElementById('inventory-list');
     if (!inventoryContainer) {
         console.error('❌ Element s ID "inventory-list" nebyl nalezen.');
@@ -69,20 +238,65 @@ function renderInventory(products) {
         return acc;
     }, {});
 
-    Object.keys(categories)
-        .sort((a, b) => a.localeCompare(b, 'cs', { sensitivity: 'base' }))
-        .forEach((category) => {
+    const sortedCategoryNames = Object.keys(categories)
+        .sort((a, b) => {
+            const orderA = getCategoryOrderValue(a);
+            const orderB = getCategoryOrderValue(b);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return a.localeCompare(b, 'cs', { sensitivity: 'base' });
+        });
+
+    sortedCategoryNames.forEach((category) => {
             const items = categories[category];
             const categoryCard = document.createElement('div');
             categoryCard.className = 'inventory-category';
 
+            const categoryDefinition = cachedCategories.find((item) => item.name === category);
+            const categoryColor = sanitiseHexColor(categoryDefinition?.color);
+
+            if (categoryColor) {
+                categoryCard.classList.add('has-color');
+                categoryCard.style.setProperty('--category-color', categoryColor);
+            }
+
             const header = document.createElement('div');
             header.className = 'inventory-category-header';
-            header.innerHTML = `
-                <h3 class="inventory-category-title">${category}</h3>
-                <span class="inventory-category-count">${items.length} položek</span>
-            `;
 
+            const categoryMeta = document.createElement('div');
+            categoryMeta.className = 'inventory-category-meta';
+
+            const titleEl = document.createElement('h3');
+            titleEl.className = 'inventory-category-title';
+            titleEl.textContent = category;
+
+            const countEl = document.createElement('span');
+            countEl.className = 'inventory-category-count';
+            countEl.textContent = `${items.length} položek`;
+
+            categoryMeta.append(titleEl, countEl);
+
+            const headerControls = document.createElement('div');
+            headerControls.className = 'inventory-category-controls';
+
+            const collapseButton = document.createElement('button');
+            collapseButton.type = 'button';
+            collapseButton.className = 'inventory-category-collapse-btn';
+            collapseButton.setAttribute('aria-label', `Sbalit kategorii ${category}`);
+
+            const collapseIcon = document.createElement('span');
+            collapseIcon.className = 'inventory-category-collapse-icon';
+            collapseButton.append(collapseIcon);
+
+            const editButton = document.createElement('button');
+            editButton.type = 'button';
+            editButton.className = 'btn btn-secondary btn-sm inventory-category-edit-btn';
+            editButton.textContent = 'Upravit';
+
+            headerControls.append(collapseButton, editButton);
+
+            header.append(categoryMeta, headerControls);
             const tableWrapper = document.createElement('div');
             tableWrapper.className = 'inventory-table-wrapper';
 
@@ -106,12 +320,15 @@ function renderInventory(products) {
             const tbody = table.querySelector('tbody');
 
             items.forEach((product) => {
-                if (!product || !product.id || !product.name) return;
+                if (!product || !product.id || !product.name) {
+                    return;
+                }
 
                 const row = document.createElement('tr');
                 row.className = 'inventory-row';
                 row.dataset.id = product.id;
-                row.dataset.color = product.color || '';
+                const productColor = sanitiseHexColor(product.color) || categoryColor;
+                row.dataset.color = productColor || '';
                 row.dataset.name = product.name || '';
                 row.dataset.description = product.description || '';
                 row.dataset.category = product.category || '';
@@ -119,9 +336,12 @@ function renderInventory(products) {
                 row.dataset.price = product.price ?? '';
                 row.dataset.active = product.active === 'false' ? 'false' : 'true';
 
-                if (product.color) {
-                    row.style.setProperty('--product-color', product.color);
-                    row.setAttribute('data-color', product.color);
+                if (productColor) {
+                    row.style.setProperty('--product-color', productColor);
+                    row.classList.add('has-color');
+                } else {
+                    row.style.removeProperty('--product-color');
+                    row.classList.remove('has-color');
                 }
 
                 const isDeactivated = product.active === 'false';
@@ -157,6 +377,48 @@ function renderInventory(products) {
 
             tableWrapper.appendChild(table);
             categoryCard.append(header, tableWrapper);
+
+            const panelId = createCategoryPanelId(category);
+            tableWrapper.id = panelId;
+            collapseButton.setAttribute('aria-controls', panelId);
+
+            const applyCollapsedState = (collapsed, { persist = false } = {}) => {
+                categoryCard.classList.toggle('is-collapsed', collapsed);
+                tableWrapper.hidden = collapsed;
+                collapseButton.setAttribute('aria-expanded', String(!collapsed));
+                collapseButton.setAttribute('aria-label', collapsed ? `Rozbalit kategorii ${category}` : `Sbalit kategorii ${category}`);
+                collapseIcon.classList.toggle('is-collapsed', collapsed);
+                if (persist) {
+                    setCategoryCollapsedState(category, collapsed);
+                }
+            };
+
+            const initialCollapsed = forceExpand ? false : isCategoryCollapsed(category);
+            applyCollapsedState(initialCollapsed);
+
+            const toggleCollapsedState = () => {
+                const nextCollapsed = !categoryCard.classList.contains('is-collapsed');
+                applyCollapsedState(nextCollapsed, { persist: true });
+            };
+
+            collapseButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                toggleCollapsedState();
+            });
+
+            editButton.addEventListener('click', (event) => {
+                event.stopPropagation();
+                focusCategoryManagementRow(category);
+            });
+
+            header.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target instanceof Element && (target.closest('.inventory-category-edit-btn') || target.closest('.inventory-category-collapse-btn'))) {
+                    return;
+                }
+                toggleCollapsedState();
+            });
+
             inventoryContainer.appendChild(categoryCard);
         });
 
@@ -175,9 +437,12 @@ function renderInventory(products) {
     });
 
     inventoryContainer.querySelectorAll('.edit-btn').forEach(button => {
-        button.addEventListener('click', function () {
-            const row = this.closest('tr');
-            enableEditing(row);
+        button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const row = event.currentTarget.closest('tr');
+            if (row) {
+                enableEditing(row);
+            }
         });
     });
 }
@@ -238,6 +503,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+    categoryManagementToggleButton = document.getElementById('toggleCategoryManagement');
+    categoryManagementContainerEl = document.getElementById('categoryManagementContainer');
+
+    if (categoryManagementContainerEl) {
+        setCategoryManagementVisible(false);
+    }
+
+    if (categoryManagementToggleButton && categoryManagementContainerEl) {
+        categoryManagementToggleButton.addEventListener('click', () => {
+            const nextVisible = !categoryManagementVisible;
+            setCategoryManagementVisible(nextVisible, { scroll: nextVisible });
+        });
+    }
+});
+
 
 async function activateProduct(productId) {
     try {
@@ -292,25 +573,261 @@ async function loadCategories() {
         }
 
         const categories = await response.json();
-        const categorySelect = document.getElementById('productCategory');
+        cachedCategories = Array.isArray(categories) ? categories : [];
+        loadedCategories = cachedCategories.slice();
+        pruneCollapseState(cachedCategories.map((category) => category.name));
 
-        if (!categorySelect) {
-            console.error('❌ Element s ID "productCategory" nebyl nalezen.');
-            return;
+        const categorySelect = document.getElementById('productCategory');
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="">Vyberte kategorii</option>';
+            cachedCategories
+                .slice()
+                .sort((a, b) => getCategoryOrderValue(a.name) - getCategoryOrderValue(b.name))
+                .forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.name;
+                    option.textContent = category.name;
+                    categorySelect.appendChild(option);
+                });
+        } else {
+            console.warn('⚠️ Element s ID "productCategory" nebyl nalezen.');
         }
 
-        // Vyčistíme roletku a přidáme kategorie
-        categorySelect.innerHTML = '<option value="">Vyberte kategorii</option>';
-        categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.name;
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
-        });
+        renderCategoryManagement(cachedCategories);
 
-        console.log('✅ Kategorie byly úspěšně načteny a přidány do roletky.');
+        if (allProducts.length > 0) {
+            renderInventory(allProducts);
+        }
+
+        console.log('✅ Kategorie byly úspěšně načteny.');
     } catch (error) {
         console.error('❌ Chyba při načítání kategorií:', error);
+    }
+}
+
+function renderCategoryManagement(categories) {
+    const container = document.getElementById('category-management');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '';
+
+    if (!Array.isArray(categories) || categories.length === 0) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'category-management-empty';
+        emptyState.textContent = 'Žádné kategorie nejsou k dispozici.';
+        container.appendChild(emptyState);
+        return;
+    }
+
+    const headerRow = document.createElement('div');
+    headerRow.className = 'category-management-head';
+    headerRow.innerHTML = '<span>Název</span><span>Barva</span><span>Pořadí</span><span>Akce</span>';
+    container.appendChild(headerRow);
+
+    const sortedCategories = categories
+        .slice()
+        .sort((a, b) => {
+            const orderA = getCategoryOrderValue(a.name);
+            const orderB = getCategoryOrderValue(b.name);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return a.name.localeCompare(b.name, 'cs', { sensitivity: 'base' });
+        });
+
+    sortedCategories.forEach((category) => {
+        const row = document.createElement('div');
+        row.className = 'category-management-row';
+        row.dataset.originalName = category.name;
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'form-input category-name-input';
+        nameInput.value = category.name || '';
+        nameInput.setAttribute('aria-label', `Název kategorie ${category.name}`);
+
+        const colorInput = document.createElement('input');
+        colorInput.type = 'color';
+        colorInput.className = 'form-input category-color-input';
+        colorInput.value = normaliseCategoryColor(category.color);
+        colorInput.setAttribute('aria-label', `Barva kategorie ${category.name}`);
+
+        const orderInput = document.createElement('input');
+        orderInput.type = 'number';
+        orderInput.className = 'form-input category-order-input';
+        orderInput.min = '0';
+        if (Number.isFinite(Number(category.order))) {
+            orderInput.value = Number(category.order);
+        } else {
+            orderInput.value = '';
+        }
+        orderInput.setAttribute('aria-label', `Pořadí kategorie ${category.name}`);
+
+        const actions = document.createElement('div');
+        actions.className = 'category-row-actions';
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.className = 'btn btn-primary btn-sm save-category-btn';
+        saveButton.textContent = 'Uložit';
+
+        actions.appendChild(saveButton);
+
+        row.append(nameInput, colorInput, orderInput, actions);
+        container.appendChild(row);
+
+        saveButton.addEventListener('click', async () => {
+            const originalName = row.dataset.originalName || '';
+            const nextName = nameInput.value.trim();
+            const nextColor = normaliseCategoryColor(colorInput.value);
+            const orderRaw = orderInput.value.trim();
+            const payload = {
+                name: nextName,
+                color: nextColor
+            };
+
+            if (orderRaw !== '') {
+                const numericOrder = Number(orderRaw);
+                if (!Number.isFinite(numericOrder)) {
+                    await showModal('❌ Pořadí musí být číslo.', {
+                        isError: true,
+                        title: 'Neplatné pořadí',
+                        confirmVariant: 'danger'
+                    });
+                    return;
+                }
+                payload.order = numericOrder;
+            }
+
+            if (!nextName) {
+                await showModal('❌ Název kategorie je povinný.', {
+                    isError: true,
+                    title: 'Neplatná data',
+                    confirmVariant: 'danger'
+                });
+                return;
+            }
+
+            saveButton.disabled = true;
+            const previousLabel = saveButton.textContent;
+            saveButton.textContent = 'Ukládám...';
+
+            try {
+                const response = await fetch(`${serverEndpoint}/categories/${encodeURIComponent(originalName)}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json().catch(() => null);
+
+                if (!response.ok) {
+                    throw new Error(data?.message || 'Chyba při aktualizaci kategorie.');
+                }
+
+                await showModal('✅ Kategorie byla upravena.', {
+                    title: 'Hotovo',
+                    confirmVariant: 'success'
+                });
+
+                await loadCategories();
+            } catch (error) {
+                console.error('❌ Chyba při aktualizaci kategorie:', error);
+                await showModal(`❌ ${error.message}`, {
+                    isError: true,
+                    title: 'Aktualizace kategorie selhala',
+                    confirmVariant: 'danger'
+                });
+            } finally {
+                saveButton.disabled = false;
+                saveButton.textContent = previousLabel;
+            }
+        });
+    });
+}
+
+async function handleAddCategory(event) {
+    event.preventDefault();
+
+    const nameInput = document.getElementById('categoryName');
+    const colorInput = document.getElementById('categoryColor');
+    const orderInput = document.getElementById('categoryOrder');
+
+    if (!nameInput || !colorInput || !orderInput) {
+        console.error('❌ Formulář pro přidání kategorie není kompletní.');
+        return;
+    }
+
+    const name = nameInput.value.trim();
+    const color = normaliseCategoryColor(colorInput.value);
+    const orderRaw = orderInput.value.trim();
+
+    if (!name) {
+        await showModal('❌ Název kategorie je povinný.', {
+            isError: true,
+            title: 'Neplatná data',
+            confirmVariant: 'danger'
+        });
+        return;
+    }
+
+    const payload = { name, color };
+    if (orderRaw !== '') {
+        const numericOrder = Number(orderRaw);
+        if (!Number.isFinite(numericOrder)) {
+            await showModal('❌ Pořadí musí být číslo.', {
+                isError: true,
+                title: 'Neplatná data',
+                confirmVariant: 'danger'
+            });
+            return;
+        }
+        payload.order = numericOrder;
+    }
+
+    const submitButton = document.getElementById('addCategoryButton');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Přidávám...';
+    }
+
+    try {
+        const response = await fetch(`${serverEndpoint}/categories`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (!response.ok) {
+            throw new Error(data?.message || 'Chyba při přidávání kategorie.');
+        }
+
+        await showModal('✅ Kategorie byla přidána.', {
+            title: 'Hotovo',
+            confirmVariant: 'success'
+        });
+
+        nameInput.value = '';
+        colorInput.value = DEFAULT_CATEGORY_COLOR;
+        orderInput.value = '';
+
+        await loadCategories();
+    } catch (error) {
+        console.error('❌ Chyba při přidávání kategorie:', error);
+        await showModal(`❌ ${error.message}`, {
+            isError: true,
+            title: 'Přidání kategorie selhalo',
+            confirmVariant: 'danger'
+        });
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Přidat kategorii';
+        }
     }
 }
 
@@ -547,10 +1064,17 @@ async function deleteProduct(productId, { skipConfirm = false } = {}) {
 let loadedCategories = [];
 
 async function fetchCategories() {
+    if (cachedCategories.length > 0) {
+        loadedCategories = cachedCategories.slice();
+        return;
+    }
+
     try {
         const response = await fetch(`${serverEndpoint}/categories`);
         if (!response.ok) throw new Error('Chyba při načítání kategorií');
-        loadedCategories = await response.json();
+        const categories = await response.json();
+        cachedCategories = Array.isArray(categories) ? categories : [];
+        loadedCategories = cachedCategories.slice();
     } catch (e) {
         console.error(e);
         loadedCategories = [];
@@ -571,6 +1095,8 @@ async function enableEditing(row) {
         console.error("❌ Chyba: ID produktu nebylo nalezeno.");
         return;
     }
+
+    row.classList.add('is-editing');
 
     const currentName = row.dataset.name || nameCell.querySelector('.inventory-product-name')?.textContent.trim() || '';
     const currentDescription = row.dataset.description || descriptionCell.textContent.trim();
@@ -741,7 +1267,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 (typeof product.description === "string" && product.description.toLowerCase().includes(query)) ||
                 (product.category && product.category.toLowerCase().includes(query))
             );
-            renderInventory(filtered);
+            renderInventory(filtered, { forceExpand: query.length > 0 });
         });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const categoryForm = document.getElementById('categoryManagementForm');
+    if (categoryForm) {
+        categoryForm.addEventListener('submit', handleAddCategory);
     }
 });

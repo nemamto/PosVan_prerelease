@@ -23,10 +23,38 @@
         <section class="card inventory-list-card">
             <div class="card-header inventory-list-header">
                 <h2 class="card-title">Skladové položky</h2>
-                <button id="toggleAddItemForm" class="btn btn-secondary toggle-btn" type="button">Přidat novou položku</button>
+                <button id="toggleAddItemForm" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="addItemForm">Přidat novou položku</button>
             </div>
             <div class="card-body">
                 <div id="inventory-list" class="inventory-list"></div>
+            </div>
+        </section>
+
+        <section class="card inventory-categories-card">
+            <div class="card-header inventory-categories-header">
+                <h2 class="card-title">Správa kategorií</h2>
+                <button id="toggleCategoryManagement" class="btn btn-secondary toggle-btn" type="button" aria-expanded="false" aria-controls="categoryManagementContainer">Zobrazit správu kategorií</button>
+            </div>
+            <div class="card-body inventory-categories-body is-hidden" id="categoryManagementContainer" aria-hidden="true">
+                <form id="categoryManagementForm" class="category-form" novalidate>
+                    <div class="form-group">
+                        <label class="form-label" for="categoryName">Název kategorie</label>
+                        <input type="text" class="form-input" id="categoryName" required placeholder="Např. Speciály">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="categoryColor">Barva</label>
+                        <input type="color" class="form-input category-color-input" id="categoryColor" value="#4dabf7">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="categoryOrder">Pořadí</label>
+                        <input type="number" class="form-input" id="categoryOrder" min="0" placeholder="Automaticky">
+                    </div>
+                    <div class="form-actions category-form-actions">
+                        <button class="btn btn-primary" type="submit" id="addCategoryButton">Přidat kategorii</button>
+                    </div>
+                </form>
+
+                <div id="category-management" class="category-management-list" aria-live="polite"></div>
             </div>
         </section>
 
