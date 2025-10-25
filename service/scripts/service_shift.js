@@ -53,6 +53,8 @@ function startShift(req, res) {
             message: `✅ Směna ID ${newShiftID} byla zahájena.`,
             shiftID: newShiftID,
             startTime: formattedDateTime,
+            bartender,
+            initialCash: cashAmount,
             fileName: shiftFileName,
         });
     } catch (error) {

@@ -606,6 +606,34 @@ p {
     list-style-type: disc;
 }
 
+.restore-confirm-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.restore-confirm-modal p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.restore-confirm-warning {
+    color: var(--brand-danger, #b3261e);
+    font-weight: 600;
+}
+
+.restore-confirm-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.restore-confirm-checkbox input[type="checkbox"] {
+    margin-top: 0.2rem;
+}
+
 @media (max-width: 768px) {
     .gdrive-tools {
         width: 100%;

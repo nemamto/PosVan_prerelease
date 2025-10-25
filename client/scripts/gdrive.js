@@ -1,4 +1,5 @@
 import { serverEndpoint } from './config.js';
+import { showModalConfirm } from './common.js';
 
 const baseLinkEl = document.getElementById('gdrive-base-link');
 const statusEl = document.getElementById('gdrive-status');
@@ -62,12 +63,48 @@ function formatDateTime(value) {
 }
 
 let restoreInProgress = false;
+let restoreConfirmCounter = 0;
 
-function confirmRestoreAction(archiveName, origin = 'drive') {
+async function confirmRestoreAction(archiveName, origin = 'drive') {
     const label = origin === 'local'
-        ? `Obnovit data z lokalni zalohy "${archiveName}"?`
-        : `Obnovit data ze zalohy "${archiveName}"?`;
-    return window.confirm(`${label} Aktualni obsah slozky data bude nahrazen. Pred obnovou se vytvori bezpecnostni kopie.`);
+        ? `Chcete obnovit data z lokální zálohy "${archiveName}"?`
+        : `Chcete obnovit data ze zálohy "${archiveName}"?`;
+
+    restoreConfirmCounter += 1;
+    const checkboxId = `restore-create-backup-${restoreConfirmCounter}`;
+
+    const message = `
+        <div class="restore-confirm-modal">
+            <p>${label}</p>
+            <p class="restore-confirm-warning">Aktuální obsah složky <code>data</code> bude nahrazen zpětovanými soubory.</p>
+            <label class="restore-confirm-checkbox">
+                <input type="checkbox" id="${checkboxId}" checked>
+                <span>Vytvořit před obnovou bezpečnostní zálohu aktuálního stavu</span>
+            </label>
+        </div>
+    `;
+
+    const confirmed = await showModalConfirm(message, {
+        title: 'Obnova dat',
+        confirmText: 'Pokračovat',
+        cancelText: 'Zrušit',
+        allowHtml: true,
+        variant: 'danger',
+        size: 'lg',
+        focus: 'cancel'
+    });
+
+    if (!confirmed) {
+        return { confirmed: false, createSafetyBackup: true };
+    }
+
+    const checkbox = document.getElementById(checkboxId);
+    const createSafetyBackup = checkbox ? checkbox.checked : true;
+
+    return {
+        confirmed: true,
+        createSafetyBackup
+    };
 }
 
 function renderInventory(data) {
@@ -355,8 +392,9 @@ function renderRemoteDevices(devices) {
                     restoreButton.type = 'button';
                     restoreButton.className = 'btn btn-secondary btn-sm';
                     restoreButton.textContent = 'Obnovit data';
-                    restoreButton.addEventListener('click', () => {
-                        if (!confirmRestoreAction(item.name, 'drive')) {
+                    restoreButton.addEventListener('click', async () => {
+                        const confirmation = await confirmRestoreAction(item.name, 'drive');
+                        if (!confirmation.confirmed) {
                             return;
                         }
                         restoreBackup({
@@ -365,6 +403,7 @@ function renderRemoteDevices(devices) {
                             fileName: item.name,
                             deviceLabel: device.name,
                             dateGroup: group.name,
+                            createSafetyBackup: confirmation.createSafetyBackup,
                         }, restoreButton);
                     });
                     path.appendChild(restoreButton);
@@ -430,13 +469,15 @@ function renderLocalBackups(backups) {
         restoreButton.type = 'button';
         restoreButton.className = 'btn btn-primary btn-sm';
         restoreButton.textContent = 'Obnovit tuto kopii';
-        restoreButton.addEventListener('click', () => {
-            if (!confirmRestoreAction(item.name, 'local')) {
+        restoreButton.addEventListener('click', async () => {
+            const confirmation = await confirmRestoreAction(item.name, 'local');
+            if (!confirmation.confirmed) {
                 return;
             }
             restoreBackup({
                 sourceType: 'local',
                 fileName: item.name,
+                createSafetyBackup: confirmation.createSafetyBackup,
             }, restoreButton);
         });
         path.appendChild(restoreButton);
@@ -651,10 +692,15 @@ async function restoreBackup(payload, triggerButton) {
     setStatus(`Obnovuji data ze zalohy ${label}...`, 'info');
 
     try {
+        const requestPayload = {
+            ...payload,
+            createSafetyBackup: payload.createSafetyBackup !== false,
+        };
+
         const response = await fetch(`${serverEndpoint}/gdrive/backups/restore`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(requestPayload),
         });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) {

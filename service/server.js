@@ -484,6 +484,7 @@ app.post('/gdrive/backups/restore', async (req, res) => {
     }
 
     const deviceName = typeof payload.deviceLabel === 'string' ? payload.deviceLabel : (typeof payload.deviceName === 'string' ? payload.deviceName : null);
+    const createSafetyBackup = payload.createSafetyBackup !== false;
 
     try {
         let result;
@@ -493,7 +494,7 @@ app.post('/gdrive/backups/restore', async (req, res) => {
                 return res.status(400).json({ message: 'Pro lokalni obnovu je nutne zadat fileName.' });
             }
             console.log(`🔁 Obnova lokalni zalohy ${payload.fileName}`);
-            result = await restoreLocalBackupByName(payload.fileName, { deviceName });
+            result = await restoreLocalBackupByName(payload.fileName, { deviceName, createSafetyBackup });
         } else if (payload.sourceType === 'drive') {
             if (!payload.fileId || typeof payload.fileId !== 'string') {
                 return res.status(400).json({ message: 'Pro vzdalenou obnovu je nutne zadat fileId.' });
@@ -504,6 +505,7 @@ app.post('/gdrive/backups/restore', async (req, res) => {
                 deviceName,
                 deviceLabel: payload.deviceLabel,
                 dateGroup: payload.dateGroup,
+                createSafetyBackup,
             });
         } else {
             return res.status(400).json({ message: 'Neznamy typ zalohy. Ocekavam "local" nebo "drive".' });
