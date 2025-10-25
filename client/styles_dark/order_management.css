@@ -197,3 +197,59 @@ select {
 .summary-wage-row:hover {
     background: rgba(255, 193, 7, 0.25) !important;
 }
+
+/* ====== NEW SHIFT SUMMARY LAYOUT (DARK) ====== */
+.shift-summary-header {
+    background: #212121;
+    border-color: #3a3a3a;
+}
+
+.shift-summary-heading {
+    color: #f0f0f0;
+}
+
+.shift-summary-subheading {
+    color: #b0b0b0;
+}
+
+.shift-summary-meta {
+    color: #b0b0b0;
+}
+
+.shift-summary-card {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.shift-summary-card h3 {
+    color: #f0f0f0;
+}
+
+.shift-summary-row {
+    color: #c4c4c4;
+}
+
+.shift-summary-label {
+    color: #cfcfcf;
+}
+
+.shift-summary-value {
+    color: #f5f5f5;
+}
+
+.shift-summary-value.muted {
+    color: #929292;
+}
+
+.shift-summary-divider {
+    border-top-color: #3a3a3a;
+}
+
+.shift-summary-subtitle {
+    color: #b9b9b9;
+}
+
+.shift-summary-note {
+    color: #9a9a9a;
+}

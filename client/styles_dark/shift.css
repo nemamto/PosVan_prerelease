@@ -139,3 +139,182 @@
     background: rgba(255, 193, 7, 0.25) !important;
 }
 
+/* ====== NEW SHIFT SUMMARY LAYOUT (DARK) ====== */
+.shift-summary-header {
+    background: #212121;
+    border-color: #3a3a3a;
+}
+
+.shift-summary-heading {
+    color: #f0f0f0;
+}
+
+.shift-summary-subheading {
+    color: #b0b0b0;
+}
+
+.shift-summary-meta {
+    color: #b0b0b0;
+}
+
+.shift-summary-card {
+    background: #2a2a2a;
+    border-color: #3a3a3a;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+.shift-summary-card h3 {
+    color: #f0f0f0;
+}
+
+.shift-summary-row {
+    color: #c4c4c4;
+}
+
+.shift-summary-label {
+    color: #cfcfcf;
+}
+
+.shift-summary-value {
+    color: #f5f5f5;
+}
+
+.shift-summary-value.muted {
+    color: #929292;
+}
+
+.shift-summary-divider {
+    border-top-color: #3a3a3a;
+}
+
+.shift-summary-subtitle {
+    color: #b9b9b9;
+}
+
+.shift-summary-note {
+    color: #9a9a9a;
+}
+
+/* ====== END SHIFT MODAL NEW LAYOUT (DARK) ====== */
+.end-shift-overview-card {
+    background: #232323;
+    border-color: #3a3a3a;
+}
+
+.end-shift-overview-label {
+    color: #b0b0b0;
+}
+
+.end-shift-overview-value {
+    color: #f0f0f0;
+}
+
+.end-shift-revenue-breakdown {
+    gap: 0.85rem;
+}
+
+.end-shift-mini-card {
+    background: #1f1f1f;
+    border-color: #363636;
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+}
+
+.end-shift-mini-label {
+    color: #a8a8a8;
+}
+
+.end-shift-mini-card strong {
+    color: #f3f3f3;
+}
+
+.end-shift-step {
+    background: #1e1e1e;
+    border-color: #363636;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+}
+
+.end-shift-step-title {
+    color: #63a4ff;
+}
+
+.end-shift-helper-list {
+    color: #b5b5b5;
+}
+
+.end-shift-helper-list strong {
+    color: #f0f0f0;
+}
+
+.end-shift-result-highlight {
+    background: #242424;
+    border-color: #3a3a3a;
+}
+
+.end-shift-result-label,
+.end-shift-result-note,
+.end-shift-result-title,
+.end-shift-tip-card-label {
+    color: #b0b0b0;
+}
+
+.end-shift-result-value,
+.end-shift-result-amount,
+.end-shift-tip-card-value {
+    color: #f5f5f5;
+}
+
+.end-shift-result-value.positive {
+    color: #6fdc8c;
+}
+
+.end-shift-result-value.negative {
+    color: #ff8787;
+}
+
+.end-shift-result-card {
+    background: #1e1e1e;
+    border-color: #373737;
+}
+
+.end-shift-tip-card {
+    background: #1e1e1e;
+    border-color: #373737;
+}
+
+.end-shift-tip-card-total {
+    background: rgba(25, 135, 84, 0.15);
+    border-color: #3f7d4d;
+}
+
+.end-shift-summary-card-block {
+    background: #1f1f1f;
+    border-color: #363636;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+}
+
+.end-shift-summary-card-title {
+    color: #aeb6c2;
+}
+
+.end-shift-summary-card-list div {
+    color: #c7c7c7;
+}
+
+.end-shift-summary-card-list strong {
+    color: #f0f0f0;
+}
+
+.end-shift-summary-card-list strong.positive,
+.end-shift-summary-card-list div.positive strong {
+    color: #6fdc8c;
+}
+
+.end-shift-summary-card-list strong.negative,
+.end-shift-summary-card-list div.negative strong {
+    color: #ff8787;
+}
+
+.end-shift-summary-card-row {
+    border-top-color: rgba(145, 145, 145, 0.4);
+}
+

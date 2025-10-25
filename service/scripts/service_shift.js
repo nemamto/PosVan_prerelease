@@ -13,6 +13,112 @@ function getFileSafeDateTime(date = new Date()) {
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}_${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
 }
 
+function toAmount(value, fallback = 0) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function toOptionalAmount(value) {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
+function computeShiftFinancials(shiftNode) {
+    if (!shiftNode) {
+        return {
+            orderItems: [],
+            totalRevenue: 0,
+            cashRevenue: 0,
+            cardRevenue: 0,
+            employeeAccountRevenue: 0,
+            orderCount: 0,
+            cancelledCount: 0,
+            initialCash: 0,
+            totalDeposits: 0,
+            totalWithdrawals: 0,
+            currentCashState: 0,
+            averageOrderValue: 0,
+        };
+    }
+
+    const orderItems = normaliseOrderList(shiftNode);
+
+    let totalRevenue = 0;
+    let cashRevenue = 0;
+    let cardRevenue = 0;
+    let employeeAccountRevenue = 0;
+    let orderCount = 0;
+    let cancelledCount = 0;
+
+    orderItems.forEach(order => {
+        const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
+
+        if (isCancelled) {
+            cancelledCount += 1;
+            return;
+        }
+
+        orderCount += 1;
+
+        const paymentMethod = order.paymentMethod || 'Neznámé';
+        const totalPrice = toAmount(order.totalPrice, NaN);
+
+        if (!Number.isFinite(totalPrice)) {
+            return;
+        }
+
+        totalRevenue += totalPrice;
+
+        if (paymentMethod === 'Hotovost' || paymentMethod === 'Hotově') {
+            cashRevenue += totalPrice;
+        } else if (paymentMethod === 'Karta' || paymentMethod === 'Card') {
+            cardRevenue += totalPrice;
+        } else {
+            employeeAccountRevenue += totalPrice;
+        }
+    });
+
+    let initialCash = 0;
+    let totalDeposits = 0;
+    let totalWithdrawals = 0;
+
+    if (shiftNode.cashRegister) {
+        initialCash = toAmount(shiftNode.cashRegister.initialAmount, 0);
+
+        const depositsNode = shiftNode.cashRegister.deposits;
+        if (depositsNode && depositsNode.deposit) {
+            const deposits = Array.isArray(depositsNode.deposit) ? depositsNode.deposit : [depositsNode.deposit];
+            totalDeposits = deposits.reduce((sum, dep) => sum + toAmount(dep.amount, 0), 0);
+        }
+
+        const withdrawalsNode = shiftNode.cashRegister.withdrawals;
+        if (withdrawalsNode && withdrawalsNode.withdrawal) {
+            const withdrawals = Array.isArray(withdrawalsNode.withdrawal) ? withdrawalsNode.withdrawal : [withdrawalsNode.withdrawal];
+            totalWithdrawals = withdrawals.reduce((sum, wd) => sum + toAmount(wd.amount, 0), 0);
+        }
+    }
+
+    const currentCashState = initialCash + cashRevenue + totalDeposits - totalWithdrawals;
+
+    return {
+        orderItems,
+        totalRevenue,
+        cashRevenue,
+        cardRevenue,
+        employeeAccountRevenue,
+        orderCount,
+        cancelledCount,
+        initialCash,
+        totalDeposits,
+        totalWithdrawals,
+        currentCashState,
+        averageOrderValue: orderCount > 0 ? totalRevenue / orderCount : 0,
+    };
+}
+
 function startShift(req, res) {
     try {
         const { bartender, initialCash } = req.body;
@@ -116,13 +222,83 @@ async function endShift(req, res) {
 
         const { filePath, jsonData } = selected;
 
+        const baseWageInput = toOptionalAmount(req.body.bartenderBaseWage);
+        const tipsInput = toOptionalAmount(req.body.bartenderTips);
+        const finalWageInput = toOptionalAmount(bartenderWage);
+    const countedCashInput = toOptionalAmount(req.body.countedCash);
+    const actualCashInput = toOptionalAmount(req.body.actualCashFinal);
+        const actualCardInput = toOptionalAmount(req.body.actualCardTotal);
+        const cashTipInput = toOptionalAmount(req.body.cashTips);
+        const cardTipInput = toOptionalAmount(req.body.cardTips);
+        const financials = computeShiftFinancials(jsonData.shift);
+
+        const baseWage = baseWageInput !== null
+            ? baseWageInput
+            : (finalWageInput !== null ? finalWageInput : 0);
+
+            let cardTipAmount = null;
+            if (actualCardInput !== null) {
+                cardTipAmount = actualCardInput - financials.cardRevenue;
+            } else if (cardTipInput !== null) {
+                cardTipAmount = cardTipInput;
+            }
+
+            let cashTipAmount = null;
+            if (countedCashInput !== null) {
+                cashTipAmount = countedCashInput - financials.currentCashState;
+            } else if (cashTipInput !== null) {
+                cashTipAmount = cashTipInput;
+            }
+
+            let tipTotal = null;
+            if (cashTipAmount !== null || cardTipAmount !== null) {
+                tipTotal = (cashTipAmount ?? 0) + (cardTipAmount ?? 0);
+            } else if (tipsInput !== null) {
+                tipTotal = tipsInput;
+            }
+
+            let finalWageAmount = finalWageInput !== null ? finalWageInput : baseWage;
+            if (tipTotal !== null) {
+                finalWageAmount = baseWage + tipTotal;
+        }
+
         const now = new Date();
         const endTimeISO = getISODateTime(now);
 
         jsonData.shift.endTime = endTimeISO;
+        jsonData.shift.bartenderBaseWage = baseWage.toFixed(2);
+        jsonData.shift.bartenderWage = finalWageAmount.toFixed(2);
 
-        if (bartenderWage !== undefined && bartenderWage !== null) {
-            jsonData.shift.bartenderWage = Number(bartenderWage);
+        if (tipTotal !== null) {
+            jsonData.shift.bartenderTips = tipTotal.toFixed(2);
+        }
+
+        if (actualCashInput !== null) {
+            jsonData.shift.cashRegister = jsonData.shift.cashRegister || {};
+            jsonData.shift.cashRegister.actualEndAmount = actualCashInput.toFixed(2);
+            jsonData.shift.closingCash = actualCashInput.toFixed(2);
+        }
+
+        if (countedCashInput !== null) {
+            jsonData.shift.cashRegister = jsonData.shift.cashRegister || {};
+            jsonData.shift.cashRegister.countedBeforePayout = countedCashInput.toFixed(2);
+        }
+
+        if (actualCardInput !== null) {
+            jsonData.shift.payments = jsonData.shift.payments || {};
+            jsonData.shift.payments.cardTerminalTotal = actualCardInput.toFixed(2);
+            jsonData.shift.closingCard = actualCardInput.toFixed(2);
+        }
+
+        if (tipTotal !== null) {
+            jsonData.shift.tips = jsonData.shift.tips || {};
+            if (cashTipAmount !== null) {
+                jsonData.shift.tips.cash = cashTipAmount.toFixed(2);
+            }
+            if (cardTipAmount !== null) {
+                jsonData.shift.tips.card = cardTipAmount.toFixed(2);
+            }
+            jsonData.shift.tips.total = tipTotal.toFixed(2);
         }
 
         const updatedXmlData = create(jsonData).end({ prettyPrint: true });
@@ -164,9 +340,16 @@ async function endShift(req, res) {
 
         console.log(`✅ Směna ID ${shiftID} byla ukončena v ${endTimeISO}.`);
 
+        const tipSummary = tipTotal !== null ? {
+            cash: cashTipAmount !== null ? cashTipAmount.toFixed(2) : null,
+            card: cardTipAmount !== null ? cardTipAmount.toFixed(2) : null,
+            total: tipTotal.toFixed(2),
+        } : null;
+
         res.json({
             message: `✅ Směna ID ${shiftID} byla ukončena.`,
             endTime: endTimeISO,
+            tips: tipSummary,
             backup: backupResult ? {
                 uploaded: Boolean(backupResult.uploaded),
                 uploadError: backupResult.uploadError ?? null,
@@ -281,65 +464,27 @@ function getShiftSummary(req, res) {
         const xmlData = fs.readFileSync(filePath, 'utf8');
         const jsonData = convert(xmlData, { format: 'object' });
 
-        // === 💡 Načtení všech objednávek, ať už jsou ve <orders> nebo přímo pod <shift> ===
-        let orderList = [];
+        const shiftNode = jsonData.shift;
+        const financials = computeShiftFinancials(shiftNode);
+        const {
+            totalRevenue,
+            cashRevenue,
+            cardRevenue,
+            employeeAccountRevenue,
+            orderCount,
+            cancelledCount,
+            averageOrderValue,
+            initialCash,
+            totalDeposits,
+            totalWithdrawals,
+            currentCashState,
+        } = financials;
 
-        // Z vnořeného <orders><order>...</order></orders>
-        if (jsonData.shift?.orders?.order) {
-            const nestedOrders = jsonData.shift.orders.order;
-            orderList = Array.isArray(nestedOrders) ? nestedOrders : [nestedOrders];
-        }
-
-        // Z přímých <order> tagů mimo <orders>
-        if (jsonData.shift?.order) {
-            const flatOrders = Array.isArray(jsonData.shift.order)
-                ? jsonData.shift.order
-                : [jsonData.shift.order];
-            orderList = orderList.concat(flatOrders);
-        }
-
-        // === 🔢 Výpočty tržeb a statistik ===
-        let totalRevenue = 0;
-        let cashRevenue = 0;
-        let cardRevenue = 0;
-        let employeeAccountRevenue = 0;
-        let orderCount = 0;
-        let cancelledCount = 0;
-
-        orderList.forEach(order => {
-            const isCancelled = String(order['@cancelled']).toLowerCase() === 'true';
-            
-            if (isCancelled) {
-                cancelledCount++;
-                return;
-            }
-            
-            orderCount++;
-            
-            const paymentMethod = order.paymentMethod || "Neznámé";
-            const totalPrice = Number(order.totalPrice || 0);
-
-            if (isNaN(totalPrice)) return;
-
-            totalRevenue += totalPrice;
-
-            if (paymentMethod === "Hotovost") {
-                cashRevenue += totalPrice;
-            } else if (paymentMethod === "Karta") {
-                cardRevenue += totalPrice;
-            } else  {
-                employeeAccountRevenue += totalPrice;
-            }
-        });
-
-        const averageOrderValue = orderCount > 0 ? (totalRevenue / orderCount) : 0;
-
-        // === ⏱️ Načtení základních údajů směny ===
-        const shiftId = jsonData.shift['@id'] || shiftID;
-        // startTime může být atribut (@startTime) nebo element (startTime)
-        const startTime = jsonData.shift['@startTime'] || jsonData.shift.startTime;
-        const endTime = jsonData.shift.endTime;
-        const bartender = jsonData.shift.bartender || 'Neznámý';
+        const shiftId = shiftNode['@id'] || shiftID;
+        const startTime = shiftNode['@startTime'] || shiftNode.startTime || null;
+        const rawEndTime = shiftNode.endTime || shiftNode['@endTime'] || null;
+        const endTime = normaliseShiftEndTime(rawEndTime);
+        const bartender = shiftNode.bartender || 'Neznámý';
         
         // === ⏱️ Pomocná funkce pro parsování data ===
         function parseDateTime(dateStr) {
@@ -386,42 +531,56 @@ function getShiftSummary(req, res) {
             durationHours = durationMs / (1000 * 60 * 60); // Převod na hodiny
         }
 
-        // === 💰 Výpočet mzdy barmana (200 Kč/h * délka směny) ===
-        const bartenderWage = jsonData.shift.bartenderWage 
-            ? Number(jsonData.shift.bartenderWage) 
-            : Math.round(durationHours * 200);
+        // === 💰 Výpočet mzdy barmana ===
+        const wageParsed = toOptionalAmount(shiftNode.bartenderWage);
+        let bartenderBaseWage = toOptionalAmount(shiftNode.bartenderBaseWage);
+        let bartenderTips = toOptionalAmount(shiftNode.bartenderTips);
 
-        // === 💵 Výpočet stavu pokladny ===
-        let initialCash = 0;
-        let totalDeposits = 0;
-        let totalWithdrawals = 0;
-
-        if (jsonData.shift.cashRegister) {
-            initialCash = Number(jsonData.shift.cashRegister.initialAmount) || 0;
-
-            // Sečteme všechny vklady
-            if (jsonData.shift.cashRegister.deposits?.deposit) {
-                const deposits = Array.isArray(jsonData.shift.cashRegister.deposits.deposit)
-                    ? jsonData.shift.cashRegister.deposits.deposit
-                    : [jsonData.shift.cashRegister.deposits.deposit];
-                
-                totalDeposits = deposits.reduce((sum, dep) => sum + (Number(dep.amount) || 0), 0);
-            }
-
-            // Sečteme všechny výběry
-            if (jsonData.shift.cashRegister.withdrawals?.withdrawal) {
-                const withdrawals = Array.isArray(jsonData.shift.cashRegister.withdrawals.withdrawal)
-                    ? jsonData.shift.cashRegister.withdrawals.withdrawal
-                    : [jsonData.shift.cashRegister.withdrawals.withdrawal];
-                
-                totalWithdrawals = withdrawals.reduce((sum, wd) => sum + (Number(wd.amount) || 0), 0);
-            }
+        if (bartenderBaseWage === null) {
+            bartenderBaseWage = Number((totalRevenue * 0.10).toFixed(2));
         }
 
-        // Aktuální stav = počáteční + příjem hotovosti + vklady - výběry
-        const currentCashState = initialCash + cashRevenue + totalDeposits - totalWithdrawals;
-        // Finální stav po výplatě barmana
-        const finalCashState = currentCashState - bartenderWage;
+        let bartenderWage = wageParsed;
+        if (bartenderWage === null && bartenderBaseWage !== null && bartenderTips !== null) {
+            bartenderWage = Number((bartenderBaseWage + bartenderTips).toFixed(2));
+        }
+
+        if (bartenderWage === null) {
+            bartenderWage = Math.round(durationHours * 200);
+        }
+
+        const countedBeforePayoutRaw = (shiftNode.cashRegister && shiftNode.cashRegister.countedBeforePayout) || null;
+        const countedCashBeforePayout = toOptionalAmount(countedBeforePayoutRaw);
+
+        const actualCashRaw = (shiftNode.cashRegister && shiftNode.cashRegister.actualEndAmount) || shiftNode.actualCashFinal || null;
+        const actualCashFinal = toOptionalAmount(actualCashRaw);
+        const actualCardRaw = (shiftNode.payments && shiftNode.payments.cardTerminalTotal) || shiftNode.actualCardTotal || null;
+        const actualCardTotal = toOptionalAmount(actualCardRaw);
+
+        const tipNode = shiftNode.tips || {};
+        let cashDifference = toOptionalAmount(tipNode.cash);
+        let cardDifference = toOptionalAmount(tipNode.card);
+        let tipAmount = toOptionalAmount(tipNode.total);
+
+        if (cardDifference === null && actualCardTotal !== null) {
+            cardDifference = Number((actualCardTotal - cardRevenue).toFixed(2));
+        }
+
+        const baseWageValue = bartenderBaseWage ?? Number((totalRevenue * 0.10).toFixed(2));
+        const cardTipPortion = cardDifference ?? 0;
+        const finalCashState = Number((currentCashState - (baseWageValue + cardTipPortion)).toFixed(2));
+
+        if (cashDifference === null && actualCashFinal !== null) {
+            cashDifference = Number((actualCashFinal - finalCashState).toFixed(2));
+        }
+
+        if (tipAmount === null && (cashDifference !== null || cardDifference !== null)) {
+            tipAmount = Number(((cashDifference ?? 0) + (cardDifference ?? 0)).toFixed(2));
+        }
+
+        if (bartenderTips === null && tipAmount !== null) {
+            bartenderTips = tipAmount;
+        }
 
         res.json({
             shiftID: shiftId,
@@ -430,6 +589,8 @@ function getShiftSummary(req, res) {
             endTime: endTime || null,
             durationHours: durationHours.toFixed(2),
             bartenderWage: bartenderWage,
+            bartenderBaseWage: bartenderBaseWage !== null ? bartenderBaseWage.toFixed(2) : null,
+            bartenderTips: bartenderTips !== null ? bartenderTips.toFixed(2) : null,
             totalRevenue: totalRevenue.toFixed(2),
             cashRevenue: cashRevenue.toFixed(2),
             cardRevenue: cardRevenue.toFixed(2),
@@ -442,7 +603,15 @@ function getShiftSummary(req, res) {
             totalDeposits: totalDeposits.toFixed(2),
             totalWithdrawals: totalWithdrawals.toFixed(2),
             currentCashState: currentCashState.toFixed(2),
-            finalCashState: finalCashState.toFixed(2)
+            finalCashState: finalCashState.toFixed(2),
+            countedCashBeforePayout: countedCashBeforePayout !== null ? countedCashBeforePayout.toFixed(2) : null,
+            actualCashFinal: actualCashFinal !== null ? actualCashFinal.toFixed(2) : null,
+            actualCardTotal: actualCardTotal !== null ? actualCardTotal.toFixed(2) : null,
+            cashDifference: cashDifference !== null ? cashDifference.toFixed(2) : null,
+            cardDifference: cardDifference !== null ? cardDifference.toFixed(2) : null,
+            tipAmount: tipAmount !== null ? tipAmount.toFixed(2) : null,
+            cashTips: cashDifference !== null ? cashDifference.toFixed(2) : null,
+            cardTips: cardDifference !== null ? cardDifference.toFixed(2) : null,
         });
 
     } catch (error) {

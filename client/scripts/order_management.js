@@ -572,159 +572,271 @@ async function showShiftSummaryModal(shiftID) {
 
         const summary = await response.json();
 
-        const formatCurrency = (value) => {
+        const formatCurrencyDetailed = (value) => {
             const numeric = Number(value) || 0;
             return new Intl.NumberFormat('cs-CZ', {
                 style: 'currency',
-                currency: 'CZK',
-                maximumFractionDigits: 0
+                currency: 'CZK'
             }).format(numeric);
         };
 
         const formatDateTime = (dateString) => {
-            if (!dateString) return '—';
+            if (!dateString) {
+                return '—';
+            }
             const date = new Date(dateString);
-            if (isNaN(date.getTime())) return '—';
-            
+            if (Number.isNaN(date.getTime())) {
+                return '—';
+            }
+
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
-            
+
             return `${day}. ${month}. ${year} ${hours}:${minutes}`;
         };
 
+        const shiftIdentifier = summary.shiftID || shiftID;
+
+        const asNumber = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return null;
+            }
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : null;
+        };
+
+        const valueOrZero = (value) => {
+            const numeric = asNumber(value);
+            return numeric !== null ? numeric : 0;
+        };
+
+        const formatNullableCurrency = (value) => {
+            const numeric = asNumber(value);
+            return numeric !== null ? formatCurrencyDetailed(numeric) : '—';
+        };
+
+        const formatDiffValue = (value) => {
+            if (value === null || Number.isNaN(value)) {
+                return '—';
+            }
+            if (value === 0) {
+                return formatCurrencyDetailed(0);
+            }
+            const absolute = formatCurrencyDetailed(Math.abs(value));
+            return value > 0 ? `+${absolute}` : `-${absolute}`;
+        };
+
+        const diffClass = (value) => {
+            if (value === null || Number.isNaN(value) || value === 0) {
+                return '';
+            }
+            return value > 0 ? 'positive' : 'negative';
+        };
+
+        const durationHours = asNumber(summary.durationHours);
+        const durationDisplay = durationHours !== null ? durationHours.toFixed(2) : '—';
+        const startTimeDisplay = formatDateTime(summary.startTime);
+        const endTimeDisplay = summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá';
+
+        const totalRevenue = valueOrZero(summary.totalRevenue);
+        const cashRevenue = valueOrZero(summary.cashRevenue);
+        const cardRevenue = valueOrZero(summary.cardRevenue);
+        const employeeAccountRevenue = valueOrZero(summary.employeeAccountRevenue);
+        const averageOrderValue = valueOrZero(summary.averageOrderValue);
+
+        const initialCash = valueOrZero(summary.initialCash);
+        const totalDeposits = valueOrZero(summary.totalDeposits);
+        const totalWithdrawals = valueOrZero(summary.totalWithdrawals);
+        const currentCashState = valueOrZero(summary.currentCashState);
+        const countedCashBeforePayout = asNumber(summary.countedCashBeforePayout);
+        const expectedFinalCashBackend = asNumber(summary.finalCashState);
+        const actualFinalCash = asNumber(summary.actualCashFinal);
+        const cardRealTotal = asNumber(summary.actualCardTotal);
+
+        const baseWage = asNumber(summary.bartenderBaseWage) ?? Number((totalRevenue * 0.10).toFixed(2));
+        const cashTip = asNumber(summary.cashTips ?? summary.cashDifference);
+        const cardTipBase = asNumber(summary.cardTips ?? summary.cardDifference);
+        const cardTip = cardTipBase !== null ? cardTipBase : (cardRealTotal !== null ? Number((cardRealTotal - cardRevenue).toFixed(2)) : null);
+
+        let expectedFinalCash = expectedFinalCashBackend;
+        if (baseWage !== null) {
+            const cardTipPortion = cardTip ?? 0;
+            expectedFinalCash = Number((currentCashState - (baseWage + cardTipPortion)).toFixed(2));
+        }
+
+        let tipsTotal = asNumber(summary.bartenderTips ?? summary.tipAmount);
+        if (tipsTotal === null && (cashTip !== null || cardTip !== null)) {
+            const cashPart = cashTip ?? 0;
+            const cardPart = cardTip ?? 0;
+            tipsTotal = Number((cashPart + cardPart).toFixed(2));
+        }
+
+        let payoutTotal = asNumber(summary.bartenderWage);
+        if (payoutTotal === null && baseWage !== null) {
+            const tipsPart = tipsTotal ?? 0;
+            payoutTotal = Number((baseWage + tipsPart).toFixed(2));
+        }
+
+        const cashBeforeDiff = cashTip;
+        const finalCashDiff = actualFinalCash !== null && expectedFinalCash !== null
+            ? Number((actualFinalCash - expectedFinalCash).toFixed(2))
+            : null;
+
+        const cardDiffClass = diffClass(cardTip);
+        const cashBeforeDiffClass = diffClass(cashBeforeDiff);
+        const finalCashDiffClass = diffClass(finalCashDiff);
+
+        const countedValueClass = countedCashBeforePayout !== null ? '' : ' muted';
+        const actualFinalClass = actualFinalCash !== null ? '' : ' muted';
+        const actualCardClass = cardRealTotal !== null ? '' : ' muted';
+
         const message = `
-            <div class="shift-summary-modal">
-                <div class="summary-grid">
-                    <!-- Levý sloupec -->
-                    <div class="summary-column">
-                        <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Základní údaje</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>👤 Barman/ka</td>
-                            <td class="summary-amount">${summary.bartender || '—'}</td>
-                        </tr>
-                        <tr>
-                            <td>🕐 Zahájení</td>
-                            <td class="summary-amount">${formatDateTime(summary.startTime)}</td>
-                        </tr>
-                        <tr>
-                            <td>🕐 Ukončení</td>
-                            <td class="summary-amount">${summary.endTime ? formatDateTime(summary.endTime) : 'Probíhá'}</td>
-                        </tr>
-                        <tr>
-                            <td>⏱️ Délka</td>
-                            <td class="summary-amount">${Number(summary.durationHours || 0).toFixed(2)} h</td>
-                        </tr>
-                    </tbody>
-                </table>
-                        
-                <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Tržby</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr class="summary-total-row">
-                            <td><strong>Celkem</strong></td>
-                            <td class="summary-amount"><strong>${formatCurrency(summary.totalRevenue || 0)}</strong></td>
-                        </tr>
-                        <tr>
-                            <td>💵 Hotovost</td>
-                            <td class="summary-amount">${formatCurrency(summary.cashRevenue || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td>💳 Karta</td>
-                            <td class="summary-amount">${formatCurrency(summary.cardRevenue || 0)}</td>
-                        </tr>
-                        <tr>
-                            <td>👤 Účty</td>
-                            <td class="summary-amount">${formatCurrency(summary.employeeAccountRevenue || 0)}</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <table class="shift-summary-table">
-                    <thead>
-                        <tr>
-                            <th colspan="2">Statistiky</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>� Objednávek</td>
-                            <td class="summary-amount">${summary.orderCount || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>❌ Stornovaných</td>
-                            <td class="summary-amount">${summary.cancelledCount || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>� Průměr</td>
-                            <td class="summary-amount">${formatCurrency(summary.averageOrderValue || 0)}</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="shift-summary-modern">
+                <div class="shift-summary-header">
+                    <div>
+                        <div class="shift-summary-heading">Směna #${shiftIdentifier}</div>
+                        <div class="shift-summary-subheading">👤 ${summary.bartender || '—'}</div>
                     </div>
-
-                    <!-- Pravý sloupec -->
-                    <div class="summary-column">
-                        <table class="shift-summary-table">
-                            <thead>
-                                <tr>
-                                    <th colspan="2">💰 Pokladna</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Počáteční stav</td>
-                                    <td class="summary-amount">${formatCurrency(summary.initialCash || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td>+ Příjem hotovosti</td>
-                                    <td class="summary-amount positive">${formatCurrency(summary.cashRevenue || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td>+ Vklady</td>
-                                    <td class="summary-amount positive">${formatCurrency(summary.totalDeposits || 0)}</td>
-                                </tr>
-                                <tr>
-                                    <td>− Výběry</td>
-                                    <td class="summary-amount negative">${formatCurrency(summary.totalWithdrawals || 0)}</td>
-                                </tr>
-                                <tr class="summary-subtotal-row">
-                                    <td><strong>Stav před výplatou</strong></td>
-                                    <td class="summary-amount"><strong>${formatCurrency(summary.currentCashState || 0)}</strong></td>
-                                </tr>
-                                <tr class="summary-wage-row">
-                                    <td>− Mzda barmana</td>
-                                    <td class="summary-amount">${formatCurrency(summary.bartenderWage || 0)}</td>
-                                </tr>
-                                <tr class="summary-total-row">
-                                    <td><strong>✅ Finální stav</strong></td>
-                                    <td class="summary-amount"><strong>${formatCurrency(summary.finalCashState || 0)}</strong></td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="shift-summary-meta">
+                        <span>🕐 ${startTimeDisplay} → ${endTimeDisplay}</span>
+                        <span>⏱️ ${durationDisplay} h</span>
                     </div>
+                </div>
+                <div class="shift-summary-sections">
+                    <section class="shift-summary-card">
+                        <h3>Tržby</h3>
+                        <div class="shift-summary-rows">
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Celkem</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(totalRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">💵 Hotově</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(cashRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">💳 Kartou</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(cardRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">👤 Účty</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(employeeAccountRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-divider"></div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Objednávek</span>
+                                <span class="shift-summary-value">${summary.orderCount || 0}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Stornovaných</span>
+                                <span class="shift-summary-value">${summary.cancelledCount || 0}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Průměr na objednávku</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(averageOrderValue)}</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="shift-summary-card">
+                        <h3>Pokladna</h3>
+                        <div class="shift-summary-rows">
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Počáteční stav</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(initialCash)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">+ Hotovostní tržby</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(cashRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">+ Vklady</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(totalDeposits)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">− Výběry</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(totalWithdrawals)}</span>
+                            </div>
+                            <div class="shift-summary-divider"></div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Kasa před výplatou (systém)</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(currentCashState)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Spočítaná kasa (před výplatou)</span>
+                                <span class="shift-summary-value${countedValueClass}">${countedCashBeforePayout !== null ? formatCurrencyDetailed(countedCashBeforePayout) : '—'}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Rozdíl před výplatou</span>
+                                <span class="shift-summary-value ${cashBeforeDiffClass}">${formatDiffValue(cashBeforeDiff)}</span>
+                            </div>
+                            <div class="shift-summary-divider"></div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Očekávaná kasa po výplatě (základ + kartové dýško)</span>
+                                <span class="shift-summary-value">${formatNullableCurrency(expectedFinalCash)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Skutečná kasa po výplatě</span>
+                                <span class="shift-summary-value${actualFinalClass}">${actualFinalCash !== null ? formatCurrencyDetailed(actualFinalCash) : '—'}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Rozdíl po výplatě</span>
+                                <span class="shift-summary-value ${finalCashDiffClass}">${formatDiffValue(finalCashDiff)}</span>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="shift-summary-card">
+                        <h3>Spropitné & výplata</h3>
+                        <div class="shift-summary-rows">
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Základ (10 % tržeb)</span>
+                                <span class="shift-summary-value">${formatNullableCurrency(baseWage)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Spropitné (hotově)</span>
+                                <span class="shift-summary-value ${cashBeforeDiffClass}">${formatDiffValue(cashTip)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Spropitné (kartou)</span>
+                                <span class="shift-summary-value ${cardDiffClass}">${formatDiffValue(cardTip)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Spropitné celkem</span>
+                                <span class="shift-summary-value">${tipsTotal !== null ? formatCurrencyDetailed(tipsTotal) : '—'}</span>
+                            </div>
+                            <div class="shift-summary-divider"></div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Výplata celkem</span>
+                                <span class="shift-summary-value">${payoutTotal !== null ? formatCurrencyDetailed(payoutTotal) : '—'}</span>
+                            </div>
+                            <div class="shift-summary-divider"></div>
+                            <div class="shift-summary-subtitle">Platby kartou</div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Podle objednávek</span>
+                                <span class="shift-summary-value">${formatCurrencyDetailed(cardRevenue)}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Skutečně zaplaceno</span>
+                                <span class="shift-summary-value${actualCardClass}">${cardRealTotal !== null ? formatCurrencyDetailed(cardRealTotal) : '—'}</span>
+                            </div>
+                            <div class="shift-summary-row">
+                                <span class="shift-summary-label">Rozdíl</span>
+                                <span class="shift-summary-value ${cardDiffClass}">${formatDiffValue(cardTip)}</span>
+                            </div>
+                        </div>
+                        <div class="shift-summary-note">Dýška i základ se z pokladny vyplácí najednou po sečtení hotovosti.</div>
+                    </section>
                 </div>
             </div>
         `;
 
-        await showModalConfirm(message, { 
+        await showModal(message, { 
             title: `📊 Souhrn směny #${shiftID}`,
-            allowHtml: true, 
-            confirmText: 'Zavřít',
-            size: 'large',
-            showCancel: false
+            allowHtml: true,
+            showConfirmButton: false,
+            size: 'large'
         });
 
     } catch (error) {
