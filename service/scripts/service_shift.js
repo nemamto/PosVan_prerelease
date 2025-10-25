@@ -73,22 +73,46 @@ async function endShift(req, res) {
         const shiftsDir = path.join(__dirname, '..', 'data', 'shifts');
         common.ensureDirectoryExistence(shiftsDir);
 
-        const shiftFile = fs.readdirSync(shiftsDir).find(file => file.includes(`_${shiftID}.xml`));
-        if (!shiftFile) {
+        const matchingFiles = fs.readdirSync(shiftsDir)
+            .filter(file => file.endsWith(`_${shiftID}.xml`))
+            .sort((a, b) => b.localeCompare(a));
+
+        if (matchingFiles.length === 0) {
             return res.status(404).json({ message: '❌ Směna nebyla nalezena!' });
         }
 
-        const filePath = path.join(shiftsDir, shiftFile);
-        const xmlData = fs.readFileSync(filePath, 'utf8');
-        const jsonData = convert(xmlData, { format: 'object' });
+        let selected = null;
 
-        if (!jsonData.shift) {
+        for (const fileName of matchingFiles) {
+            const candidatePath = path.join(shiftsDir, fileName);
+            const xmlData = fs.readFileSync(candidatePath, 'utf8');
+            const jsonData = convert(xmlData, { format: 'object' });
+
+            if (!jsonData.shift) {
+                continue;
+            }
+
+            const existingEndTime = normaliseShiftEndTime(jsonData.shift.endTime || jsonData.shift['@endTime']);
+
+            if (!selected) {
+                selected = { filePath: candidatePath, jsonData, endTime: existingEndTime };
+            }
+
+            if (!existingEndTime) {
+                selected = { filePath: candidatePath, jsonData, endTime: null };
+                break;
+            }
+        }
+
+        if (!selected) {
             return res.status(400).json({ message: '❌ Neplatný formát směny!' });
         }
 
-        if (jsonData.shift.endTime) {
+        if (selected.endTime) {
             return res.status(400).json({ message: '❌ Směna již byla ukončena!' });
         }
+
+        const { filePath, jsonData } = selected;
 
         const now = new Date();
         const endTimeISO = getISODateTime(now);
